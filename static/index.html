@@ -172,11 +172,6 @@ async function newGame() {
 }
 
 async function ask(text) {
-    // the server rejects longer questions: a long voice transcript is usually a garbled one
-  if (text.length > 200) {
-    speak("Domanda troppo lunga, prova a dirla più breve.");
-    return;
-  }
   text = text.trim();
   if (!text || busy || !gameId) return;
   setBusy(true);
@@ -289,17 +284,37 @@ function speakTurn(data) {
 // ---------- voice in: press, speak, stop ----------
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognizer = null;
+let heard = "";           // words transcribed so far for the current question
+let sent = false;         // true once the current question has been sent
+let silenceTimer = null;
+
+// send what was heard (only once) and stop listening
+function finish() {
+  clearTimeout(silenceTimer);
+  recognizer.stop();
+  if (heard && !sent) {
+    sent = true;
+    ask(heard);
+  }
+}
 
 if (Recognition) {
   recognizer = new Recognition();
   recognizer.lang = "it-IT";
   recognizer.interimResults = true;   // show the words while the player speaks
+  recognizer.onstart = () => { heard = ""; sent = false; };
   recognizer.onresult = (event) => {
     const result = event.results[event.results.length - 1];
-    $("transcript").textContent = result[0].transcript;
-    if (result.isFinal) ask(result[0].transcript);   // the browser stops by itself at the first pause
+    heard = result[0].transcript;
+    $("transcript").textContent = heard;
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(finish, 2000);   // transcript unchanged for 2 s (e.g. TV noise): send it
+    if (result.isFinal) finish();               // the browser detected the pause by itself
   };
-  recognizer.onend = () => $("mic").classList.remove("listening");
+  recognizer.onend = () => {
+    $("mic").classList.remove("listening");
+    finish();   // some browsers (iPhone) end without a final result
+  };
 } else {
   // no speech recognition in this browser (e.g. Firefox): typing only
   $("mic").hidden = true;
@@ -308,13 +323,13 @@ if (Recognition) {
 }
 
 function listen() {
-  if (!recognizer || busy || $("mic").classList.contains("listening")) return;
+  if (!recognizer || busy) return;
+  if ($("mic").classList.contains("listening")) { finish(); return; }   // second press: send now
   speechSynthesis.cancel();   // stop reading, so the microphone does not hear the page
   $("transcript").textContent = "";
   $("mic").classList.add("listening");
   recognizer.start();
 }
-
 // ---------- controls ----------
 $("mic").addEventListener("click", listen);
 document.addEventListener("keydown", (event) => {

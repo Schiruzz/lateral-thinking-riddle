@@ -116,7 +116,7 @@ def ask(game_id: str, question: Question):
 
     # the judge sees the conversation so far and the lit cards, then decides
     start = time.perf_counter()
-    verdict = JUDGE.judge(...)   # your existing line, unchanged
+    verdict = JUDGE.judge(question.text, game.history, game.lit)
     latency = time.perf_counter() - start
     # remember the exchange: it becomes context for the next questions
         # remember the exchange as context, unless the judge did not understand it: that does not count as a question
