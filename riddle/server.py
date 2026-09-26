@@ -19,6 +19,9 @@ Run from the repository root:
 Then open http://localhost:8000 (the page) or http://localhost:8000/docs
 (an automatic page to try the endpoints by hand).
 """
+import json
+import time
+from datetime import datetime, timezone
 
 import uuid
 from pathlib import Path
@@ -35,6 +38,7 @@ from riddle.puzzle import load_puzzle
 PUZZLE = load_puzzle("gabbiano", "it")
 JUDGE = Judge(PUZZLE, make_client())      # needs GCP_SA_KEY in the environment
 STATIC_DIR = Path(__file__).parent.parent / "static"   # where index.html lives
+LOG_FILE = Path("logs/games.jsonl")  # one line per question, kept out of git
 GAMES = {}   # game id -> Game, kept in memory: the server runs as a single instance
 
 app = FastAPI(title="Lateral Thinking Riddle")
@@ -111,7 +115,9 @@ def ask(game_id: str, question: Question):
         raise HTTPException(status_code=404, detail="game not found")
 
     # the judge sees the conversation so far and the lit cards, then decides
-    verdict = JUDGE.judge(question.text, game.history, game.lit)
+    start = time.perf_counter()
+    verdict = JUDGE.judge(...)   # your existing line, unchanged
+    latency = time.perf_counter() - start
     # remember the exchange: it becomes context for the next questions
         # remember the exchange as context, unless the judge did not understand it: that does not count as a question
     if verdict["answer"] != UNCLEAR:
@@ -120,6 +126,22 @@ def ask(game_id: str, question: Question):
     new_cards = game.unlock(verdict["cards"])
 
     board = game.board()
+
+        # append this question to the game log: enough to replay it and to measure the judge
+    LOG_FILE.parent.mkdir(exist_ok=True)
+    with LOG_FILE.open("a", encoding="utf-8") as log:
+        log.write(json.dumps({
+            "time": datetime.now(timezone.utc).isoformat(),
+            "game": game_id,
+            "question": question.text,
+            "positive_question": verdict["positive_question"],
+            "answer": verdict["answer"],
+            "new_cards": new_cards,
+            "score": game.score,
+            "won": game.won(),
+            "latency": round(latency, 2),
+        }, ensure_ascii=False) + "\n")
+
     return {
         "positive_question": verdict["positive_question"],
         "answer": verdict["answer"],
