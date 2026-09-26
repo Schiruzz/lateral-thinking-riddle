@@ -39,12 +39,24 @@ are cards withheld, not given away.
 
 ## Repository
 
-- `notebooks/` — how the judge was built and measured, step by step.
+```
+puzzles/gabbiano/   it.json (the puzzle as data), tests.it.json (112 labelled questions)
+riddle/             puzzle.py (load and check), game.py (game state),
+                    judge.py (judge and verifier), evaluate.py (evaluation CLI)
+tests/              checks with no API calls: puzzle data, game logic, judge guards
+notebooks/          how the judge was built and measured, step by step
+```
 
 ## Run
 
-Open the notebook in Colab and set `PROJECT_ID` to a Google Cloud project with the
-Vertex AI API enabled.
+```bash
+pip install -r requirements.txt
+python -m pytest -q          # no API calls
+python -m riddle.evaluate    # needs GCP_SA_KEY, see below
+```
+
+The evaluation calls Vertex AI. Set `GCP_SA_KEY` to the content of the JSON key
+of a Google Cloud service account with the Agent Platform User role.
 
 ## Next
 

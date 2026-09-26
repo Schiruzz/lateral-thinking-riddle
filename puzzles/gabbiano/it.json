@@ -1,0 +1,239 @@
+{
+  "story": "Un uomo e una donna entrano in un ristorante. Lui ordina carne di gabbiano, ne assaggia un boccone, esce e si toglie la vita. Perché?",
+  "solution": "Anni prima l'uomo, cieco, la moglie e il loro figlio fanno naufragio. Il figlio annega in mare durante il naufragio, non sull'isola; i genitori raggiungono un'isola senza cibo, dove ci sono molti gabbiani, e il mare vi porta il corpo del figlio già morto. Affamati, i genitori sono costretti a mangiarne la carne, ma la moglie, per farlo sopravvivere, gli dice che è gabbiano, e lui, sentendo i gabbiani, le crede. Negli anni gli resta un dubbio. Prima del ristorante non aveva mai mangiato gabbiano: sull'isola aveva mangiato suo figlio. Al ristorante ordina gabbiano apposta per verificare: il sapore è diverso da quello che ricordava, capisce che quello dell'isola non era gabbiano ma suo figlio, e si uccide.",
+  "facts": {
+    "moglie": {
+      "text": "La donna è sua moglie",
+      "points": 10
+    },
+    "passato": {
+      "text": "È successo qualcosa anni prima",
+      "points": 10
+    },
+    "naufragio": {
+      "text": "Hanno fatto naufragio",
+      "points": 20
+    },
+    "isola": {
+      "text": "Sono finiti su un'isola senza cibo",
+      "points": 20
+    },
+    "terza_persona": {
+      "text": "Nella storia c'entra un'altra persona",
+      "points": 10
+    },
+    "figlio": {
+      "text": "L'altra persona era il loro figlio",
+      "points": 20
+    },
+    "figlio_morto": {
+      "text": "Il figlio è morto",
+      "points": 30
+    },
+    "carne_umana": {
+      "text": "Hanno mangiato carne umana",
+      "points": 40
+    },
+    "cieco": {
+      "text": "L'uomo è cieco",
+      "points": 20
+    },
+    "gabbiani": {
+      "text": "Sull'isola c'erano gabbiani",
+      "points": 20
+    },
+    "gabbiano_creduto": {
+      "text": "Credeva di mangiare gabbiano",
+      "points": 30
+    },
+    "bugia": {
+      "text": "La moglie gli ha mentito sul cibo",
+      "points": 40
+    },
+    "motivo": {
+      "text": "La moglie voleva a ogni costo che lui sopravvivesse",
+      "points": 40
+    },
+    "sospetto": {
+      "text": "Da anni dubitava di quel pasto",
+      "points": 30
+    },
+    "apposta": {
+      "text": "Ha ordinato gabbiano apposta",
+      "points": 40
+    },
+    "sapore": {
+      "text": "Il sapore era diverso dal ricordo",
+      "points": 40
+    }
+  },
+  "exclusions": {
+    "carne_ok": {
+      "text": "La carne del ristorante era cotta e commestibile",
+      "points": 5
+    },
+    "ristorante_no": {
+      "text": "Nulla di ciò che ha fatto il ristorante è la causa",
+      "points": 5
+    },
+    "moglie_no_male": {
+      "text": "La moglie non voleva fargli del male",
+      "points": 5
+    },
+    "tradimento": {
+      "text": "La moglie non lo tradiva",
+      "points": 5
+    },
+    "nessun_omicidio": {
+      "text": "Nessuno ha ucciso il figlio: è morto",
+      "points": 5
+    }
+  },
+  "prerequisites": {
+    "figlio": [
+      "terza_persona"
+    ],
+    "figlio_morto": [
+      "figlio"
+    ],
+    "bugia": [
+      "moglie"
+    ],
+    "motivo": [
+      "moglie"
+    ]
+  },
+  "deductions": [
+    {
+      "id": "d_non_soli",
+      "children": [
+        "moglie",
+        "terza_persona"
+      ],
+      "text": "Nella storia, oltre a marito e moglie, c'è una terza persona"
+    },
+    {
+      "id": "d_famiglia",
+      "children": [
+        "d_non_soli",
+        "figlio"
+      ],
+      "text": "La storia riguarda una famiglia: padre, madre e figlio"
+    },
+    {
+      "id": "d_naufragio",
+      "children": [
+        "passato",
+        "naufragio"
+      ],
+      "text": "Anni prima hanno fatto naufragio"
+    },
+    {
+      "id": "d_famiglia_naufraga",
+      "children": [
+        "d_famiglia",
+        "d_naufragio"
+      ],
+      "text": "Anni prima la famiglia, figlio compreso, ha fatto naufragio"
+    },
+    {
+      "id": "d_figlio_isola",
+      "children": [
+        "isola",
+        "figlio_morto"
+      ],
+      "text": "Il figlio è morto e loro erano su un'isola senza cibo"
+    },
+    {
+      "id": "d_tragedia",
+      "children": [
+        "d_famiglia_naufraga",
+        "d_figlio_isola"
+      ],
+      "text": "Nel naufragio il figlio è annegato, loro sono finiti su un'isola senza cibo"
+    },
+    {
+      "id": "d_udito",
+      "children": [
+        "cieco",
+        "gabbiani"
+      ],
+      "text": "Cieco, riconosceva i gabbiani solo dal verso"
+    },
+    {
+      "id": "d_pieta",
+      "children": [
+        "bugia",
+        "motivo"
+      ],
+      "text": "La moglie gli ha mentito per salvarlo"
+    },
+    {
+      "id": "d_credibile",
+      "children": [
+        "d_pieta",
+        "d_udito"
+      ],
+      "text": "La bugia era credibile: intorno sentiva i gabbiani"
+    },
+    {
+      "id": "d_pasto",
+      "children": [
+        "carne_umana",
+        "gabbiano_creduto"
+      ],
+      "text": "Ha mangiato carne umana credendola gabbiano"
+    },
+    {
+      "id": "d_inganno",
+      "children": [
+        "d_credibile",
+        "d_pasto"
+      ],
+      "text": "La moglie gli ha fatto credere che la carne umana fosse gabbiano"
+    },
+    {
+      "id": "d_verita",
+      "children": [
+        "d_tragedia",
+        "d_inganno"
+      ],
+      "text": "Sull'isola ha mangiato il figlio credendolo gabbiano"
+    },
+    {
+      "id": "d_verifica",
+      "children": [
+        "sospetto",
+        "apposta"
+      ],
+      "text": "Ha ordinato gabbiano per verificare un vecchio dubbio"
+    },
+    {
+      "id": "d_conferma",
+      "children": [
+        "d_verifica",
+        "sapore"
+      ],
+      "text": "Il sapore ha smentito il ricordo"
+    },
+    {
+      "id": "soluzione",
+      "children": [
+        "d_verita",
+        "d_conferma"
+      ],
+      "text": "Al ristorante ha capito di aver mangiato suo figlio"
+    }
+  ],
+  "solution_elements": {
+    "figlio_mangiato": "Ha mangiato la carne di suo figlio",
+    "scoperta": "Al ristorante ha capito cosa aveva mangiato"
+  },
+  "required_words": {
+    "cieco": [
+      "ciec",
+      "cecit",
+      "non vedente"
+    ]
+  }
+}
