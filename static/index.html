@@ -130,7 +130,7 @@ form.typed input { flex: 1; max-width: 420px; background: var(--ink-soft); borde
     <p class="transcript" id="transcript"></p>
     <p class="hint"><span id="mic-hint">Premi il microfono o la barra spaziatrice, poi parla</span> · <a href="#" id="toggle-typed">scrivi</a></p>
     <form class="typed" id="typed">
-      <input id="typed-input" autocomplete="off" placeholder="Scrivi una domanda">
+      <input id="typed-input" autocomplete="off" placeholder="Scrivi una domanda" maxlength="200">
       <button class="ghost">Invia</button>
     </form>
   </footer>
@@ -172,6 +172,11 @@ async function newGame() {
 }
 
 async function ask(text) {
+    // the server rejects longer questions: a long voice transcript is usually a garbled one
+  if (text.length > 200) {
+    speak("Domanda troppo lunga, prova a dirla più breve.");
+    return;
+  }
   text = text.trim();
   if (!text || busy || !gameId) return;
   setBusy(true);

@@ -25,7 +25,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from riddle.game import Game
 from riddle.judge import UNCLEAR, Judge, make_client
@@ -39,14 +39,12 @@ GAMES = {}   # game id -> Game, kept in memory: the server runs as a single inst
 
 app = FastAPI(title="Lateral Thinking Riddle")
 
+MAX_QUESTION_LENGTH = 200  # longer texts are rejected before calling the judge
+
 
 class Question(BaseModel):
-    """Body of an /ask request: what the player said, already transcribed by the browser.
-
-    FastAPI checks every request against this model: a body without a "text"
-    string is rejected with an error before reaching our code.
-    """
-    text: str
+    """Body of an ask request: the question as the player said or typed it."""
+    text: str = Field(max_length=MAX_QUESTION_LENGTH)
 
 
 def card_view(card):
