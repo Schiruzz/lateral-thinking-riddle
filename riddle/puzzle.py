@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 PUZZLES_DIR = Path(__file__).parent.parent / "puzzles"
-ANSWERS = ("yes", "no", "irrelevant", "invalid", "partly")
+ANSWERS = ("yes", "no", "irrelevant", "invalid", "partly", "unclear")   # the judge's possible answers
 DEDUCTION_BONUS = 20
 
 
@@ -17,6 +17,7 @@ class Puzzle:
     """A lateral thinking puzzle with its cards, deduction tree and solution.
 
     Attributes:
+        title: The name of the case, shown to the player.
         story: The text read to the player at the start.
         solution: The full truth, shown only to the judge.
         facts: Fact cards, id -> {"text", "points"}.
@@ -42,6 +43,7 @@ class Puzzle:
         Raises:
             ValueError: If the data is inconsistent (see `check`).
         """
+        self.title = data["title"]
         self.story = data["story"]
         self.solution = data["solution"]
         self.facts = data["facts"]

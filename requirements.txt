@@ -1,3 +1,5 @@
 google-genai==2.12.1
 google-auth
 pytest
+fastapi
+uvicorn

@@ -1202,5 +1202,9 @@
         "no"
       ]
     ]
-  }
+  },
+  {"group": "unclear", "question": "la carne era variata", "answer": "unclear", "cards": [], "lit": [], "history": []},
+  {"group": "unclear", "question": "sé figlio nave fatto isola", "answer": "unclear", "cards": [], "lit": [], "history": []},
+  {"group": "unclear", "question": "era cieca la vista del menù quando", "answer": "unclear", "cards": [], "lit": [], "history": []},
+  {"group": "unclear", "question": "Il gabbiano aveva un nome?", "answer": "irrelevant", "cards": [], "lit": [], "history": []}
 ]

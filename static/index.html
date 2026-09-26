@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caso N°1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ===================== STYLE: black, paper and red, like Black Stories ===================== */
+:root {
+  --ink: #0f0f0f;
+  --ink-soft: #1c1c1c;
+  --paper: #efe6d2;
+  --shadow: rgba(0, 0, 0, 0.55);
+  --red: #b3121b;
+  --muted: #8b8478;
+  --type: "Special Elite", "Courier New", monospace;   /* typewriter: cards and questions */
+  --sans: "Inter", system-ui, sans-serif;              /* everything else */
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ink); color: var(--paper); font-family: var(--sans); }
+a { color: var(--paper); }
+.app { max-width: 960px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+/* top bar: always visible, with the question number and the score */
+.topbar { position: sticky; top: 0; z-index: 5; background: var(--ink); border-bottom: 2px solid var(--red);
+  padding: 12px 16px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.case { font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: .9rem; }
+.stats { font-family: var(--type); color: var(--muted); white-space: nowrap; }
+.stats strong { color: var(--paper); }
+main { flex: 1; padding: 16px; }
+
+/* the story: open at the start, can be closed to make room */
+details.story { background: var(--ink-soft); border-left: 4px solid var(--red); padding: 10px 14px; margin-bottom: 24px; }
+details.story summary { cursor: pointer; font-weight: 600; }
+.story p { font-family: var(--type); font-size: 1.1rem; line-height: 1.5; }
+button.ghost { background: none; border: 1px solid var(--muted); color: var(--paper); padding: 6px 12px;
+  cursor: pointer; font-family: var(--sans); }
+
+/* clue cards: paper notes pinned to the board, deductions across the whole row */
+h2 { font-size: .8rem; letter-spacing: .2em; color: var(--muted); margin: 0 0 14px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+.card { --rot: var(--tilt); position: relative; background: var(--paper); color: var(--ink); font-family: var(--type);
+  font-size: 1rem; line-height: 1.35; padding: 16px 14px 14px; box-shadow: 3px 4px 0 var(--shadow);
+  transform: rotate(var(--rot)); }
+.card::before { content: ""; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px;
+  border-radius: 50%; background: var(--red); box-shadow: 1px 2px 2px var(--shadow); }   /* the pin */
+.card.deduction { --rot: calc(var(--tilt) / 4); grid-column: 1 / -1; border: 3px solid var(--red); font-size: 1.15rem; }   /* wide cards tilt less */
+.card .label { display: block; font-family: var(--sans); font-weight: 800; font-size: .65rem;
+  letter-spacing: .2em; color: var(--red); margin-bottom: 6px; }
+.card.new { animation: pin-in .6s ease-out; }
+@keyframes pin-in { from { opacity: 0; transform: scale(1.25) rotate(0deg); } to { opacity: 1; transform: scale(1) rotate(var(--rot)); } }
+.empty { grid-column: 1 / -1; color: var(--muted); font-style: italic; }   /* spans the whole row */
+
+/* ruled-out leads and question log: closed by default, opened only when needed */
+details.drawer { margin-top: 20px; color: var(--muted); }
+details.drawer summary { cursor: pointer; }
+.ruled-out li { text-decoration: line-through; font-family: var(--type); }
+.log li { font-family: var(--type); margin: 4px 0; }
+
+/* bottom dock: the subtitle with question and answer, then the microphone */
+.dock { position: sticky; bottom: 0; background: linear-gradient(transparent, var(--ink) 18%);
+  padding: 28px 16px 16px; text-align: center; }
+.subtitle { min-height: 100px; }
+.question { color: var(--muted); font-family: var(--type); font-size: 1.15rem; margin: 0; }
+.answer { font-size: clamp(2rem, 7vw, 3.2rem); font-weight: 800; letter-spacing: .04em; margin: 4px 0 0; }
+.answer.irrelevant, .answer.invalid, .answer.unclear { color: var(--muted); }
+.answer.unclear { font-size: clamp(1.4rem, 4.5vw, 2rem); }
+.mic { width: 84px; height: 84px; border-radius: 50%; border: 3px solid var(--red); background: var(--ink-soft);
+  color: var(--paper); font-size: 2rem; cursor: pointer; margin: 10px 0 6px; }
+.mic.listening { background: var(--red); animation: pulse 1s infinite; }
+.mic:disabled { opacity: .4; cursor: wait; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 14px rgba(179, 18, 27, .25); } }
+.transcript { min-height: 1.4em; color: var(--muted); font-style: italic; margin: 0; }
+.hint { color: var(--muted); font-size: .8rem; }
+form.typed { display: none; gap: 8px; justify-content: center; margin-top: 10px; }
+form.typed.open { display: flex; }
+form.typed input { flex: 1; max-width: 420px; background: var(--ink-soft); border: 1px solid var(--muted);
+  color: var(--paper); padding: 10px; font-family: var(--type); }
+
+/* case solved: full-screen overlay with the solution */
+.win { position: fixed; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(0, 0, 0, .92); }
+.win.open { display: flex; }
+.win-card { max-width: 560px; padding: 28px; background: var(--paper); color: var(--ink); border-top: 8px solid var(--red); }
+.win-card h2 { color: var(--red); font-size: 1.4rem; letter-spacing: .15em; }
+.win-card p { font-family: var(--type); line-height: 1.5; }
+.win-card button { color: var(--ink); border-color: var(--ink); }
+</style>
+</head>
+<body>
+<!-- ===================== STRUCTURE ===================== -->
+<div class="app">
+  <header class="topbar">
+    <span class="case" id="case">Caso N°1</span>
+    <span class="stats">Domanda <strong id="questions">0</strong> · <strong id="score">0</strong> punti</span>
+  </header>
+
+  <main>
+    <details class="story" open>
+      <summary>La storia</summary>
+      <p id="story-text"></p>
+      <button class="ghost" id="read-story">▶ Ascolta</button>
+    </details>
+
+    <h2>INDIZI</h2>
+    <div class="cards" id="cards"></div>
+
+    <details class="drawer">
+      <summary>Piste scartate (<span id="ruled-count">0</span>)</summary>
+      <ul class="ruled-out" id="ruled-out"></ul>
+    </details>
+    <details class="drawer">
+      <summary>Registro domande (<span id="log-count">0</span>)</summary>
+      <ol class="log" id="log" reversed></ol>
+    </details>
+  </main>
+
+  <footer class="dock">
+    <div class="subtitle" aria-live="polite">
+      <p class="question" id="question"></p>
+      <p class="answer" id="answer"></p>
+    </div>
+    <button class="mic" id="mic" aria-label="Fai una domanda">
+      <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/>
+      </svg>
+    </button>
+    <p class="transcript" id="transcript"></p>
+    <p class="hint"><span id="mic-hint">Premi il microfono o la barra spaziatrice, poi parla</span> · <a href="#" id="toggle-typed">scrivi</a></p>
+    <form class="typed" id="typed">
+      <input id="typed-input" autocomplete="off" placeholder="Scrivi una domanda">
+      <button class="ghost">Invia</button>
+    </form>
+  </footer>
+</div>
+
+<div class="win" id="win">
+  <div class="win-card">
+    <h2>CASO RISOLTO</h2>
+    <p id="solution"></p>
+    <p><strong id="win-stats"></strong></p>
+    <button class="ghost" id="again">Nuova partita</button>
+  </div>
+</div>
+
+<script>
+// ===================== LOGIC =====================
+
+// answers as the player reads and hears them
+const ANSWER_TEXT = {yes: "Sì", no: "No", partly: "Sì, ma non solo", irrelevant: "Non importa",
+                     invalid: "Domanda non valida", unclear: "Non ho capito, puoi ripetere?"};
+const $ = (id) => document.getElementById(id);
+let gameId = null;
+let busy = false;   // true while waiting for the judge: no new questions meanwhile
+
+// ---------- game ----------
+async function newGame() {
+  const data = await (await fetch("/api/games", {method: "POST"})).json();
+  gameId = data.id;
+  $("case").textContent = `Caso N°1 · ${data.title}`;
+  $("story-text").textContent = data.story;
+  renderBoard({cards: [], ruled_out: []}, []);
+  $("log").replaceChildren();
+  $("log-count").textContent = 0;
+  $("questions").textContent = 0;
+  $("score").textContent = 0;
+  $("question").textContent = "";
+  $("answer").textContent = "";
+  $("win").classList.remove("open");
+}
+
+async function ask(text) {
+  text = text.trim();
+  if (!text || busy || !gameId) return;
+  setBusy(true);
+  $("question").textContent = `«${text}»`;   // shown at once, replaced by the judge's version
+  $("answer").textContent = "…";
+  $("answer").className = "answer";
+  try {
+    const response = await fetch(`/api/games/${gameId}/ask`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text}),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    showTurn(await response.json());
+  } catch (error) {
+    $("answer").textContent = "Errore, riprova";
+    console.error(error);
+  } finally {
+    setBusy(false);
+  }
+}
+
+function showTurn(data) {
+  // subtitle: the question as the judge understood it, then the answer
+  $("question").textContent = `«${data.positive_question}»`;
+  $("answer").textContent = ANSWER_TEXT[data.answer];
+  $("answer").className = `answer ${data.answer}`;
+  renderBoard(data.board, data.new_cards);
+  if (data.answer !== "unclear") addToLog(data);   // a question not understood does not count
+  $("questions").textContent = data.questions;
+  $("score").textContent = data.score;
+  speakTurn(data);
+  if (data.won) showWin(data);
+}
+
+// ---------- board ----------
+function renderBoard(board, newCards) {
+  const newIds = new Set(newCards.map((card) => card.id));
+  const cards = board.cards.map((card) => cardElement(card, newIds.has(card.id)));
+  $("cards").replaceChildren(...(cards.length ? cards : [emptyNote()]));
+  $("ruled-out").replaceChildren(...board.ruled_out.map((card) => listItem(card.text)));
+  $("ruled-count").textContent = board.ruled_out.length;
+}
+
+function cardElement(card, isNew) {
+  const el = document.createElement("article");
+  el.className = `card ${card.kind}${isNew ? " new" : ""}`;
+  el.style.setProperty("--tilt", `${tilt(card.id)}deg`);
+  if (card.kind === "deduction") {
+    const label = document.createElement("span");
+    label.className = "label";
+    label.textContent = "DEDUZIONE";
+    el.append(label);
+  }
+  el.append(card.text);
+  return el;
+}
+
+function tilt(id) {
+  // a small tilt fixed for each card, so the notes look pinned by hand
+  let sum = 0;
+  for (const ch of id) sum += ch.charCodeAt(0);
+  return (sum % 5) - 2;
+}
+
+function emptyNote() {
+  const p = document.createElement("p");
+  p.className = "empty";
+  p.textContent = "Nessun indizio. Fai la prima domanda…";
+  return p;
+}
+
+function listItem(text) {
+  const li = document.createElement("li");
+  li.textContent = text;
+  return li;
+}
+
+function addToLog(data) {
+  $("log").prepend(listItem(`${data.positive_question} — ${ANSWER_TEXT[data.answer]}`));   // newest first
+  $("log-count").textContent = data.questions;
+}
+
+function showWin(data) {
+  $("solution").textContent = data.solution;
+  $("win-stats").textContent = `Risolto in ${data.questions} domande · ${data.score} punti`;
+  $("win").classList.add("open");
+}
+
+function setBusy(value) {
+  busy = value;
+  $("mic").disabled = value;
+  $("typed-input").disabled = value;
+}
+
+// ---------- voice out: the browser reads the answers ----------
+function speak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "it-IT";
+  speechSynthesis.speak(utterance);
+}
+
+function speakTurn(data) {
+  speak(ANSWER_TEXT[data.answer]);
+  const found = data.new_cards.filter((card) => card.kind !== "ruled_out");
+  if (data.won) speak("Caso risolto!");
+  else if (found.length) speak(`Nuovo indizio: ${found[0].text}`);   // the first card is the one earned
+}
+
+// ---------- voice in: press, speak, stop ----------
+const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+
+if (Recognition) {
+  recognizer = new Recognition();
+  recognizer.lang = "it-IT";
+  recognizer.interimResults = true;   // show the words while the player speaks
+  recognizer.onresult = (event) => {
+    const result = event.results[event.results.length - 1];
+    $("transcript").textContent = result[0].transcript;
+    if (result.isFinal) ask(result[0].transcript);   // the browser stops by itself at the first pause
+  };
+  recognizer.onend = () => $("mic").classList.remove("listening");
+} else {
+  // no speech recognition in this browser (e.g. Firefox): typing only
+  $("mic").hidden = true;
+  $("mic-hint").textContent = "Il riconoscimento vocale non è disponibile in questo browser";
+  $("typed").classList.add("open");
+}
+
+function listen() {
+  if (!recognizer || busy || $("mic").classList.contains("listening")) return;
+  speechSynthesis.cancel();   // stop reading, so the microphone does not hear the page
+  $("transcript").textContent = "";
+  $("mic").classList.add("listening");
+  recognizer.start();
+}
+
+// ---------- controls ----------
+$("mic").addEventListener("click", listen);
+document.addEventListener("keydown", (event) => {
+  // the space bar works like the microphone button, except while typing
+  if (event.code === "Space" && document.activeElement.tagName !== "INPUT") {
+    event.preventDefault();
+    listen();
+  }
+});
+$("typed").addEventListener("submit", (event) => {
+  event.preventDefault();
+  ask($("typed-input").value);
+  $("typed-input").value = "";
+});
+$("toggle-typed").addEventListener("click", (event) => {
+  event.preventDefault();
+  $("typed").classList.toggle("open");
+  $("typed-input").focus();
+});
+$("read-story").addEventListener("click", () => {
+  speechSynthesis.cancel();
+  speak($("story-text").textContent);
+});
+$("again").addEventListener("click", newGame);
+
+newGame();
+</script>
+</body>
+</html>

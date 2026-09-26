@@ -28,7 +28,7 @@ def evaluate(judge, tests):
     """
     rows = []
     for i, case in enumerate(tests, 1):
-        print(f"\r{judge.model}: {i}/{len(tests)}", end="")   # progress on a single line
+        print(f"\r{judge.model}: {i}/{len(tests)}", end="", flush=True)   # flush: show progress at once
         known = judge.puzzle.closure(case["lit"])
         start = time.time()
         verdict = judge.judge(case["question"], case["history"], case["lit"])

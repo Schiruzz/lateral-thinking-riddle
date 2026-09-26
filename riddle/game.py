@@ -50,3 +50,23 @@ class Game:
     def won(self):
         """Return True once the root of the deduction tree, the solution, is lit."""
         return self.puzzle.root in self.lit
+
+    
+    def board(self):
+        """Return what the player sees: the cards not merged yet, and the ruled-out leads.
+
+        A lit card disappears from the board once a lit deduction merges it, so
+        the board grows while facts are found and shrinks while they are linked,
+        down to the solution alone.
+
+        Returns:
+            A dict with "cards" (ids of the lit facts and deductions not merged
+            into a lit deduction) and "ruled_out" (ids of the lit exclusions),
+            both in the order they were lit.
+        """
+        merged = {child for d in self.puzzle.deductions if d["id"] in self.lit for child in d["children"]}
+        exclusions = self.puzzle.exclusions
+        return {
+            "cards": [card for card in self.lit if card not in merged and card not in exclusions],
+            "ruled_out": [card for card in self.lit if card in exclusions],
+        }

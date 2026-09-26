@@ -1,5 +1,7 @@
 # Lateral Thinking Riddle — an LLM Judge for a Voice Game
 
+[![tests](https://github.com/Schiruzz/lateral-thinking-riddle/actions/workflows/tests.yml/badge.svg)](https://github.com/Schiruzz/lateral-thinking-riddle/actions/workflows/tests.yml)
+
 > Work in progress: the judge is built and evaluated; the playable app comes next.
 
 A lateral thinking puzzle played by voice. The player asks yes/no questions; an LLM

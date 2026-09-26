@@ -28,7 +28,7 @@ class FakeModels:
         return SimpleNamespace(text=json.dumps(self.verdicts.pop(0)))
 
 
-def verdict(answer, cards=(), elements=(), positive="question"):
+def verdict(answer, cards=(), elements=(), positive=""):
     """Build a judge verdict; cards are (quote, id) pairs."""
     return {"positive_question": positive, "answer": answer,
             "cards": [{"quote": quote, "id": cid} for quote, cid in cards],
@@ -112,3 +112,29 @@ def test_links_are_verified_without_context(puzzle):
                          ["bugia", "motivo", "moglie"])
     assert result["cards"] == ["d_pieta"]
     assert models.verify_calls[0].startswith(judge.no_context)
+
+
+
+def test_unclear_answer_unlocks_nothing(puzzle):
+    """A question the judge did not understand never unlocks cards."""
+    judge, _ = make_judge(puzzle, [verdict("unclear", [("carne", "carne_ok")])])
+    assert judge.judge("la carne era variata", [], [])["cards"] == []
+
+
+
+def test_rewrite_with_words_the_player_did_not_say_is_unclear(puzzle):
+    """A garbled question the judge "repaired" with new words counts as not understood."""
+    judge, _ = make_judge(puzzle, [verdict("yes", [("cieca", "cieco")], positive="Era cieco?")],
+                          {puzzle.card_text["cieco"]: True})
+    result = judge.judge("era cieca la vista del menù quando", [], [])
+    assert result["answer"] == "unclear"
+    assert result["cards"] == []
+
+
+def test_rewrite_that_only_removes_words_is_kept(puzzle):
+    """Dropping fillers like "secondo me" keeps the answer and the card."""
+    judge, _ = make_judge(puzzle, [verdict("yes", [("era cieco", "cieco")], positive="Era cieco?")],
+                          {puzzle.card_text["cieco"]: True})
+    result = judge.judge("secondo me era cieco", [], [])
+    assert result["answer"] == "yes"
+    assert result["cards"] == ["cieco"]
