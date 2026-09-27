@@ -58,17 +58,45 @@ def card_view(card):
         card: The id of a card.
 
     Returns:
-        A dict with "id", "text" (shown on the card) and "kind": "fact",
-        "deduction" or "ruled_out", so the page can style each kind differently.
+        A dict with "id", "text" (shown on the card), "zone" ("restaurant" or
+        "past") and "kind": "fact", "deduction", "theory" or "ruled_out", so
+        the page can place and style each card.
     """
     if card in PUZZLE.facts:
         kind = "fact"
     elif card in PUZZLE.exclusions:
         kind = "ruled_out"
+    elif card in PUZZLE.theories:
+        kind = "theory"
     else:
         kind = "deduction"
-    return {"id": card, "text": PUZZLE.card_text[card], "kind": kind}
+    return {"id": card, "text": PUZZLE.card_text[card], "zone": PUZZLE.card_zone[card], "kind": kind}
 
+
+def board_view(game):
+    """Return the board as the page draws it, without revealing cards not found yet.
+
+    Threads and guides point to cards the player has not unlocked: their ids
+    would give the answer away to anyone reading the network traffic, so only
+    the lit cards they link, their zone and their question are sent.
+
+    Args:
+        game: The `Game` to draw.
+
+    Returns:
+        A dict with "cards" and "ruled_out" (card views), "past_open",
+        "threads" (each with "cards", "zone", "theory", "final", "question")
+        and "guides" (each with "zone" and "question").
+    """
+    board = game.board()
+    return {
+        "cards": [card_view(c) for c in board["cards"]],
+        "ruled_out": [card_view(c) for c in board["ruled_out"]],
+        "past_open": board["past_open"],
+        "threads": [{"cards": t["cards"], "zone": t["zone"], "theory": t["theory"],
+                     "final": t["id"] == PUZZLE.root, "question": t["question"]} for t in board["threads"]],
+        "guides": [{"zone": g["zone"], "question": g["question"]} for g in board["guides"]],
+    }
 
 @app.get("/")
 def page():
@@ -81,12 +109,14 @@ def new_game():
     """Start a new game.
 
     Returns:
-        A dict with "id", to send back with every question of this game, and
-        "story", the text the page reads to the player at the start.
+        A dict with "id", to send back with every question of this game,
+        "title", "story", the text the page reads to the player at the start,
+        and "board", the starting board with the first guide questions.
     """
     game_id = uuid.uuid4().hex   # random and unguessable, so players cannot touch each other's games
-    GAMES[game_id] = Game(PUZZLE)
-    return {"id": game_id, "title": PUZZLE.title, "story": PUZZLE.story}
+    game = Game(PUZZLE)
+    GAMES[game_id] = game
+    return {"id": game_id, "title": PUZZLE.title, "story": PUZZLE.story, "board": board_view(game)}
 
 
 @app.post("/api/games/{game_id}/ask")
@@ -103,7 +133,7 @@ def ask(game_id: str, question: Question):
                 shown or read back so the player hears what was understood;
             "answer": one of the answer ids (yes, no, partly, irrelevant, invalid);
             "new_cards": the cards lit by this question, to announce them;
-            "board": the cards to show ("cards") and the ruled-out leads ("ruled_out");
+            "board": the board to draw, from `board_view`;
             "score": the points earned so far;
             "won": True once the solution is lit.
 
@@ -118,16 +148,13 @@ def ask(game_id: str, question: Question):
     start = time.perf_counter()
     verdict = JUDGE.judge(question.text, game.history, game.lit)
     latency = time.perf_counter() - start
-    # remember the exchange: it becomes context for the next questions
-        # remember the exchange as context, unless the judge did not understand it: that does not count as a question
+    # remember the exchange as context, unless the judge did not understand it: that does not count as a question
     if verdict["answer"] != UNCLEAR:
         game.history.append((verdict["positive_question"], verdict["answer"]))
     # light the confirmed cards and, in chain, the cards they imply
     new_cards = game.unlock(verdict["cards"])
 
-    board = game.board()
-
-        # append this question to the game log: enough to replay it and to measure the judge
+    # append this question to the game log: enough to replay it and to measure the judge
     LOG_FILE.parent.mkdir(exist_ok=True)
     with LOG_FILE.open("a", encoding="utf-8") as log:
         log.write(json.dumps({
@@ -146,8 +173,7 @@ def ask(game_id: str, question: Question):
         "positive_question": verdict["positive_question"],
         "answer": verdict["answer"],
         "new_cards": [card_view(card) for card in new_cards],
-        "board": {"cards": [card_view(c) for c in board["cards"]],
-                  "ruled_out": [card_view(c) for c in board["ruled_out"]]},
+        "board": board_view(game),
         "score": game.score,
         "won": game.won(),
         "questions": len(game.history),                              # questions asked so far

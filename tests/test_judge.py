@@ -91,18 +91,26 @@ def test_negated_question_is_judged_again_in_positive_form(puzzle):
     assert result["answer"] == "yes"
     assert result["cards"] == ["moglie"]
 
-
 def test_solution_needs_every_element(puzzle):
     """The solution is won only when every element is confirmed by the verifier."""
     elements = puzzle.solution_elements
+    final = ["t_pasto", "d_inganno"]   # the theories that put the final thread on the board
     judge, _ = make_judge(puzzle, [verdict("yes", elements=["figlio_mangiato"])],
                           {elements["figlio_mangiato"]: True})
-    assert puzzle.root not in judge.judge("Ha mangiato suo figlio?", [], [])["cards"]
+    assert puzzle.root not in judge.judge("Ha mangiato suo figlio?", [], final)["cards"]
 
     judge, _ = make_judge(puzzle, [verdict("yes", elements=["figlio_mangiato"])],
                           {text: True for text in elements.values()})
-    assert puzzle.root in judge.judge("Al ristorante ha capito di aver mangiato suo figlio", [], [])["cards"]
+    assert puzzle.root in judge.judge("Al ristorante ha capito di aver mangiato suo figlio", [], final)["cards"]
 
+
+def test_solution_waits_for_the_final_thread(puzzle):
+    """Before the meal and the deception are lit, a right solution does not win and is not verified."""
+    elements = puzzle.solution_elements
+    judge, models = make_judge(puzzle, [verdict("yes", elements=list(elements))],
+                               {text: True for text in elements.values()})
+    assert puzzle.root not in judge.judge("Al ristorante ha capito di aver mangiato suo figlio", [], [])["cards"]
+    assert models.verify_calls == []
 
 def test_links_are_verified_without_context(puzzle):
     """A deduction must be in the player's words: its check gets no context."""
@@ -138,3 +146,12 @@ def test_rewrite_that_only_removes_words_is_kept(puzzle):
     result = judge.judge("secondo me era cieco", [], [])
     assert result["answer"] == "yes"
     assert result["cards"] == ["cieco"]
+
+
+def test_rewrite_that_only_adds_an_apostrophe_is_kept(puzzle):
+    """The transcription writes "centra", the judge "c'entra": same word, so answer and card are kept."""
+    judge, _ = make_judge(puzzle, [verdict("partly", [("Il ristorante c'entra", "ristorante_no")],
+                                           positive="Il ristorante c'entra?")])
+    result = judge.judge("Il ristorante centra?", [], [])
+    assert result["answer"] == "partly"
+    assert result["cards"] == ["ristorante_no"]

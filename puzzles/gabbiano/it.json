@@ -8,7 +8,7 @@
       "points": 10
     },
     "passato": {
-      "text": "È successo qualcosa anni prima",
+      "text": "C'entra qualcosa del suo passato",
       "points": 10
     },
     "naufragio": {
@@ -32,7 +32,7 @@
       "points": 30
     },
     "carne_umana": {
-      "text": "Hanno mangiato carne umana",
+      "text": "L'uomo ha mangiato carne umana",
       "points": 40
     },
     "cieco": {
@@ -70,161 +70,51 @@
   },
   "exclusions": {
     "carne_ok": {
-      "text": "La carne del ristorante era cotta e commestibile",
+      "text": "La carne era avvelenata, cruda o avariata",
       "points": 5
     },
     "ristorante_no": {
-      "text": "Nulla di ciò che ha fatto il ristorante è la causa",
+      "text": "Il ristorante ha causato la sua morte",
       "points": 5
     },
     "moglie_no_male": {
-      "text": "La moglie non voleva fargli del male",
+      "text": "La moglie voleva fargli del male",
       "points": 5
     },
     "tradimento": {
-      "text": "La moglie non lo tradiva",
+      "text": "La moglie lo tradiva",
       "points": 5
     },
     "nessun_omicidio": {
-      "text": "Nessuno ha ucciso il figlio: è morto",
+      "text": "Qualcuno ha ucciso il figlio",
       "points": 5
     }
   },
   "prerequisites": {
-    "figlio": [
-      "terza_persona"
-    ],
-    "figlio_morto": [
-      "figlio"
-    ],
-    "bugia": [
-      "moglie"
-    ],
-    "motivo": [
-      "moglie"
-    ]
+    "figlio": ["terza_persona"],
+    "figlio_morto": ["figlio", "passato"],
+    "bugia": ["moglie", "passato"],
+    "motivo": ["moglie", "passato"],
+    "naufragio": ["passato"],
+    "isola": ["passato"],
+    "carne_umana": ["passato"],
+    "gabbiani": ["passato"],
+    "gabbiano_creduto": ["passato"]
   },
   "deductions": [
-    {
-      "id": "d_non_soli",
-      "children": [
-        "moglie",
-        "terza_persona"
-      ],
-      "text": "Nella storia, oltre a marito e moglie, c'è una terza persona"
-    },
-    {
-      "id": "d_famiglia",
-      "children": [
-        "d_non_soli",
-        "figlio"
-      ],
-      "text": "La storia riguarda una famiglia: padre, madre e figlio"
-    },
-    {
-      "id": "d_naufragio",
-      "children": [
-        "passato",
-        "naufragio"
-      ],
-      "text": "Anni prima hanno fatto naufragio"
-    },
-    {
-      "id": "d_famiglia_naufraga",
-      "children": [
-        "d_famiglia",
-        "d_naufragio"
-      ],
-      "text": "Anni prima la famiglia, figlio compreso, ha fatto naufragio"
-    },
-    {
-      "id": "d_figlio_isola",
-      "children": [
-        "isola",
-        "figlio_morto"
-      ],
-      "text": "Il figlio è morto e loro erano su un'isola senza cibo"
-    },
-    {
-      "id": "d_tragedia",
-      "children": [
-        "d_famiglia_naufraga",
-        "d_figlio_isola"
-      ],
-      "text": "Nel naufragio il figlio è annegato, loro sono finiti su un'isola senza cibo"
-    },
-    {
-      "id": "d_udito",
-      "children": [
-        "cieco",
-        "gabbiani"
-      ],
-      "text": "Cieco, riconosceva i gabbiani solo dal verso"
-    },
-    {
-      "id": "d_pieta",
-      "children": [
-        "bugia",
-        "motivo"
-      ],
-      "text": "La moglie gli ha mentito per salvarlo"
-    },
-    {
-      "id": "d_credibile",
-      "children": [
-        "d_pieta",
-        "d_udito"
-      ],
-      "text": "La bugia era credibile: intorno sentiva i gabbiani"
-    },
-    {
-      "id": "d_pasto",
-      "children": [
-        "carne_umana",
-        "gabbiano_creduto"
-      ],
-      "text": "Ha mangiato carne umana credendola gabbiano"
-    },
-    {
-      "id": "d_inganno",
-      "children": [
-        "d_credibile",
-        "d_pasto"
-      ],
-      "text": "La moglie gli ha fatto credere che la carne umana fosse gabbiano"
-    },
-    {
-      "id": "d_verita",
-      "children": [
-        "d_tragedia",
-        "d_inganno"
-      ],
-      "text": "Sull'isola ha mangiato il figlio credendolo gabbiano"
-    },
-    {
-      "id": "d_verifica",
-      "children": [
-        "sospetto",
-        "apposta"
-      ],
-      "text": "Ha ordinato gabbiano per verificare un vecchio dubbio"
-    },
-    {
-      "id": "d_conferma",
-      "children": [
-        "d_verifica",
-        "sapore"
-      ],
-      "text": "Il sapore ha smentito il ricordo"
-    },
-    {
-      "id": "soluzione",
-      "children": [
-        "d_verita",
-        "d_conferma"
-      ],
-      "text": "Al ristorante ha capito di aver mangiato suo figlio"
-    }
+    {"id": "d_famiglia", "children": ["moglie", "figlio"], "text": "La storia riguarda una famiglia: padre, madre e figlio"},
+    {"id": "d_naufragio", "children": ["passato", "naufragio"], "text": "Anni prima hanno fatto naufragio"},
+    {"id": "d_famiglia_naufraga", "children": ["d_famiglia", "d_naufragio"], "text": "Anni prima la famiglia, figlio compreso, ha fatto naufragio"},
+    {"id": "d_figlio_isola", "children": ["isola", "figlio_morto"], "text": "Il figlio è morto e loro erano su un'isola senza cibo"},
+    {"id": "d_tragedia", "children": ["d_famiglia_naufraga", "d_figlio_isola"], "text": "Nel naufragio il figlio è annegato, loro sono finiti su un'isola senza cibo"},
+    {"id": "t_pasto", "children": ["d_tragedia", "carne_umana"], "text": "Sull'isola hanno mangiato il corpo del figlio"},
+    {"id": "d_udito", "children": ["cieco", "gabbiani"], "text": "Cieco, riconosceva i gabbiani solo dal verso"},
+    {"id": "d_pieta", "children": ["bugia", "motivo"], "text": "La moglie gli ha mentito per salvarlo"},
+    {"id": "d_credibile", "children": ["d_pieta", "d_udito"], "text": "La bugia era credibile: intorno sentiva i gabbiani"},
+    {"id": "d_inganno", "children": ["d_credibile", "gabbiano_creduto"], "text": "La moglie gli ha fatto credere che fosse gabbiano e lui, cieco, le ha creduto"},
+    {"id": "d_verifica", "children": ["sospetto", "apposta"], "text": "Ha ordinato gabbiano per verificare un vecchio dubbio"},
+    {"id": "d_conferma", "children": ["d_verifica", "sapore"], "text": "Il sapore ha smentito il ricordo"},
+    {"id": "soluzione", "children": ["t_pasto", "d_inganno", "d_conferma"], "text": "Al ristorante ha capito di aver mangiato suo figlio"}
   ],
   "solution_elements": {
     "figlio_mangiato": "Ha mangiato la carne di suo figlio",
@@ -236,5 +126,39 @@
       "cecit",
       "non vedente"
     ]
-  }
+  },
+  "zones": {
+    "past": ["passato", "naufragio", "isola", "figlio_morto", "carne_umana", "gabbiani",
+            "gabbiano_creduto", "bugia", "motivo", "nessun_omicidio",
+            "d_naufragio", "d_famiglia_naufraga", "d_figlio_isola", "d_tragedia", "t_pasto",
+            "d_udito", "d_pieta", "d_credibile", "d_inganno"]
+  },
+  "theories": {
+    "d_tragedia": ["naufragio", "isola", "figlio_morto"],
+    "t_pasto": ["d_tragedia", "carne_umana"],
+    "d_inganno": ["bugia", "cieco", "gabbiano_creduto"],
+    "soluzione": ["t_pasto", "d_inganno"]
+  },
+  "guides": [
+    {"card": "apposta", "after": [], "question": "Perché proprio il gabbiano?"},
+    {"card": "moglie", "after": [], "question": "Chi è la donna?"},
+    {"card": "sospetto", "after": ["apposta"], "question": "Cosa voleva verificare?"},
+    {"card": "sapore", "after": ["apposta"], "question": "Cosa ha notato al primo boccone?"},
+    {"card": "passato", "after": ["sapore"], "question": "Quel sapore gli ha ricordato qualcosa: quando?"},
+    {"card": "naufragio", "after": ["passato"], "question": "Cosa è successo anni prima?"},
+    {"card": "isola", "after": ["naufragio"], "question": "Dove sono finiti?"},
+    {"card": "terza_persona", "after": ["naufragio"], "question": "Erano soli?"},
+    {"card": "figlio", "after": ["terza_persona"], "question": "Chi era con loro?"},
+    {"card": "figlio_morto", "after": ["figlio", "naufragio"], "question": "Che fine ha fatto il figlio?"},
+    {"card": "carne_umana", "after": ["isola"], "question": "Senza cibo, come sono sopravvissuti?"},
+    {"card": "d_tragedia", "after": ["naufragio", "isola", "figlio_morto"], "question": "Metti insieme i pezzi: cosa è successo nel naufragio?"},
+    {"card": "t_pasto", "after": ["d_tragedia", "carne_umana"], "question": "Di chi era quella carne?"},
+    {"card": "gabbiano_creduto", "after": ["carne_umana"], "question": "Lui sapeva cosa stava mangiando?"},
+    {"card": "bugia", "after": ["gabbiano_creduto"], "question": "Chi gli ha detto che era gabbiano?"},
+    {"card": "motivo", "after": ["bugia"], "question": "Perché la moglie gli ha mentito?"},
+    {"card": "cieco", "after": ["bugia", "gabbiano_creduto"], "question": "Perché le ha creduto?"},
+    {"card": "gabbiani", "after": ["cieco"], "question": "Da cosa capiva che c'erano gabbiani?"},
+    {"card": "d_inganno", "after": ["bugia", "cieco", "gabbiano_creduto"], "question": "Metti insieme i pezzi: come l'ha ingannato?"},
+    {"card": "soluzione", "after": ["t_pasto", "d_inganno"], "question": "Allora: cosa ha capito al ristorante?"}
+  ]
 }

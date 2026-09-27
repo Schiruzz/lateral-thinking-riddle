@@ -1,8 +1,11 @@
 """Load lateral thinking puzzles from JSON and check that their data is consistent.
 
 A puzzle is made of fact cards, exclusion cards and a tree of deductions whose
-root is the solution. Every derived table the game and the judge need (card
-texts, points, implied cards) is computed here, once, from the raw data.
+root is the solution. Some deductions are theories: they unlock from a few key
+cards instead of their children. Guides are the detective's questions that
+lead the player from one card to the next. Every derived table the game and
+the judge need (card texts, zones, points, implied cards) is computed here,
+once, from the raw data.
 """
 
 import json
@@ -28,9 +31,17 @@ class Puzzle:
         solution_elements: Key elements the player must state to win, id -> text.
         required_words: Key cards that unlock only if one of these word stems
             appears in the player's words, id -> list of stems.
+        theories: Deductions reachable from key cards instead of their
+            children, id -> list of key card ids. The root is one of them.
+        guides: Detective questions as {"card", "after", "question"}: the
+            question leads to "card" once every card in "after" is lit.
         root: Id of the root deduction, the solution.
         card_text: Text of every card, id -> text.
+        card_zone: Zone of every card, id -> "past" or "restaurant".
         implies: Cards each card lights for free, id -> list of ids.
+        parent: The deduction that merges each card, id -> deduction id.
+        needs: Cards that make each deduction reachable: the key cards of a
+            theory, the children of any other deduction.
         points: Points of every card; a deduction is worth its children plus a bonus.
     """
 
@@ -52,12 +63,18 @@ class Puzzle:
         self.deductions = data["deductions"]
         self.solution_elements = data["solution_elements"]
         self.required_words = data["required_words"]
+        self.theories = data["theories"]
+        self.guides = data["guides"]
         self.root = self.deductions[-1]["id"]
 
-        # text of every card, and what each card implies: prerequisites or the two children
+        # text of every card, and what each card implies: its prerequisites, or the children of a deduction
         self.card_text = {cid: c["text"] for cid, c in (self.facts | self.exclusions).items()}
         self.card_text |= {d["id"]: d["text"] for d in self.deductions}
         self.implies = dict(self.prerequisites) | {d["id"]: d["children"] for d in self.deductions}
+        self.parent = {c: d["id"] for d in self.deductions for c in d["children"]}
+        self.needs = {d["id"]: self.theories.get(d["id"], d["children"]) for d in self.deductions}
+        # cards listed in the "past" zone stay sealed until the past is opened; all the others are in the restaurant
+        self.card_zone = {cid: "past" if cid in data["zones"]["past"] else "restaurant" for cid in self.card_text}
         self.check()
 
         # in the deductions list each deduction comes after its children, so their points are already known
@@ -69,16 +86,24 @@ class Puzzle:
         """Check that the puzzle data is consistent.
 
         Raises:
-            ValueError: If an id is unknown, a deduction merges cards defined
-                after it, or a card is not merged exactly once in the tree.
+            ValueError: If an id is unknown, a theory is not a deduction, a
+                deduction merges cards defined after it, a card is merged
+                more than once, or a card cannot be reached from the root.
         """
         # every id used anywhere must be a card
         used = [c for d in self.deductions for c in d["children"]]
         used += [c for cards in self.prerequisites.values() for c in cards]
         used += list(self.prerequisites) + list(self.required_words)
+        used += [c for keys in self.theories.values() for c in keys]
+        used += [c for g in self.guides for c in [g["card"], *g["after"]]]
         unknown = set(used) - set(self.card_text)
         if unknown:
             raise ValueError(f"unknown card ids: {sorted(unknown)}")
+
+        # theories are deductions with a different unlock rule
+        deduction_ids = {d["id"] for d in self.deductions}
+        if not set(self.theories) <= deduction_ids:
+            raise ValueError(f"theories that are not deductions: {sorted(set(self.theories) - deduction_ids)}")
 
         # children must be defined before the deduction that merges them
         seen = set(self.facts)
@@ -87,11 +112,14 @@ class Puzzle:
                 raise ValueError(f"{d['id']} merges cards defined after it")
             seen.add(d["id"])
 
-        # every fact and deduction is merged exactly once, except the root
-        expected = set(self.facts) | {d["id"] for d in self.deductions if d["id"] != self.root}
+        # a card is merged at most once, so each card has a single place on the board
         merged = [c for d in self.deductions for c in d["children"]]
-        if sorted(merged) != sorted(expected):
-            raise ValueError("the deduction tree is broken")
+        if len(merged) != len(set(merged)):
+            raise ValueError("a card is merged by more than one deduction")
+
+        # every fact and deduction is lit when the solution is: children and prerequisites, in chain
+        if self.closure([self.root]) != set(self.facts) | deduction_ids:
+            raise ValueError("some cards cannot be reached from the root")
 
     def closure(self, cards):
         """Return the cards together with every card they imply, in chain.
@@ -110,11 +138,22 @@ class Puzzle:
                 queue.extend(self.implies.get(card, ()))
         return result
 
+    def is_reachable(self, deduction, lit):
+        """Return True if the player can unlock this deduction now.
+
+        A theory is reachable when its key cards are lit; any other deduction
+        when its children are lit.
+
+        Args:
+            deduction: Id of a deduction.
+            lit: Ids of the cards already lit.
+        """
+        return deduction not in lit and set(self.needs[deduction]) <= set(lit)
+
     def reachable_deductions(self, lit):
         """Return the deductions the player can unlock now.
 
-        A deduction is reachable when it is not lit yet and both its children
-        are lit. The root is excluded: it is won by stating the solution elements.
+        The root is excluded: it is won by stating the solution elements.
 
         Args:
             lit: Ids of the cards already lit.
@@ -123,7 +162,7 @@ class Puzzle:
             A list of (id, text) pairs.
         """
         return [(d["id"], d["text"]) for d in self.deductions
-                if d["id"] != self.root and d["id"] not in lit and set(d["children"]) <= set(lit)]
+                if d["id"] != self.root and self.is_reachable(d["id"], lit)]
 
 
 def load_puzzle(name, language):

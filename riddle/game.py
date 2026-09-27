@@ -51,22 +51,63 @@ class Game:
         """Return True once the root of the deduction tree, the solution, is lit."""
         return self.puzzle.root in self.lit
 
-    
     def board(self):
-        """Return what the player sees: the cards not merged yet, and the ruled-out leads.
+        """Return what the player sees: cards, ruled-out leads, threads and guide questions.
 
-        A lit card disappears from the board once a lit deduction merges it, so
-        the board grows while facts are found and shrinks while they are linked,
-        down to the solution alone.
+        A lit card disappears once a lit deduction merges it, so the board grows
+        while facts are found and shrinks while they are linked. A card that no
+        deduction merges disappears once a lit card presupposes it (the other
+        person, once we know it is the son).
 
         Returns:
-            A dict with "cards" (ids of the lit facts and deductions not merged
-            into a lit deduction) and "ruled_out" (ids of the lit exclusions),
-            both in the order they were lit.
+            A dict with:
+                "cards": ids of the lit facts and deductions still in view;
+                "ruled_out": ids of the lit exclusions, hidden while their zone is sealed;
+                "past_open": True once a card of the past is lit;
+                "threads": the deductions the player can state now, each as
+                    {"id", "zone", "theory", "cards", "question"}: "cards" are
+                    the cards in view to link, "question" the guide, if any;
+                "guides": the other guide questions, each as {"card", "zone", "question"},
+                    in the zone of the last card they follow.
         """
-        merged = {child for d in self.puzzle.deductions if d["id"] in self.lit for child in d["children"]}
-        exclusions = self.puzzle.exclusions
-        return {
-            "cards": [card for card in self.lit if card not in merged and card not in exclusions],
-            "ruled_out": [card for card in self.lit if card in exclusions],
-        }
+        puzzle = self.puzzle
+        lit = set(self.lit)
+
+        def in_view(card):
+            # the card itself, or the lit deduction that has merged it, in chain
+            while puzzle.parent.get(card) in lit:
+                card = puzzle.parent[card]
+            return card
+
+        # cards that some lit card presupposes: they hide if no deduction merges them
+        presupposed = {c for card in lit for c in puzzle.prerequisites.get(card, ())}
+        cards = [card for card in self.lit
+                 if card not in puzzle.exclusions and in_view(card) == card
+                 and not (card not in puzzle.parent and card in presupposed)]
+
+        # the past opens with its first fact or deduction; its ruled-out leads wait until then
+        past_open = any(puzzle.card_zone[card] == "past" for card in lit if card not in puzzle.exclusions)
+        ruled_out = [card for card in self.lit if card in puzzle.exclusions
+                     and (past_open or puzzle.card_zone[card] != "past")]
+
+        # guide questions whose cards are all lit and whose target is not
+        questions = {g["card"]: g["question"] for g in puzzle.guides
+                     if set(g["after"]) <= lit and g["card"] not in lit}
+
+        # a thread for every deduction reachable now; a guide on the same deduction goes on its thread
+        threads = []
+        for d in puzzle.deductions:
+            if puzzle.is_reachable(d["id"], lit):
+                threads.append({
+                    "id": d["id"],
+                    "zone": puzzle.card_zone[d["id"]],
+                    "theory": d["id"] in puzzle.theories,
+                    "cards": list(dict.fromkeys(in_view(c) for c in puzzle.needs[d["id"]])),   # no duplicates
+                    "question": questions.pop(d["id"], None),
+                })
+        # a guide stands where the player is looking: next to the last card it follows, or where its target is
+        guides = [{"card": g["card"], "zone": puzzle.card_zone[(g["after"] or [g["card"]])[-1]], "question": g["question"]}
+                  for g in puzzle.guides if g["card"] in questions]
+
+        return {"cards": cards, "ruled_out": ruled_out, "past_open": past_open,
+                "threads": threads, "guides": guides}

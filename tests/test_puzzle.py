@@ -28,6 +28,6 @@ def test_gabbiano_matches_the_notebook():
     """The gabbiano puzzle keeps the numbers validated in the notebook."""
     puzzle = load_puzzle("gabbiano", "it")
     assert len(puzzle.facts) == 16
-    assert len(puzzle.deductions) == 15
-    assert puzzle.points[puzzle.root] == 720
-    assert len(load_tests("gabbiano", "it")) == 119
+    assert len(puzzle.deductions) == 13
+    assert puzzle.points[puzzle.root] == 670
+    assert len(load_tests("gabbiano", "it")) == 132

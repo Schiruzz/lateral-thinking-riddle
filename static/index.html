@@ -12,8 +12,11 @@
   --ink: #0f0f0f;
   --ink-soft: #1c1c1c;
   --paper: #efe6d2;
+  --paper-dim: #d9d0bd;
+  --folder: #c7ad7c;
   --shadow: rgba(0, 0, 0, 0.55);
   --red: #b3121b;
+  --red-soft: rgba(179, 18, 27, .12);
   --muted: #8b8478;
   --type: "Special Elite", "Courier New", monospace;   /* typewriter: cards and questions */
   --sans: "Inter", system-ui, sans-serif;              /* everything else */
@@ -38,35 +41,87 @@ details.story summary { cursor: pointer; font-weight: 600; }
 button.ghost { background: none; border: 1px solid var(--muted); color: var(--paper); padding: 6px 12px;
   cursor: pointer; font-family: var(--sans); }
 
-/* clue cards: paper notes pinned to the board, deductions across the whole row */
-h2 { font-size: .8rem; letter-spacing: .2em; color: var(--muted); margin: 0 0 14px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-.card { --rot: var(--tilt); position: relative; background: var(--paper); color: var(--ink); font-family: var(--type);
-  font-size: 1rem; line-height: 1.35; padding: 16px 14px 14px; box-shadow: 3px 4px 0 var(--shadow);
-  transform: rotate(var(--rot)); }
-.card::before { content: ""; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px;
-  border-radius: 50%; background: var(--red); box-shadow: 1px 2px 2px var(--shadow); }   /* the pin */
+/* ---------- the board: two zones, red threads drawn behind the notes ---------- */
+.board { position: relative; }
+svg.threads { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; }
+svg.threads path { fill: none; stroke: var(--red); stroke-width: 2.5; stroke-linecap: round;
+  filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, .6)); }
+svg.threads path.theory { stroke-width: 3.5; }
+
+.zone { position: relative; margin-bottom: 28px; }
+.zone-title { display: flex; align-items: center; gap: 12px; font-size: .8rem; font-weight: 800; letter-spacing: .25em;
+  color: var(--paper); margin: 0 0 16px; }
+.zone-title::after { content: ""; flex: 1; height: 2px; background: var(--red); opacity: .6; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 30px 16px; }
+
+/* clue cards: paper notes pinned to the board */
+.card { --rot: var(--tilt); position: relative; z-index: 1; background: var(--paper); color: var(--ink);
+  font-family: var(--type); font-size: 1rem; line-height: 1.35; padding: 16px 14px 14px;
+  box-shadow: 3px 4px 0 var(--shadow); transform: rotate(var(--rot)); }
+.card::before, .slot::before { content: ""; position: absolute; top: -6px; left: var(--pin, 50%); width: 12px; height: 12px;
+  margin-left: -6px; border-radius: 50%; background: var(--red); box-shadow: 1px 2px 2px var(--shadow); z-index: 3; }   /* the pin */
+.label { display: block; font-family: var(--sans); font-weight: 800; font-size: .65rem; letter-spacing: .2em;
+  color: var(--red); margin-bottom: 6px; }
 .card.deduction { --rot: calc(var(--tilt) / 4); grid-column: 1 / -1; border: 3px solid var(--red); font-size: 1.15rem; }   /* wide cards tilt less */
-.card .label { display: block; font-family: var(--sans); font-weight: 800; font-size: .65rem;
-  letter-spacing: .2em; color: var(--red); margin-bottom: 6px; }
+.card.theory { --rot: 0deg; grid-column: 1 / -1; border: 5px double var(--red); font-size: 1.25rem;
+  box-shadow: 0 0 0 3px var(--ink), 0 0 18px 4px rgba(179, 18, 27, .45); }
+.card.theory .label { font-size: .75rem; }
 .card.new { animation: pin-in .6s ease-out; }
 @keyframes pin-in { from { opacity: 0; transform: scale(1.25) rotate(0deg); } to { opacity: 1; transform: scale(1) rotate(var(--rot)); } }
-.empty { grid-column: 1 / -1; color: var(--muted); font-style: italic; }   /* spans the whole row */
 
-/* ruled-out leads and question log: closed by default, opened only when needed */
+/* ruled-out leads: in their zone, readable, crossed out and stamped, so the player drops them */
+.out-title { font-size: .7rem; font-weight: 800; letter-spacing: .25em; color: var(--red); margin: 26px 0 14px; }
+.card.ruled_out { background: var(--paper-dim); color: #3a3530; padding-bottom: 40px; }
+.card.ruled_out .struck { text-decoration: line-through; text-decoration-color: var(--red); text-decoration-thickness: 2px; }
+.card.ruled_out::after { content: "SCARTATA"; position: absolute; right: 8px; bottom: 8px; border: 3px solid var(--red);
+  color: var(--red); font-family: var(--sans); font-weight: 800; font-size: .7rem; letter-spacing: .2em;
+  padding: 2px 6px; transform: rotate(-10deg); background: rgba(239, 230, 210, .85); }
+
+/* empty notes: where a guide question or a "?" waits for the player */
+.slot { position: relative; z-index: 1; min-height: 96px; padding: 16px 14px 14px; border: 2px dashed var(--red);
+  background: var(--red-soft); font-family: var(--type); color: var(--paper); display: flex; flex-direction: column;
+  justify-content: center; gap: 6px; transform: rotate(var(--tilt)); }
+.slot .mark { font-family: var(--sans); font-weight: 800; font-size: 2rem; line-height: 1; color: var(--red); }
+.slot .q { font-size: 1.05rem; line-height: 1.35; }
+.slot.guide { animation: breathe 3s ease-in-out infinite; }
+.slot.thread { align-items: center; text-align: center; }
+.slot.thread.theory { grid-column: 1 / -1; border-width: 3px; background: rgba(179, 18, 27, .2); }
+@keyframes breathe { 50% { box-shadow: 0 0 14px 2px rgba(179, 18, 27, .45); } }
+
+/* the final question, between the two zones */
+.final-wrap { display: flex; justify-content: center; margin: 8px 0 36px; }
+.final-wrap:empty { display: none; }
+.slot.final { width: min(100%, 460px); min-height: 150px; align-items: center; text-align: center; transform: none;
+  border: 4px solid var(--red); background: var(--ink-soft); box-shadow: 0 0 30px 6px rgba(179, 18, 27, .5);
+  animation: breathe 2s ease-in-out infinite; }
+.slot.final .mark { font-size: 3.4rem; }
+.slot.final .q { font-size: 1.3rem; }
+
+/* the sealed file of the past */
+.sealed { position: relative; background: var(--folder); color: var(--ink); padding: 34px 20px 28px; margin-top: 34px;
+  border-radius: 0 6px 6px 6px; box-shadow: 4px 5px 0 var(--shadow); text-align: center; font-family: var(--type); }
+.sealed::before { content: "ANNI PRIMA"; position: absolute; top: -24px; left: 0; background: var(--folder);
+  padding: 4px 16px; border-radius: 6px 6px 0 0; font-family: var(--sans); font-weight: 800; font-size: .7rem; letter-spacing: .2em; }
+.stamp { display: inline-block; border: 4px solid var(--red); color: var(--red); padding: 6px 18px; font-family: var(--sans);
+  font-weight: 800; font-size: 1.6rem; letter-spacing: .25em; transform: rotate(-8deg); opacity: .9; }
+.sealed p { margin: 16px 0 0; opacity: .75; }
+.opened { animation: open-file .8s ease-out; }
+@keyframes open-file { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+
+/* question log: closed by default, opened only when needed */
 details.drawer { margin-top: 20px; color: var(--muted); }
 details.drawer summary { cursor: pointer; }
-.ruled-out li { text-decoration: line-through; font-family: var(--type); }
 .log li { font-family: var(--type); margin: 4px 0; }
 
 /* bottom dock: the subtitle with question and answer, then the microphone */
-.dock { position: sticky; bottom: 0; background: linear-gradient(transparent, var(--ink) 18%);
+.dock { position: sticky; bottom: 0; z-index: 4; background: linear-gradient(transparent, var(--ink) 18%);
   padding: 28px 16px 16px; text-align: center; }
 .subtitle { min-height: 100px; }
-.question { color: var(--muted); font-family: var(--type); font-size: 1.15rem; margin: 0; }
-.answer { font-size: clamp(2rem, 7vw, 3.2rem); font-weight: 800; letter-spacing: .04em; margin: 4px 0 0; }
-.answer.irrelevant, .answer.invalid, .answer.unclear { color: var(--muted); }
-.answer.unclear { font-size: clamp(1.4rem, 4.5vw, 2rem); }
+.question { color: var(--paper); font-family: var(--type); font-size: 1.15rem; margin: 0;
+  text-shadow: 0 1px 6px var(--ink), 0 0 2px var(--ink); }   /* readable over the board */
+.answer { font-size: clamp(2rem, 7vw, 3.2rem); font-weight: 800; letter-spacing: .04em; margin: 4px 0 0;
+  text-shadow: 0 2px 8px var(--ink), 0 0 3px var(--ink); }   /* readable over the board */
+.answer.unclear, .answer.open { font-size: clamp(1.4rem, 4.5vw, 2rem); }
 .mic { width: 84px; height: 84px; border-radius: 50%; border: 3px solid var(--red); background: var(--ink-soft);
   color: var(--paper); font-size: 2rem; cursor: pointer; margin: 10px 0 6px; }
 .mic.listening { background: var(--red); animation: pulse 1s infinite; }
@@ -84,7 +139,7 @@ form.typed input { flex: 1; max-width: 420px; background: var(--ink-soft); borde
   padding: 16px; background: rgba(0, 0, 0, .92); }
 .win.open { display: flex; }
 .win-card { max-width: 560px; padding: 28px; background: var(--paper); color: var(--ink); border-top: 8px solid var(--red); }
-.win-card h2 { color: var(--red); font-size: 1.4rem; letter-spacing: .15em; }
+.win-card h2 { color: var(--red); font-size: 1.4rem; letter-spacing: .15em; margin: 0 0 14px; }
 .win-card p { font-family: var(--type); line-height: 1.5; }
 .win-card button { color: var(--ink); border-color: var(--ink); }
 </style>
@@ -104,13 +159,17 @@ form.typed input { flex: 1; max-width: 420px; background: var(--ink-soft); borde
       <button class="ghost" id="read-story">▶ Ascolta</button>
     </details>
 
-    <h2>INDIZI</h2>
-    <div class="cards" id="cards"></div>
+    <div class="board" id="board">
+      <svg class="threads" id="threads"></svg>
+      <section class="zone">
+        <h2 class="zone-title">IL RISTORANTE</h2>
+        <div class="cards" id="zone-restaurant"></div>
+        <div id="out-restaurant"></div>
+      </section>
+      <div class="final-wrap" id="final-wrap"></div>
+      <section class="zone" id="zone-past"></section>
+    </div>
 
-    <details class="drawer">
-      <summary>Piste scartate (<span id="ruled-count">0</span>)</summary>
-      <ul class="ruled-out" id="ruled-out"></ul>
-    </details>
     <details class="drawer">
       <summary>Registro domande (<span id="log-count">0</span>)</summary>
       <ol class="log" id="log" reversed></ol>
@@ -150,18 +209,23 @@ form.typed input { flex: 1; max-width: 420px; background: var(--ink-soft); borde
 
 // answers as the player reads and hears them
 const ANSWER_TEXT = {yes: "Sì", no: "No", partly: "Sì, ma non solo", irrelevant: "Non importa",
-                     invalid: "Domanda non valida", unclear: "Non ho capito, puoi ripetere?"};
+                     invalid: "Domanda non valida: chiedi con un si o no", unclear: "Non ho capito, puoi ripetere?",
+                     open: "Chiedi con un sì o un no"};
+const LABELS = {deduction: "DEDUZIONE", theory: "TEORIA"};   // label on top of the wide cards
 const $ = (id) => document.getElementById(id);
 let gameId = null;
-let busy = false;   // true while waiting for the judge: no new questions meanwhile
+let busy = false;        // true while waiting for the judge: no new questions meanwhile
+let pastOpen = false;    // to animate the past only when it opens
+let links = [];          // [empty note, linked card ids, theory] for the red threads
 
 // ---------- game ----------
 async function newGame() {
   const data = await (await fetch("/api/games", {method: "POST"})).json();
   gameId = data.id;
+  pastOpen = false;
   $("case").textContent = `Caso N°1 · ${data.title}`;
   $("story-text").textContent = data.story;
-  renderBoard({cards: [], ruled_out: []}, []);
+  renderBoard(data.board, []);
   $("log").replaceChildren();
   $("log-count").textContent = 0;
   $("questions").textContent = 0;
@@ -200,7 +264,7 @@ function showTurn(data) {
   $("answer").textContent = ANSWER_TEXT[data.answer];
   $("answer").className = `answer ${data.answer}`;
   renderBoard(data.board, data.new_cards);
-  if (data.answer !== "unclear") addToLog(data);   // a question not understood does not count
+  if (!["unclear", "open"].includes(data.answer)) addToLog(data);   // not understood or not yes/no: does not count
   $("questions").textContent = data.questions;
   $("score").textContent = data.score;
   speakTurn(data);
@@ -210,48 +274,134 @@ function showTurn(data) {
 // ---------- board ----------
 function renderBoard(board, newCards) {
   const newIds = new Set(newCards.map((card) => card.id));
-  const cards = board.cards.map((card) => cardElement(card, newIds.has(card.id)));
-  $("cards").replaceChildren(...(cards.length ? cards : [emptyNote()]));
-  $("ruled-out").replaceChildren(...board.ruled_out.map((card) => listItem(card.text)));
-  $("ruled-count").textContent = board.ruled_out.length;
+  const restaurant = [], past = [];
+  const inZone = (zone) => (zone === "past" ? past : restaurant);
+
+  // cards found, then the threads waiting for a "?", then the guide questions
+  board.cards.forEach((card) => inZone(card.zone).push(cardElement(card, newIds.has(card.id))));
+  links = [];
+  let finalNote = null;
+  board.threads.forEach((thread, i) => {
+    const note = thread.final
+      ? emptyNote("final", "IL CASO", thread.question, "final")
+      : emptyNote(`thread${thread.theory ? " theory" : ""}`, thread.theory ? "TEORIA" : null, thread.question, `t${i}`);
+    links.push([note, thread.cards, thread.theory]);
+    if (thread.final) finalNote = note;
+    else inZone(thread.zone).push(note);
+  });
+  board.guides.forEach((guide) => inZone(guide.zone).push(emptyNote("guide", "INDAGA", guide.question, guide.question)));
+  placeWidePins(restaurant);
+  placeWidePins(past);
+
+  $("zone-restaurant").replaceChildren(...restaurant);
+  $("out-restaurant").replaceChildren(...ruledOutRow(board, "restaurant", newIds));
+  $("final-wrap").replaceChildren(...(finalNote ? [finalNote] : []));
+
+  // the past: a sealed file until its first card, then a zone like the restaurant
+  if (board.past_open) {
+    const grid = element("div", "cards");
+    grid.replaceChildren(...past);
+    const title = element("h2", "zone-title", "ANNI PRIMA");
+    $("zone-past").replaceChildren(title, grid, ...ruledOutRow(board, "past", newIds));
+    if (!pastOpen) $("zone-past").classList.add("opened");   // animate only the first time
+  } else {
+    const file = element("div", "sealed");
+    file.append(element("span", "stamp", "SIGILLATO"), element("p", null, "Qualcosa è successo prima del ristorante…"));
+    $("zone-past").replaceChildren(file);
+    $("zone-past").classList.remove("opened");
+  }
+  pastOpen = board.past_open;
+  requestAnimationFrame(drawThreads);   // threads need the notes already laid out
+}
+
+function ruledOutRow(board, zone, newIds) {
+  // the ruled-out leads of a zone, in a row of their own at its bottom
+  const leads = board.ruled_out.filter((card) => card.zone === zone).map((card) => cardElement(card, newIds.has(card.id)));
+  if (!leads.length) return [];
+  const grid = element("div", "cards");
+  grid.replaceChildren(...leads);
+  return [element("h3", "out-title", "PISTE SCARTATE"), grid];
 }
 
 function cardElement(card, isNew) {
-  const el = document.createElement("article");
-  el.className = `card ${card.kind}${isNew ? " new" : ""}`;
+  const el = element("article", `card ${card.kind}${isNew ? " new" : ""}`);
+  el.dataset.id = card.id;
   el.style.setProperty("--tilt", `${tilt(card.id)}deg`);
-  if (card.kind === "deduction") {
-    const label = document.createElement("span");
-    label.className = "label";
-    label.textContent = "DEDUZIONE";
-    el.append(label);
-  }
-  el.append(card.text);
+  if (LABELS[card.kind]) el.append(element("span", "label", LABELS[card.kind]));
+  el.append(card.kind === "ruled_out" ? element("span", "struck", card.text) : card.text);
   return el;
 }
 
-function tilt(id) {
-  // a small tilt fixed for each card, so the notes look pinned by hand
+function emptyNote(kind, label, question, key) {
+  // an empty note with a red "?": a guide question, a thread to explain, or the final question
+  const el = element("div", `slot ${kind}`);
+  el.style.setProperty("--tilt", `${tilt(key) / 2}deg`);
+  if (label) el.append(element("span", "label", label));
+  el.append(element("span", "mark", "?"));
+  if (question) el.append(element("span", "q", question));
+  return el;
+}
+
+function placeWidePins(elements) {
+  // wide cards take the whole row: alternate their pins so their threads do not overlap
+  elements.filter((el) => el.matches(".card.deduction, .card.theory"))
+          .forEach((el, i) => el.style.setProperty("--pin", i % 2 ? "70%" : "30%"));
+}
+
+function element(tag, className, text) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (text) el.textContent = text;
+  return el;
+}
+
+function tilt(key) {
+  // a small tilt fixed for each note, so the notes look pinned by hand
   let sum = 0;
-  for (const ch of id) sum += ch.charCodeAt(0);
+  for (const ch of key) sum += ch.charCodeAt(0);
   return (sum % 5) - 2;
 }
 
-function emptyNote() {
-  const p = document.createElement("p");
-  p.className = "empty";
-  p.textContent = "Nessun indizio. Fai la prima domanda…";
-  return p;
+// ---------- red threads: from each linked card to its "?" ----------
+function anchor(el, origin, bottom) {
+  // the pin on top of a note, or the middle of its bottom edge when the thread leaves downward
+  const box = el.getBoundingClientRect();
+  const pinX = parseFloat(el.style.getPropertyValue("--pin")) || 50;
+  return {x: box.left + box.width * pinX / 100 - origin.left, y: (bottom ? box.bottom : box.top) - origin.top};
 }
 
-function listItem(text) {
-  const li = document.createElement("li");
-  li.textContent = text;
-  return li;
+function drawThreads() {
+  const svg = $("threads");
+  const origin = $("board").getBoundingClientRect();
+  svg.replaceChildren();
+  for (const [note, ids, theory] of links) {
+    const noteBox = note.getBoundingClientRect();
+    for (const id of ids) {
+      const card = document.querySelector(`.card[data-id="${id}"]`);
+      if (!card) continue;
+      const cardBox = card.getBoundingClientRect();
+      let from, to, bow = 0;
+      if (cardBox.top >= noteBox.bottom) {          // card below the "?": up to the bottom of the "?"
+        from = anchor(card, origin, false);
+        to = anchor(note, origin, true);
+      } else if (cardBox.bottom <= noteBox.top) {   // card above: down to the pin of the "?"
+        from = anchor(card, origin, true);
+        to = anchor(note, origin, false);
+      } else {                                      // same row: pin to pin, arching over the notes
+        from = anchor(card, origin, false);
+        to = anchor(note, origin, false);
+        bow = -Math.min(26, 10 + Math.abs(to.x - from.x) / 12);
+      }
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", `M${from.x},${from.y} Q${(from.x + to.x) / 2},${(from.y + to.y) / 2 + bow} ${to.x},${to.y}`);
+      if (theory) path.setAttribute("class", "theory");
+      svg.append(path);
+    }
+  }
 }
 
 function addToLog(data) {
-  $("log").prepend(listItem(`${data.positive_question} — ${ANSWER_TEXT[data.answer]}`));   // newest first
+  $("log").prepend(element("li", null, `${data.positive_question} — ${ANSWER_TEXT[data.answer]}`));   // newest first
   $("log-count").textContent = data.questions;
 }
 
@@ -278,7 +428,7 @@ function speakTurn(data) {
   speak(ANSWER_TEXT[data.answer]);
   const found = data.new_cards.filter((card) => card.kind !== "ruled_out");
   if (data.won) speak("Caso risolto!");
-  else if (found.length) speak(`Nuovo indizio: ${found[0].text}`);   // the first card is the one earned
+  else if (found.length) speak(`${found[0].kind === "theory" ? "Nuova teoria" : "Nuovo indizio"}: ${found[0].text}`);   // the first card is the one earned
 }
 
 // ---------- voice in: press, speak, stop ----------
@@ -330,6 +480,7 @@ function listen() {
   $("mic").classList.add("listening");
   recognizer.start();
 }
+
 // ---------- controls ----------
 $("mic").addEventListener("click", listen);
 document.addEventListener("keydown", (event) => {
@@ -354,6 +505,9 @@ $("read-story").addEventListener("click", () => {
   speak($("story-text").textContent);
 });
 $("again").addEventListener("click", newGame);
+window.addEventListener("resize", drawThreads);
+document.fonts.ready.then(drawThreads);   // the typewriter font changes the card sizes once loaded
+$("board").addEventListener("animationend", drawThreads);   // redraw once new cards have settled
 
 newGame();
 </script>
