@@ -27,7 +27,7 @@ def test_test_cases_use_valid_ids(path):
 def test_gabbiano_matches_the_notebook():
     """The gabbiano puzzle keeps the numbers validated in the notebook."""
     puzzle = load_puzzle("gabbiano", "it")
-    assert len(puzzle.facts) == 16
+    assert len(puzzle.facts) == 20
     assert len(puzzle.deductions) == 13
-    assert puzzle.points[puzzle.root] == 670
-    assert len(load_tests("gabbiano", "it")) == 132
+    assert puzzle.points[puzzle.root] == 690
+    assert len(load_tests("gabbiano", "it")) == 148

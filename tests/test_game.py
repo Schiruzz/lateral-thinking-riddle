@@ -43,8 +43,8 @@ def test_solution_wins_and_lights_the_whole_tree(game):
 
 def test_board_hides_cards_merged_into_a_deduction(game):
     """Two cards are shown until the player links them, then only their deduction is."""
-    game.unlock(["sospetto", "apposta"])
-    assert game.board()["cards"] == ["sospetto", "apposta"]
+    game.unlock(["verifica", "mai_gabbiano"])
+    assert game.board()["cards"] == ["verifica", "mai_gabbiano"]
     game.unlock(["d_verifica"])
     assert game.board()["cards"] == ["d_verifica"]
 
@@ -89,15 +89,15 @@ def test_past_lead_waits_for_the_past(game):
 
 def test_first_guides_at_the_start(game):
     """Before any question, the board asks about the gull and the woman."""
-    assert [g["card"] for g in game.board()["guides"]] == ["apposta", "moglie"]
+    assert [g["card"] for g in game.board()["guides"]] == ["verifica", "moglie"]
 
 
 def test_thread_links_the_children_of_a_deduction(game):
     """Once both children are lit, a thread without a question links them."""
-    game.unlock(["sospetto", "apposta"])
+    game.unlock(["verifica", "mai_gabbiano"])
     thread = game.board()["threads"][0]
     assert thread["id"] == "d_verifica"
-    assert thread["cards"] == ["sospetto", "apposta"]
+    assert thread["cards"] == ["verifica", "mai_gabbiano"]
     assert not thread["theory"] and thread["question"] is None
 
 
@@ -115,3 +115,13 @@ def test_final_thread_before_the_solution(game):
     game.unlock(["t_pasto", "d_inganno"])
     thread = next(t for t in game.board()["threads"] if t["id"] == game.puzzle.root)
     assert thread["question"] == "Allora: cosa ha capito al ristorante?"
+
+
+def test_intermediate_cards_give_way_to_the_shipwreck(game):
+    """Incident, sea and boat show one at a time, and all leave the board once the shipwreck is found."""
+    game.unlock(["incidente"])
+    assert "incidente" in game.board()["cards"]
+    game.unlock(["mare"])
+    assert "incidente" not in game.board()["cards"] and "mare" in game.board()["cards"]
+    game.unlock(["naufragio"])
+    assert not {"incidente", "mare", "barca"} & set(game.board()["cards"])

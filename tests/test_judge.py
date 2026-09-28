@@ -3,6 +3,7 @@
 import json
 from types import SimpleNamespace
 
+import httpx
 import pytest
 
 from riddle.judge import VERIFY_CONFIG, Judge
@@ -155,3 +156,27 @@ def test_rewrite_that_only_adds_an_apostrophe_is_kept(puzzle):
     result = judge.judge("Il ristorante centra?", [], [])
     assert result["answer"] == "partly"
     assert result["cards"] == ["ristorante_no"]
+
+
+def test_verifier_sees_the_story(puzzle):
+    """A fact is verified with the story in its context, so "l'ha ordinato" means the gull."""
+    judge, models = make_judge(puzzle, [verdict("yes", [("ordinato per verificare qualcosa", "verifica")])],
+                               {puzzle.card_text["verifica"]: True})
+    judge.judge("L'ha ordinato per verificare qualcosa?", [], [])
+    assert puzzle.story in models.verify_calls[0]
+
+
+def test_call_retries_after_a_timeout(puzzle, monkeypatch):
+    """A call that times out is retried after a short wait instead of blocking the game."""
+    monkeypatch.setattr("riddle.judge.time.sleep", lambda seconds: None)   # no real waiting in tests
+    answers = [httpx.ReadTimeout("timed out"), SimpleNamespace(text="ok")]
+
+    def generate_content(model, contents, config):
+        # first call times out, the second one answers
+        answer = answers.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    judge = Judge(puzzle, SimpleNamespace(models=SimpleNamespace(generate_content=generate_content)))
+    assert judge._call("model", "contents", None).text == "ok"

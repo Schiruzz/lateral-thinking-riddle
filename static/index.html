@@ -284,7 +284,9 @@ function renderBoard(board, newCards) {
   board.threads.forEach((thread, i) => {
     const note = thread.final
       ? emptyNote("final", "IL CASO", thread.question, "final")
-      : emptyNote(`thread${thread.theory ? " theory" : ""}`, thread.theory ? "TEORIA" : null, thread.question, `t${i}`);
+      : thread.theory
+        ? emptyNote("thread theory", "TEORIA", thread.question, `t${i}`)
+        : emptyNote("thread", "COLLEGA", "Cosa unisce queste carte?", `t${i}`);   // same text for every link: explains, reveals nothing
     links.push([note, thread.cards, thread.theory]);
     if (thread.final) finalNote = note;
     else inZone(thread.zone).push(note);
