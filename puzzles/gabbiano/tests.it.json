@@ -229,19 +229,23 @@
     "lit": [],
     "history": []
   },
-  {
+    {
     "group": "partial_fact",
     "question": "Sono finiti su un'isola?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "isola"
+    ],
     "lit": [],
     "history": []
   },
-  {
+    {
     "group": "partial_fact",
     "question": "Aveva già mangiato gabbiano?",
     "answer": "no",
-    "cards": [],
+    "cards": [
+      "mai_gabbiano"
+    ],
     "lit": [],
     "history": []
   },
@@ -251,6 +255,7 @@
     "answer": "yes",
     "cards": [
       "figlio",
+      "moglie",
       "naufragio"
     ],
     "lit": [],
@@ -262,7 +267,8 @@
     "answer": "yes",
     "cards": [
       "carne_umana",
-      "figlio_morto"
+      "figlio_morto",
+      "isola"
     ],
     "lit": [],
     "history": []
@@ -454,7 +460,9 @@
     "group": "negation",
     "question": "Non ci vedeva?",
     "answer": "no",
-    "cards": [],
+    "cards": [
+      "cieco"
+    ],
     "lit": [],
     "history": []
   },
@@ -462,7 +470,9 @@
     "group": "negation",
     "question": "Non era la prima volta che mangiava gabbiano?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "mai_gabbiano"
+    ],
     "lit": [],
     "history": []
   },
@@ -470,7 +480,7 @@
     "group": "negation",
     "question": "Quello dell'isola era davvero gabbiano?",
     "answer": "no",
-    "cards": [],
+    "cards": ["isola"],
     "lit": [],
     "history": []
   },
@@ -570,7 +580,9 @@
     "group": "partly",
     "question": "C'entra la moglie?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "moglie"
+    ],
     "lit": [],
     "history": []
   },
@@ -997,7 +1009,9 @@
     "group": "spoken",
     "question": "ci vedeva",
     "answer": "no",
-    "cards": [],
+    "cards": [
+      "cieco"
+    ],
     "lit": [],
     "history": []
   },
@@ -1232,7 +1246,7 @@
   {"group": "unclear", "question": "Il gabbiano aveva un nome?", "answer": "irrelevant", "cards": [], "lit": [], "history": []},
   {"group": "solution", "question": "Quindi l'uomo si è ucciso perché ha capito che la carne che aveva mangiato non era di gabbiano ma era il figlio morto", "answer": "yes", "cards": ["soluzione"], "lit": ["t_pasto", "d_inganno"], "history": []},
   {"group": "solution", "question": "Ha capito cosa aveva mangiato?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "solution", "question": "Sull'isola ha mangiato suo figlio?", "answer": "yes", "cards": ["carne_umana", "figlio", "figlio_morto", "terza_persona"], "lit": [], "history": []},
+  {"group": "solution", "question": "Sull'isola ha mangiato suo figlio?", "answer": "yes", "cards": ["carne_umana", "figlio", "figlio_morto", "isola", "terza_persona"], "lit": [], "history": []},
   {"group": "solution", "question": "Al ristorante ha capito di aver mangiato suo figlio?", "answer": "yes", "cards": ["carne_umana", "figlio_morto"], "lit": [], "history": []},
   {"group": "invalid", "question": "Dove devo cercare?", "answer": "invalid", "cards": [], "lit": [], "history": []},
   {"group": "invalid", "question": "Cosa devo chiedere adesso?", "answer": "invalid", "cards": [], "lit": [], "history": []},
