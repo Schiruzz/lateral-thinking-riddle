@@ -11,34 +11,42 @@ from riddle.puzzle import load_puzzle
 
 
 class FakeModels:
-    """Stands in for `client.models`: canned judge verdicts, verifier answers by card text."""
+    """Stands in for `client.models`: canned arbiter and matcher outputs, verifier answers by card text."""
 
-    def __init__(self, verdicts, stated):
-        self.verdicts = list(verdicts)   # returned in order, one per judge call
-        self.stated = stated             # card or element text -> verifier answer
-        self.judge_calls = []
+    def __init__(self, answers, matches, stated):
+        self.answers = list(answers)   # arbiter outputs, returned in order
+        self.matches = list(matches)   # matcher outputs, returned in order
+        self.stated = stated           # card or element text -> verifier answer
+        self.arbiter_calls = []
+        self.matcher_calls = []
         self.verify_calls = []
 
     def generate_content(self, model, contents, config):
-        """Answer as the verifier or as the judge, depending on the config."""
+        """Answer as the verifier, the matcher or the arbiter, depending on the call."""
         if config is VERIFY_CONFIG:
             self.verify_calls.append(contents)
             text = contents.split("CARD: ")[-1]
             return SimpleNamespace(text=json.dumps({"stated": self.stated.get(text, False)}))
-        self.judge_calls.append(contents)
-        return SimpleNamespace(text=json.dumps(self.verdicts.pop(0)))
+        if "ANSWER: " in contents:   # only the matcher receives the answer
+            self.matcher_calls.append((contents, config))
+            return SimpleNamespace(text=json.dumps(self.matches.pop(0)))
+        self.arbiter_calls.append(contents)
+        return SimpleNamespace(text=json.dumps(self.answers.pop(0)))
 
 
-def verdict(answer, cards=(), elements=(), positive=""):
-    """Build a judge verdict; cards are (quote, id) pairs."""
-    return {"positive_question": positive, "answer": answer,
-            "cards": [{"quote": quote, "id": cid} for quote, cid in cards],
-            "solution_elements": list(elements)}
+def answer(value, positive=""):
+    """Build an arbiter output."""
+    return {"positive_question": positive, "answer": value}
 
 
-def make_judge(puzzle, verdicts, stated=None):
+def match(cards=(), elements=()):
+    """Build a matcher output; cards are (quote, id) pairs."""
+    return {"cards": [{"quote": quote, "id": cid} for quote, cid in cards], "solution_elements": list(elements)}
+
+
+def make_judge(puzzle, answers=(), matches=(), stated=None):
     """Build a judge whose model is a FakeModels; return both."""
-    models = FakeModels(verdicts, stated or {})
+    models = FakeModels(answers, matches, stated or {})
     return Judge(puzzle, SimpleNamespace(models=models)), models
 
 
@@ -48,143 +56,154 @@ def puzzle():
     return load_puzzle("gabbiano", "it")
 
 
-def test_invalid_answer_unlocks_nothing(puzzle):
-    """An invalid question never unlocks cards, whatever the judge proposes."""
-    judge, _ = make_judge(puzzle, [verdict("invalid", [("figlio", "figlio")])])
-    assert judge.judge("La soluzione riguarda il figlio?", [], [])["cards"] == []
+# ---------- answer: the arbiter and its guards ----------
+
+def test_negated_question_is_judged_again_in_positive_form(puzzle):
+    """A question with "non" is judged a second time, and the second verdict counts."""
+    judge, models = make_judge(puzzle, [answer("no", "È sua moglie?"), answer("yes", "È sua moglie?")])
+    assert judge.answer("Non è sua moglie?", [], [])["answer"] == "yes"
+    assert len(models.arbiter_calls) == 2
+
+
+def test_rewrite_with_words_the_player_did_not_say_is_unclear(puzzle):
+    """A garbled question the arbiter "repaired" with new words counts as not understood."""
+    judge, _ = make_judge(puzzle, [answer("yes", "Era cieco?")])
+    assert judge.answer("era cieca la vista del menù quando", [], [])["answer"] == "unclear"
+
+
+def test_rewrite_that_only_removes_words_is_kept(puzzle):
+    """Dropping fillers like "secondo me" keeps the answer."""
+    judge, _ = make_judge(puzzle, [answer("yes", "Era cieco?")])
+    assert judge.answer("secondo me era cieco", [], [])["answer"] == "yes"
+
+
+def test_rewrite_that_only_adds_an_apostrophe_is_kept(puzzle):
+    """The transcription writes "centra", the arbiter "c'entra": the same word."""
+    judge, _ = make_judge(puzzle, [answer("partly", "Il ristorante c'entra?")])
+    assert judge.answer("Il ristorante centra?", [], [])["answer"] == "partly"
+
+
+def test_rewrite_that_splits_an_apostrophe_is_kept(puzzle):
+    """The arbiter writes "un isola" for "un'isola": the same words."""
+    judge, _ = make_judge(puzzle, [answer("yes", "Sono rimasti su un isola senza cibo")])
+    assert judge.answer("Sono rimasti su un'isola senza cibo?", [], [])["answer"] == "yes"
+
+
+def test_arbiter_never_sees_the_cards(puzzle):
+    """The arbiter knows the solution but no card list: answering and finding cards stay apart."""
+    judge, _ = make_judge(puzzle)
+    prompt = judge.arbiter_config.system_instruction
+    assert puzzle.solution in prompt
+    assert puzzle.card_text["cieco"] not in prompt
+
+
+# ---------- cards: the matcher, its guards and the verifier ----------
+
+@pytest.mark.parametrize("value", ["invalid", "unclear", "irrelevant"])
+def test_answers_without_content_unlock_nothing(puzzle, value):
+    """Invalid, unclear or irrelevant questions unlock nothing and do not even call the matcher."""
+    judge, models = make_judge(puzzle)
+    assert judge.cards("La soluzione riguarda il figlio?", answer(value), [], []) == []
+    assert models.matcher_calls == []
+
+
+def test_matcher_never_sees_the_solution(puzzle):
+    """The matcher reads question and answer only: the solution is not in its prompt."""
+    judge, models = make_judge(puzzle, matches=[match()])
+    judge.cards("Era cieco?", answer("yes", "Era cieco?"), [], [])
+    _, config = models.matcher_calls[0]
+    assert puzzle.solution not in config.system_instruction
 
 
 def test_quote_missing_from_the_question_is_dropped(puzzle):
     """A card whose quote is not in the player's words is dropped before verification."""
-    judge, models = make_judge(puzzle, [verdict("yes", [("carne umana", "carne_umana")])])
-    assert judge.judge("C'entra la carne?", [], [])["cards"] == []
+    judge, models = make_judge(puzzle, matches=[match([("carne umana", "carne_umana")])])
+    assert judge.cards("C'entra la carne?", answer("yes", "C'entra la carne?"), [], []) == []
     assert models.verify_calls == []
 
 
+def test_quote_with_an_apostrophe_matches_the_transcription(puzzle):
+    """The matcher quotes "c'entra", the player said "centra": the quote still counts."""
+    judge, _ = make_judge(puzzle, matches=[match([("Il ristorante c'entra", "ristorante_no")])])
+    assert judge.cards("Il ristorante centra?", answer("no", "Il ristorante c'entra?"), [], []) == ["ristorante_no"]
+
+
 def test_key_card_needs_its_word(puzzle):
-    """cieco stays hidden without a blindness word, even if both models agree."""
-    judge, _ = make_judge(puzzle, [verdict("yes", [("problemi alla vista", "cieco")])],
-                          {puzzle.card_text["cieco"]: True})
-    assert judge.judge("Ha problemi alla vista?", [], [])["cards"] == []
+    """cieco stays hidden without a blindness word, even if matcher and verifier agree."""
+    judge, _ = make_judge(puzzle, matches=[match([("problemi alla vista", "cieco")])],
+                          stated={puzzle.card_text["cieco"]: True})
+    assert judge.cards("Ha problemi alla vista?", answer("yes", "Ha problemi alla vista?"), [], []) == []
 
 
 def test_verifier_decides_facts(puzzle):
-    """A fact proposed by the judge is dropped when the verifier rejects it."""
-    judge, _ = make_judge(puzzle, [verdict("yes", [("isola", "isola")])],
-                          {puzzle.card_text["isola"]: False})
-    assert judge.judge("Sono finiti su un'isola?", [], [])["cards"] == []
+    """A fact proposed by the matcher is dropped when the verifier rejects it."""
+    judge, _ = make_judge(puzzle, matches=[match([("isola", "isola")])], stated={puzzle.card_text["isola"]: False})
+    assert judge.cards("Sono finiti su un'isola?", answer("yes", "Sono finiti su un'isola?"), [], []) == []
 
 
 def test_exclusions_skip_verification(puzzle):
     """An exclusion follows from a "no" and is kept without calling the verifier."""
-    judge, models = make_judge(puzzle, [verdict("no", [("carne", "carne_ok")])])
-    assert judge.judge("La carne era avariata?", [], [])["cards"] == ["carne_ok"]
+    judge, models = make_judge(puzzle, matches=[match([("carne", "carne_ok")])])
+    assert judge.cards("La carne era avariata?", answer("no", "La carne era avariata?"), [], []) == ["carne_ok"]
     assert models.verify_calls == []
 
 
-def test_negated_question_is_judged_again_in_positive_form(puzzle):
-    """A question with "non" is judged a second time, and the second verdict counts."""
-    first = verdict("no", positive="È sua moglie?")
-    second = verdict("yes", [("sua moglie", "moglie")], positive="È sua moglie?")
-    judge, models = make_judge(puzzle, [first, second], {puzzle.card_text["moglie"]: True})
-    result = judge.judge("Non è sua moglie?", [], [])
-    assert len(models.judge_calls) == 2
-    assert result["answer"] == "yes"
-    assert result["cards"] == ["moglie"]
+def test_links_are_verified_without_context(puzzle):
+    """A deduction must be in the player's words: its check gets no context."""
+    judge, models = make_judge(puzzle, matches=[match([("mentito per salvarlo", "d_pieta")])],
+                               stated={puzzle.card_text["d_pieta"]: True})
+    question = "La moglie gli ha mentito per salvarlo?"
+    cards = judge.cards(question, answer("yes", question), [("Gli ha mentito?", "yes")], ["bugia", "motivo", "moglie"])
+    assert cards == ["d_pieta"]
+    assert models.verify_calls[0].startswith(judge.no_context)
+
+
+def test_verifier_sees_the_story(puzzle):
+    """A fact is verified with the story in its context, so "l'ha ordinato" means the gull."""
+    judge, models = make_judge(puzzle, matches=[match([("ordinato per verificare qualcosa", "verifica")])],
+                               stated={puzzle.card_text["verifica"]: True})
+    question = "L'ha ordinato per verificare qualcosa?"
+    judge.cards(question, answer("yes", question), [], [])
+    assert puzzle.story in models.verify_calls[0]
+
 
 def test_solution_needs_every_element(puzzle):
     """The solution is won only when every element is confirmed by the verifier."""
     elements = puzzle.solution_elements
     final = ["t_pasto", "d_inganno"]   # the theories that put the final thread on the board
-    judge, _ = make_judge(puzzle, [verdict("yes", elements=["figlio_mangiato"])],
-                          {elements["figlio_mangiato"]: True})
-    assert puzzle.root not in judge.judge("Ha mangiato suo figlio?", [], final)["cards"]
+    question = "Al ristorante ha capito di aver mangiato suo figlio"
+    judge, _ = make_judge(puzzle, matches=[match(elements=["figlio_mangiato"])],
+                          stated={elements["figlio_mangiato"]: True})
+    assert puzzle.root not in judge.cards(question, answer("yes", question), [], final)
 
-    judge, _ = make_judge(puzzle, [verdict("yes", elements=["figlio_mangiato"])],
-                          {text: True for text in elements.values()})
-    assert puzzle.root in judge.judge("Al ristorante ha capito di aver mangiato suo figlio", [], final)["cards"]
+    judge, _ = make_judge(puzzle, matches=[match(elements=["figlio_mangiato"])],
+                          stated={text: True for text in elements.values()})
+    assert puzzle.root in judge.cards(question, answer("yes", question), [], final)
 
 
 def test_solution_waits_for_the_final_thread(puzzle):
     """Before the meal and the deception are lit, a right solution does not win and is not verified."""
     elements = puzzle.solution_elements
-    judge, models = make_judge(puzzle, [verdict("yes", elements=list(elements))],
-                               {text: True for text in elements.values()})
-    assert puzzle.root not in judge.judge("Al ristorante ha capito di aver mangiato suo figlio", [], [])["cards"]
+    question = "Al ristorante ha capito di aver mangiato suo figlio"
+    judge, models = make_judge(puzzle, matches=[match(elements=list(elements))],
+                               stated={text: True for text in elements.values()})
+    assert puzzle.root not in judge.cards(question, answer("yes", question), [], [])
     assert models.verify_calls == []
 
-def test_links_are_verified_without_context(puzzle):
-    """A deduction must be in the player's words: its check gets no context."""
-    judge, models = make_judge(puzzle, [verdict("yes", [("mentito per salvarlo", "d_pieta")])],
-                               {puzzle.card_text["d_pieta"]: True})
-    result = judge.judge("La moglie gli ha mentito per salvarlo?", [("Gli ha mentito?", "yes")],
-                         ["bugia", "motivo", "moglie"])
-    assert result["cards"] == ["d_pieta"]
-    assert models.verify_calls[0].startswith(judge.no_context)
 
-
-
-def test_unclear_answer_unlocks_nothing(puzzle):
-    """A question the judge did not understand never unlocks cards."""
-    judge, _ = make_judge(puzzle, [verdict("unclear", [("carne", "carne_ok")])])
-    assert judge.judge("la carne era variata", [], [])["cards"] == []
-
-
-
-def test_rewrite_with_words_the_player_did_not_say_is_unclear(puzzle):
-    """A garbled question the judge "repaired" with new words counts as not understood."""
-    judge, _ = make_judge(puzzle, [verdict("yes", [("cieca", "cieco")], positive="Era cieco?")],
-                          {puzzle.card_text["cieco"]: True})
-    result = judge.judge("era cieca la vista del menù quando", [], [])
-    assert result["answer"] == "unclear"
-    assert result["cards"] == []
-
-
-def test_rewrite_that_only_removes_words_is_kept(puzzle):
-    """Dropping fillers like "secondo me" keeps the answer and the card."""
-    judge, _ = make_judge(puzzle, [verdict("yes", [("era cieco", "cieco")], positive="Era cieco?")],
-                          {puzzle.card_text["cieco"]: True})
-    result = judge.judge("secondo me era cieco", [], [])
-    assert result["answer"] == "yes"
-    assert result["cards"] == ["cieco"]
-
-
-def test_rewrite_that_only_adds_an_apostrophe_is_kept(puzzle):
-    """The transcription writes "centra", the judge "c'entra": same word, so answer and card are kept."""
-    judge, _ = make_judge(puzzle, [verdict("partly", [("Il ristorante c'entra", "ristorante_no")],
-                                           positive="Il ristorante c'entra?")])
-    result = judge.judge("Il ristorante centra?", [], [])
-    assert result["answer"] == "partly"
-    assert result["cards"] == ["ristorante_no"]
-
-
-def test_verifier_sees_the_story(puzzle):
-    """A fact is verified with the story in its context, so "l'ha ordinato" means the gull."""
-    judge, models = make_judge(puzzle, [verdict("yes", [("ordinato per verificare qualcosa", "verifica")])],
-                               {puzzle.card_text["verifica"]: True})
-    judge.judge("L'ha ordinato per verificare qualcosa?", [], [])
-    assert puzzle.story in models.verify_calls[0]
-
+# ---------- model calls ----------
 
 def test_call_retries_after_a_timeout(puzzle, monkeypatch):
     """A call that times out is retried after a short wait instead of blocking the game."""
     monkeypatch.setattr("riddle.judge.time.sleep", lambda seconds: None)   # no real waiting in tests
-    answers = [httpx.ReadTimeout("timed out"), SimpleNamespace(text="ok")]
+    outputs = [httpx.ReadTimeout("timed out"), SimpleNamespace(text="ok")]
 
     def generate_content(model, contents, config):
         # first call times out, the second one answers
-        answer = answers.pop(0)
-        if isinstance(answer, Exception):
-            raise answer
-        return answer
+        output = outputs.pop(0)
+        if isinstance(output, Exception):
+            raise output
+        return output
 
     judge = Judge(puzzle, SimpleNamespace(models=SimpleNamespace(generate_content=generate_content)))
     assert judge._call("model", "contents", None).text == "ok"
-
-
-def test_rewrite_that_splits_an_apostrophe_is_kept(puzzle):
-    """The judge writes "un isola" for "un'isola": the same words, so the answer is kept."""
-    judge, _ = make_judge(puzzle, [verdict("yes", positive="Sono rimasti su un isola senza cibo")])
-    assert judge.judge("Sono rimasti su un'isola senza cibo?", [], [])["answer"] == "yes"
-
-    

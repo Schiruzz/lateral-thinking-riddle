@@ -15,36 +15,40 @@ from riddle.puzzle import load_puzzle, load_tests
 def evaluate(judge, tests):
     """Judge every test question and compare the result with its label.
 
-    Cards already lit in a test's context are left out of both sides, so only
-    the cards unlocked by the question itself are compared. Cards are compared
-    after adding the cards they imply, since that is what the player sees.
+    Each question goes through the game's two steps: the answer, then the
+    cards. Cards already lit in a test's context are left out of both sides,
+    so only the cards unlocked by the question itself are compared. Cards are
+    compared after adding the cards they imply, since that is what the player sees.
 
     Args:
         judge: The `Judge` to evaluate.
         tests: Test cases from `load_tests`.
 
     Returns:
-        One row per test, with expected and obtained answer and cards, and latency.
+        One row per test, with expected and obtained answer and cards, and the
+        time of each step.
     """
     rows = []
     for i, case in enumerate(tests, 1):
         print(f"\r{judge.model}: {i}/{len(tests)}", end="", flush=True)   # flush: show progress at once
         known = judge.puzzle.closure(case["lit"])
         start = time.time()
-        verdict = judge.judge(case["question"], case["history"], case["lit"])
+        verdict = judge.answer(case["question"], case["history"], case["lit"])
+        answered = time.time()
+        cards = judge.cards(case["question"], verdict, case["history"], case["lit"])
         rows.append({
             "group": case["group"], "question": case["question"], "rewritten": verdict["positive_question"],
             "expected_answer": case["answer"], "answer": verdict["answer"],
             "expected_cards": judge.puzzle.closure(case["cards"]) - known,
-            "cards": judge.puzzle.closure(verdict["cards"]) - known,
-            "seconds": time.time() - start,
+            "cards": judge.puzzle.closure(cards) - known,
+            "answer_seconds": answered - start, "cards_seconds": time.time() - answered,
         })
     print()
     return rows
 
 
 def report(rows):
-    """Print accuracy per group, cards given away, latency, then every mistake.
+    """Print accuracy per group, cards given away, time per step, then every mistake.
 
     Args:
         rows: The rows returned by `evaluate`.
@@ -60,8 +64,13 @@ def report(rows):
     answers = sum(r["answer"] == r["expected_answer"] for r in rows) / len(rows)
     cards = sum(r["cards"] == r["expected_cards"] for r in rows) / len(rows)
     extra = sum(len(r["cards"] - r["expected_cards"]) for r in rows)
-    seconds = sum(r["seconds"] for r in rows) / len(rows)
-    print(f"{'TOTAL':<20}{answers:>9.0%}{cards:>9.0%}{extra:>7}   avg {seconds:.1f}s per question")
+    print(f"{'TOTAL':<20}{answers:>9.0%}{cards:>9.0%}{extra:>7}")
+
+    # average and worst case of each step: a high maximum means retries on rate limits or timeouts
+    print(f"\n{'step':<10}{'avg s':>8}{'max s':>8}")
+    for step in ("answer", "cards"):
+        seconds = [r[f"{step}_seconds"] for r in rows]
+        print(f"{step:<10}{sum(seconds) / len(seconds):>8.1f}{max(seconds):>8.1f}")
 
     print("\nMISTAKES")
     for r in rows:
