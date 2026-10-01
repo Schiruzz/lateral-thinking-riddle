@@ -22,7 +22,9 @@ class Puzzle:
     Attributes:
         title: The name of the case, shown to the player.
         story: The text read to the player at the start.
-        solution: The full truth, shown only to the judge.
+        solution: The full truth as a story, shown to the player at the end.
+        solution_facts: The same truth as short facts in time order, shown
+            only to the judge's arbiter.
         facts: Fact cards, id -> {"text", "points"}.
         exclusions: Ruled-out false leads, id -> {"text", "points"}.
         prerequisites: Cards each card presupposes, id -> list of ids.
@@ -31,6 +33,9 @@ class Puzzle:
         solution_elements: Key elements the player must state to win, id -> text.
         required_words: Key cards that unlock only if one of these word stems
             appears in the player's words, id -> list of stems.
+        trigger_words: Door cards that unlock, with no model, when the answer
+            is yes and one of these word stems appears in the player's words,
+            id -> list of stems.
         theories: Deductions reachable from key cards instead of their
             children, id -> list of key card ids. The root is one of them.
         guides: Detective questions as {"card", "after", "question"}: the
@@ -59,12 +64,14 @@ class Puzzle:
         self.title = data["title"]
         self.story = data["story"]
         self.solution = data["solution"]
+        self.solution_facts = data["solution_facts"]
         self.facts = data["facts"]
         self.exclusions = data["exclusions"]
         self.prerequisites = data["prerequisites"]
         self.deductions = data["deductions"]
         self.solution_elements = data["solution_elements"]
         self.required_words = data["required_words"]
+        self.trigger_words = data["trigger_words"]
         self.theories = data["theories"]
         self.guides = data["guides"]
         self.judge_notes = data["judge_notes"]

@@ -65,7 +65,7 @@ MATCHER_STEPS = """HOW TO FIND THE CARDS
 1. For every card, first write in "quote" the exact words of the question that state it.
 2. Fact cards: return one only if the quote, with the answer, states every element of the card: if a person, place, time or reason is missing, return no card. Being about the same topic is not enough.
 3. Deduction cards: only after yes, and only if the player's words alone state the whole deduction.
-4. Exclusion cards: return one when the answer rules out that false lead entirely; quote the words that state the false lead.
+4. Exclusion cards: return one only after no or partly, when the answer rules out that false lead; quote the words that state the false lead.
 5. Solution elements: only after yes, and only those the question states entirely.
 6. Use the context only to resolve references (pronouns, "lì", "l'ha ordinato").
 """
@@ -143,7 +143,8 @@ class Judge:
         self.element_lines = "\n".join(f"- {eid}: {text}" for eid, text in puzzle.solution_elements.items())
         self.no_context = self._context([], [])   # links and the solution must be stated by the player alone
 
-        # the arbiter knows the solution and the puzzle notes, but no cards
+        # the arbiter knows the solution, one fact per line, and the puzzle notes, but no cards
+        facts = "\n".join(f"{i}. {fact}" for i, fact in enumerate(puzzle.solution_facts, 1))
         notes = "\n".join(f"- {note}" for note in puzzle.judge_notes)
         arbiter_prompt = f"""You are the judge of a lateral thinking puzzle played by voice. The
 player asks yes/no questions about the story; you know the secret solution. You only
@@ -151,7 +152,8 @@ answer: other steps decide what the player has discovered.
 
 STORY: {puzzle.story}
 
-SOLUTION (secret): {puzzle.solution}
+SOLUTION FACTS (secret, in time order):
+{facts}
 
 PUZZLE NOTES:
 {notes}
@@ -238,6 +240,10 @@ PUZZLE NOTES:
         card_checks, element_checks = checks[:len(to_verify)], checks[len(to_verify):]
 
         cards = exclusions + [card for card, ok in zip(to_verify, card_checks) if ok]
+        # door cards light from their trigger words after a yes, with no model involved
+        if answer == YES:
+            cards += [card for card, stems in self.puzzle.trigger_words.items()
+                      if card not in cards and any(stem in question.lower() for stem in stems)]
         # the solution needs every key element confirmed
         if elements and all(element_checks):
             cards.append(self.puzzle.root)
@@ -301,7 +307,7 @@ FACT CARDS: return one when the question, with its answer, states the whole fact
 DEDUCTION CARDS the player can reach now: return one only after yes, when the player's words state the whole deduction (id: deduction):
 {deduction_lines}
 
-EXCLUSION CARDS: false leads; return one when the answer rules it out entirely (id: false lead):
+EXCLUSION CARDS: false leads; return one after no or partly, when the answer rules it out (id: false lead):
 {self.exclusion_lines}
 
 SOLUTION ELEMENTS: list one only after yes, when the question states it entirely (id: element):

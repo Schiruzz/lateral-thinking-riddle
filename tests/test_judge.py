@@ -90,10 +90,10 @@ def test_rewrite_that_splits_an_apostrophe_is_kept(puzzle):
 
 
 def test_arbiter_never_sees_the_cards(puzzle):
-    """The arbiter knows the solution but no card list: answering and finding cards stay apart."""
+    """The arbiter knows the solution facts but no card list: answering and finding cards stay apart."""
     judge, _ = make_judge(puzzle)
     prompt = judge.arbiter_config.system_instruction
-    assert puzzle.solution in prompt
+    assert all(fact in prompt for fact in puzzle.solution_facts)
     assert puzzle.card_text["cieco"] not in prompt
 
 
@@ -112,7 +112,7 @@ def test_matcher_never_sees_the_solution(puzzle):
     judge, models = make_judge(puzzle, matches=[match()])
     judge.cards("Era cieco?", answer("yes", "Era cieco?"), [], [])
     _, config = models.matcher_calls[0]
-    assert puzzle.solution not in config.system_instruction
+    assert puzzle.solution_facts[0] not in config.system_instruction
 
 
 def test_quote_missing_from_the_question_is_dropped(puzzle):
@@ -189,6 +189,21 @@ def test_solution_waits_for_the_final_thread(puzzle):
                                stated={text: True for text in elements.values()})
     assert puzzle.root not in judge.cards(question, answer("yes", question), [], [])
     assert models.verify_calls == []
+
+
+def test_trigger_word_lights_a_door_card_after_yes(puzzle):
+    """The stem "ricord" lights the past card after a yes, even when the models propose nothing."""
+    judge, models = make_judge(puzzle, matches=[match()])
+    question = "Gli ha ricordato qualcosa?"
+    assert judge.cards(question, answer("yes", question), [], []) == ["passato"]
+    assert models.verify_calls == []
+
+
+def test_trigger_word_needs_a_yes(puzzle):
+    """After a no, the trigger word lights nothing."""
+    judge, _ = make_judge(puzzle, matches=[match()])
+    question = "Gli ha ricordato qualcosa?"
+    assert judge.cards(question, answer("no", question), [], []) == []
 
 
 # ---------- model calls ----------

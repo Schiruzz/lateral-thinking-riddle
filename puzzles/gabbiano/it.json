@@ -2,6 +2,18 @@
   "title": "Il gabbiano",
   "story": "Un uomo e una donna entrano in un ristorante. Lui ordina carne di gabbiano, ne assaggia un boccone, esce e si toglie la vita. Perché?",
   "solution": "Anni prima l'uomo, cieco, la moglie e il loro figlio fanno naufragio. Il figlio annega in mare durante il naufragio, non sull'isola; i genitori raggiungono un'isola senza cibo, dove ci sono molti gabbiani, e il mare vi porta il corpo del figlio già morto. Affamati, i genitori sono costretti a mangiarne la carne, ma la moglie, per farlo sopravvivere, gli dice che è gabbiano, e lui, sentendo i gabbiani, le crede. Negli anni gli resta un dubbio. Prima del ristorante non aveva mai mangiato gabbiano: sull'isola aveva mangiato suo figlio. Al ristorante ordina gabbiano apposta per verificare: il sapore è diverso da quello che ricordava, capisce che quello dell'isola non era gabbiano ma suo figlio, e si uccide.",
+  "solution_facts": [
+    "Years before the restaurant, the man was already blind.",
+    "He, his wife and their son were on a boat at sea. It sank: a shipwreck.",
+    "The son drowned in the sea during the shipwreck. Nobody killed him.",
+    "The man and his wife reached an island with no food and many gulls. The sea brought the son's body there.",
+    "Starving, they ate the son's flesh.",
+    "The wife told him it was gull, so that he would survive. Hearing the gulls, he believed her.",
+    "For years he kept a doubt about that meal.",
+    "At the restaurant: he had never eaten real gull. He ordered it on purpose, to check.",
+    "The taste was different from what he remembered: he understood he had eaten his son, and killed himself.",
+    "NOT TRUE: the restaurant meat was poisoned, raw or spoiled; the restaurant caused his death; the wife wanted to harm him or was cheating on him."
+  ],
   "facts": {
     "moglie": {
       "text": "La donna è sua moglie",
@@ -47,6 +59,10 @@
       "text": "Erano su una barca",
       "points": 10
     },
+    "figlio_in_mare": {
+      "text": "Il figlio era con loro in mare",
+      "points": 20
+    },
     "naufragio": {
       "text": "Hanno fatto naufragio",
       "points": 20
@@ -76,7 +92,7 @@
       "points": 30
     },
     "bugia": {
-      "text": "La moglie gli ha mentito",
+      "text": "La donna gli ha mentito",
       "points": 40
     },
     "motivo": {
@@ -110,12 +126,11 @@
     "figlio": [
       "terza_persona"
     ],
+    "figlio_in_mare": [
+      "figlio", "mare"
+    ],
     "figlio_morto": [
       "figlio",
-      "passato"
-    ],
-    "bugia": [
-      "moglie",
       "passato"
     ],
     "motivo": [
@@ -152,30 +167,6 @@
   },
   "deductions": [
     {
-      "id": "d_famiglia",
-      "children": [
-        "moglie",
-        "figlio"
-      ],
-      "text": "La storia riguarda una famiglia: padre, madre e figlio"
-    },
-    {
-      "id": "d_naufragio",
-      "children": [
-        "passato",
-        "naufragio"
-      ],
-      "text": "Anni prima hanno fatto naufragio"
-    },
-    {
-      "id": "d_famiglia_naufraga",
-      "children": [
-        "d_famiglia",
-        "d_naufragio"
-      ],
-      "text": "Anni prima la famiglia, figlio compreso, ha fatto naufragio"
-    },
-    {
       "id": "d_figlio_isola",
       "children": [
         "isola",
@@ -187,7 +178,8 @@
     {
       "id": "d_tragedia",
       "children": [
-        "d_famiglia_naufraga",
+        "naufragio",
+        "figlio_in_mare",
         "d_figlio_isola"
       ],
       "text": "Nel naufragio il figlio è annegato, loro sono finiti su un'isola senza cibo"
@@ -270,6 +262,9 @@
       "ci ved"
     ]
   },
+  "trigger_words": {
+    "passato": ["passat", "anni prima", "anni fa", "tempo fa", "ricord"]
+  },
   "zones": {
     "past": [
       "passato",
@@ -283,11 +278,8 @@
       "carne_umana",
       "gabbiani",
       "gabbiano_creduto",
-      "bugia",
       "motivo",
       "nessun_omicidio",
-      "d_naufragio",
-      "d_famiglia_naufraga",
       "d_figlio_isola",
       "d_tragedia",
       "t_pasto",
@@ -392,6 +384,13 @@
       "question": "Chi era con loro?"
     },
     {
+      "card": "figlio_in_mare", 
+      "after": [
+        "figlio", "mare"
+        ], 
+      "question": "Il figlio era con loro?"
+    },
+    {
       "card": "isola",
       "after": [
         "naufragio"
@@ -492,6 +491,6 @@
     }
   ],
   "judge_notes": [
-    "The restaurant is only where the truth comes out: a question that is true but focused on the restaurant, its food or its staff is partly (\"È successo qualcosa al ristorante?\", \"La causa è nel ristorante?\", \"È morto per ciò che ha mangiato?\"), unless it touches a key element of the solution. A false one stays no (\"Tutto si svolge nel ristorante?\"). A partly answer does not rule out the restaurant false lead."
+    "The restaurant is only where the truth comes out: a question that is true but focused on the restaurant, its food or its staff is partly (\"È successo qualcosa al ristorante?\", \"La causa è nel ristorante?\", \"È morto per ciò che ha mangiato?\"), unless it touches a key element of the solution. A false one stays no (\"Tutto si svolge nel ristorante?\")."
   ]
 }

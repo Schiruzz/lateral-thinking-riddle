@@ -101,13 +101,11 @@ def test_thread_links_the_children_of_a_deduction(game):
     assert not thread["theory"] and thread["question"] is None
 
 
-def test_theory_thread_carries_its_guide(game):
-    """A theory's thread links the cards in view that hold its key cards, with its guide question."""
-    game.unlock(["d_pieta", "cieco", "gabbiano_creduto"])
-    thread = next(t for t in game.board()["threads"] if t["id"] == "d_inganno")
-    assert thread["theory"]
-    assert thread["cards"] == ["d_pieta", "cieco", "gabbiano_creduto"]   # bugia is merged into d_pieta
-    assert thread["question"] == "Metti insieme i pezzi: come l'ha ingannato?"
+def test_secondary_with_its_own_cards_keeps_its_thread(game):
+    """The son-on-the-island secondary also needs the food card, so it keeps its thread beside the tragedy's."""
+    game.unlock(["naufragio", "isola", "fame", "figlio_morto"])
+    ids = [t["id"] for t in game.board()["threads"]]
+    assert "d_tragedia" in ids and "d_figlio_isola" in ids
 
 
 def test_final_thread_before_the_solution(game):
