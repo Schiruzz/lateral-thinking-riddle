@@ -77,7 +77,9 @@
     "cards": [
       "figlio"
     ],
-    "lit": [],
+    "lit": [
+      "terza_persona"
+    ],
     "history": []
   },
   {
@@ -536,9 +538,7 @@
     "group": "partly",
     "question": "È successo qualcosa al ristorante?",
     "answer": "partly",
-    "cards": [
-      "ristorante_no"
-    ],
+    "cards": [],
     "lit": [],
     "history": []
   },
@@ -554,9 +554,7 @@
     "group": "partly",
     "question": "La causa è nel ristorante?",
     "answer": "partly",
-    "cards": [
-      "ristorante_no"
-    ],
+    "cards": [],
     "lit": [],
     "history": []
   },

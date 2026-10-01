@@ -180,3 +180,11 @@ def test_call_retries_after_a_timeout(puzzle, monkeypatch):
 
     judge = Judge(puzzle, SimpleNamespace(models=SimpleNamespace(generate_content=generate_content)))
     assert judge._call("model", "contents", None).text == "ok"
+
+
+def test_rewrite_that_splits_an_apostrophe_is_kept(puzzle):
+    """The judge writes "un isola" for "un'isola": the same words, so the answer is kept."""
+    judge, _ = make_judge(puzzle, [verdict("yes", positive="Sono rimasti su un isola senza cibo")])
+    assert judge.judge("Sono rimasti su un'isola senza cibo?", [], [])["answer"] == "yes"
+
+    

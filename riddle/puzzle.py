@@ -35,6 +35,8 @@ class Puzzle:
             children, id -> list of key card ids. The root is one of them.
         guides: Detective questions as {"card", "after", "question"}: the
             question leads to "card" once every card in "after" is lit.
+        judge_notes: Puzzle-specific guidance for the judge, e.g. which part
+            of the story answers "partly".            
         root: Id of the root deduction, the solution.
         card_text: Text of every card, id -> text.
         card_zone: Zone of every card, id -> "past" or "restaurant".
@@ -65,6 +67,7 @@ class Puzzle:
         self.required_words = data["required_words"]
         self.theories = data["theories"]
         self.guides = data["guides"]
+        self.judge_notes = data["judge_notes"]
         self.root = self.deductions[-1]["id"]
 
         # text of every card, and what each card implies: its prerequisites, or the children of a deduction
