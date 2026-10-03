@@ -168,21 +168,24 @@ def ask(game_id: str, question: Question):
         # light the confirmed cards and, in chain, the cards they imply
         new_cards = game.unlock(card_ids)
 
-        # append this question to the game log: enough to replay it and to measure each step
+        # one log line per question: enough to replay it and to measure each step;
+        # printed too, so on Cloud Run it reaches Cloud Logging (the container's files are lost on restart)
+        entry = json.dumps({
+            "time": datetime.now(timezone.utc).isoformat(),
+            "game": game_id,
+            "question": question.text,
+            "positive_question": verdict["positive_question"],
+            "answer": verdict["answer"],
+            "new_cards": new_cards,
+            "score": game.score,
+            "won": game.won(),
+            "answer_seconds": round(answer_seconds, 2),
+            "cards_seconds": round(cards_seconds, 2),
+        }, ensure_ascii=False)
+        print(entry)
         LOG_FILE.parent.mkdir(exist_ok=True)
         with LOG_FILE.open("a", encoding="utf-8") as log:
-            log.write(json.dumps({
-                "time": datetime.now(timezone.utc).isoformat(),
-                "game": game_id,
-                "question": question.text,
-                "positive_question": verdict["positive_question"],
-                "answer": verdict["answer"],
-                "new_cards": new_cards,
-                "score": game.score,
-                "won": game.won(),
-                "answer_seconds": round(answer_seconds, 2),
-                "cards_seconds": round(cards_seconds, 2),
-            }, ensure_ascii=False) + "\n")
+            log.write(entry + "\n")
 
         # line 2: what the page draws
         yield json.dumps({

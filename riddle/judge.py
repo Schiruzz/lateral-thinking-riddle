@@ -100,19 +100,23 @@ def normalize(text):
 
 
 def make_client():
-    """Create a Vertex AI client from the service account key in `GCP_SA_KEY`.
+    """Create a Vertex AI client.
 
-    The environment variable holds the content of the key JSON file, so the
-    key never needs to be written to disk. The project comes from the key.
+    In the Codespace the service account key is in `GCP_SA_KEY` (the content of
+    the key JSON file, so it never needs to be written to disk). On Cloud Run
+    there is no key: the service runs as a service account and the library
+    finds its credentials by itself; the project comes from `GOOGLE_CLOUD_PROJECT`.
 
     Returns:
         A `genai.Client` bound to Vertex AI.
     """
-    info = json.loads(os.environ["GCP_SA_KEY"])
+    key = os.environ.get("GCP_SA_KEY")
+    if key is None:
+        return genai.Client(vertexai=True, project=os.environ["GOOGLE_CLOUD_PROJECT"], location="global")
+    info = json.loads(key)
     credentials = service_account.Credentials.from_service_account_info(
         info, scopes=["https://www.googleapis.com/auth/cloud-platform"])
-    return genai.Client(vertexai=True, project=info["project_id"], location="global", credentials=credentials,
-                        http_options=types.HttpOptions(timeout=CALL_TIMEOUT_MS))
+    return genai.Client(vertexai=True, project=info["project_id"], location="global", credentials=credentials)
 
 
 class Judge:
