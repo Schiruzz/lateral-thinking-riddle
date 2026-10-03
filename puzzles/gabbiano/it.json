@@ -31,10 +31,6 @@
       "text": "L'uomo è cieco",
       "points": 20
     },
-    "verifica": {
-      "text": "Ha ordinato il gabbiano per verificare qualcosa",
-      "points": 40
-    },
     "mai_gabbiano": {
       "text": "Non aveva mai mangiato gabbiano",
       "points": 30
@@ -234,17 +230,9 @@
       "text": "La moglie gli ha fatto credere che fosse gabbiano e lui, cieco, le ha creduto"
     },
     {
-      "id": "d_verifica",
-      "children": [
-        "verifica",
-        "mai_gabbiano"
-      ],
-      "text": "Voleva capire cosa aveva mangiato anni prima"
-    },
-    {
       "id": "d_conferma",
       "children": [
-        "d_verifica",
+        "mai_gabbiano",
         "sapore"
       ],
       "text": "Il sapore ha smentito il ricordo"
@@ -348,35 +336,14 @@
   },
   "guides": [
     {
-      "card": "verifica",
+      "card": "passato",
       "after": [],
-      "question": "Cosa cercava in quel piatto?"
+      "question": "Cosa lo legava al gabbiano?"
     },
     {
       "card": "moglie",
       "after": [],
       "question": "Chi è la donna?"
-    },
-    {
-      "card": "mai_gabbiano",
-      "after": [
-        "verifica"
-      ],
-      "question": "Cosa voleva verificare?"
-    },
-    {
-      "card": "sapore",
-      "after": [
-        "verifica"
-      ],
-      "question": "Cosa ha sentito al primo boccone?"
-    },
-    {
-      "card": "passato",
-      "after": [
-        "sapore"
-      ],
-      "question": "Quel sapore gli ha ricordato qualcosa: quando?"
     },
     {
       "card": "incidente",
@@ -524,6 +491,21 @@
         "gabbiano_creduto"
       ],
       "question": "Metti insieme i pezzi: come l'ha ingannato?"
+    },
+    {
+      "card": "mai_gabbiano",
+      "after": [
+        "mangiato_figlio",
+        "gabbiano_creduto"
+      ],
+      "question": "Quante volte aveva mangiato davvero gabbiano?"
+    },
+    {
+      "card": "sapore",
+      "after": [
+        "mai_gabbiano"
+      ],
+      "question": "Cosa ha capito al primo boccone?"
     },
     {
       "card": "soluzione",

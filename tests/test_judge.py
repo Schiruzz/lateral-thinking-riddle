@@ -176,10 +176,10 @@ def test_links_are_verified_without_context(puzzle):
 
 
 def test_verifier_sees_the_story(puzzle):
-    """A fact is verified with the story in its context, so "l'ha ordinato" means the gull."""
-    judge, models = make_judge(puzzle, matches=[match([("ordinato per verificare qualcosa", "verifica")])],
-                               stated={puzzle.card_text["verifica"]: True})
-    question = "L'ha ordinato per verificare qualcosa?"
+    """A fact is verified with the story in its context, so "la carne" means the gull he ordered."""
+    judge, models = make_judge(puzzle, matches=[match([("sapore della carne era diverso", "sapore")])],
+                               stated={puzzle.card_text["sapore"]: True})
+    question = "Il sapore della carne era diverso?"
     judge.cards(question, answer("yes", question), [], [])
     assert puzzle.story in models.verify_calls[0]
 

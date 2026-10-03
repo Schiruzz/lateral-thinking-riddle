@@ -43,10 +43,10 @@ def test_solution_wins_and_lights_the_whole_tree(game):
 
 def test_board_hides_cards_merged_into_a_deduction(game):
     """Two cards are shown until the player links them, then only their deduction is."""
-    game.unlock(["verifica", "mai_gabbiano"])
-    assert game.board()["cards"] == ["verifica", "mai_gabbiano"]
-    game.unlock(["d_verifica"])
-    assert game.board()["cards"] == ["d_verifica"]
+    game.unlock(["mai_gabbiano", "sapore"])
+    assert game.board()["cards"] == ["mai_gabbiano", "sapore"]
+    game.unlock(["d_conferma"])
+    assert game.board()["cards"] == ["d_conferma"]
 
 
 def test_board_keeps_ruled_out_leads_apart(game):
@@ -89,15 +89,15 @@ def test_past_lead_waits_for_the_past(game):
 
 def test_first_guides_at_the_start(game):
     """Before any question, the board asks about the gull and the woman."""
-    assert [g["card"] for g in game.board()["guides"]] == ["verifica", "moglie"]
+    assert [g["card"] for g in game.board()["guides"]] == ["passato", "moglie"]
 
 
 def test_thread_links_the_children_of_a_deduction(game):
     """Once both children are lit, a thread without a question links them."""
-    game.unlock(["verifica", "mai_gabbiano"])
+    game.unlock(["mai_gabbiano", "sapore"])
     thread = game.board()["threads"][0]
-    assert thread["id"] == "d_verifica"
-    assert thread["cards"] == ["verifica", "mai_gabbiano"]
+    assert thread["id"] == "d_conferma"
+    assert thread["cards"] == ["mai_gabbiano", "sapore"]
     assert not thread["theory"] and thread["question"] is None
 
 
