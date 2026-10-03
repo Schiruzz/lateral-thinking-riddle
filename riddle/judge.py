@@ -215,9 +215,12 @@ PUZZLE NOTES:
                     f"QUESTION: {verdict['positive_question']}\nANSWER: {answer}")
         match = json.loads(self._call(self.model, contents, self._matcher_config(lit)).text)
 
-        # candidates: cards whose quote appears in the player's words or in their positive form
-        said = normalize(f"{question} {verdict['positive_question']}")
-        candidates = [c["id"] for c in match["cards"] if normalize(c["quote"]) in said]
+        # candidates: cards quoted with words the player said, in any order and with any punctuation;
+        # apostrophes read both ways, as in `answer`
+        said = f"{question} {verdict['positive_question']}"
+        said_words = set(WORD.findall(normalize(said))) | set(WORD.findall(said.lower()))
+        candidates = [c["id"] for c in match["cards"]
+                      if WORD.findall(c["quote"]) and set(WORD.findall(normalize(c["quote"]))) <= said_words]
         # key cards must be named explicitly by the player, whatever the models think
         required = self.puzzle.required_words
         candidates = [card for card in candidates
@@ -225,10 +228,9 @@ PUZZLE NOTES:
         # exclusions follow from a "no" and are not stated by the question: they skip verification
         exclusions = [card for card in candidates if card in self.puzzle.exclusions]
         to_verify = [card for card in candidates if card not in self.puzzle.exclusions]
-        # the solution counts only once the final thread is on the board (its theories are lit);
-        # then, when the matcher sees any solution element, all of them are verified
-        final = self.puzzle.is_reachable(self.puzzle.root, lit)
-        elements = list(self.puzzle.solution_elements) if final and answer == YES and match["solution_elements"] else []
+        # the player wins by stating every key element, whatever is on the board;
+        # when the matcher sees any solution element, all of them are verified
+        elements = list(self.puzzle.solution_elements) if answer == YES and match["solution_elements"] else []
 
         # facts may use the context for references; deductions and the solution must be in the player's words
         checks_to_run = [(self.puzzle.card_text[card], context if card in self.puzzle.facts else self.no_context)
@@ -240,10 +242,12 @@ PUZZLE NOTES:
         card_checks, element_checks = checks[:len(to_verify)], checks[len(to_verify):]
 
         cards = exclusions + [card for card, ok in zip(to_verify, card_checks) if ok]
-        # door cards light from their trigger words after a yes, with no model involved
+        # door cards light from their trigger words after a yes, with no model involved,
+        # unless the board already has them (lit or implied by a lit card)
         if answer == YES:
+            known = self.puzzle.closure(lit)
             cards += [card for card, stems in self.puzzle.trigger_words.items()
-                      if card not in cards and any(stem in question.lower() for stem in stems)]
+                      if card not in cards and card not in known and any(stem in question.lower() for stem in stems)]
         # the solution needs every key element confirmed
         if elements and all(element_checks):
             cards.append(self.puzzle.root)
@@ -301,7 +305,7 @@ PUZZLE NOTES:
 puzzle played by voice. The question has already been answered: you do not judge whether
 it is true, you only read what the player's words, together with that answer, establish.
 
-FACT CARDS: return one when the question, with its answer, states the whole fact (id: fact):
+FACT CARDS: return one when the question, with its answer, states or directly implies the whole fact (id: fact):
 {self.fact_lines}
 
 DEDUCTION CARDS the player can reach now: return one only after yes, when the player's words state the whole deduction (id: deduction):
@@ -330,5 +334,7 @@ SOLUTION ELEMENTS: list one only after yes, when the question states it entirely
             "required": ["cards", "solution_elements"],
             "propertyOrdering": ["cards", "solution_elements"],
         }
+        # a short reasoning makes the matcher check every card instead of stopping at the first that fits
         return types.GenerateContentConfig(system_instruction=prompt, temperature=0,
-                                           response_mime_type="application/json", response_schema=schema)
+                                           response_mime_type="application/json", response_schema=schema,
+                                           thinking_config=types.ThinkingConfig(thinking_level="low"))

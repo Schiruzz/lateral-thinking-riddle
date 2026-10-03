@@ -197,7 +197,9 @@
     "group": "partial_fact",
     "question": "Avevano un figlio?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "figlio"
+    ],
     "lit": [],
     "history": []
   },
@@ -213,7 +215,7 @@
     "group": "partial_fact",
     "question": "La moglie nascondeva qualcosa?",
     "answer": "yes",
-    "cards": [],
+    "cards": ["moglie"],
     "lit": [],
     "history": []
   },
@@ -270,9 +272,7 @@
     "question": "Sull'isola hanno mangiato il figlio?",
     "answer": "yes",
     "cards": [
-      "carne_umana",
-      "figlio_morto",
-      "isola"
+      "mangiato_figlio"
     ],
     "lit": [],
     "history": []
@@ -655,7 +655,9 @@
     "group": "var_children",
     "question": "Avevano figli?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "figlio"
+    ],
     "lit": [],
     "history": []
   },
@@ -671,7 +673,9 @@
     "group": "var_children",
     "question": "La coppia aveva un figlio?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "figlio"
+    ],
     "lit": [],
     "history": []
   },
@@ -794,7 +798,8 @@
     "question": "C'erano gabbiani sull'isola?",
     "answer": "yes",
     "cards": [
-      "gabbiani"
+      "gabbiani",
+      "isola"
     ],
     "lit": [],
     "history": []
@@ -859,7 +864,8 @@
     "question": "Sull'isola hanno mangiato il corpo del figlio?",
     "answer": "yes",
     "cards": [
-      "t_pasto"
+      "d_tragedia", 
+      "mangiato_figlio"
     ],
     "lit": [
       "d_tragedia",
@@ -973,8 +979,7 @@
     "question": "Ha mangiato suo figlio?",
     "answer": "yes",
     "cards": [
-      "carne_umana",
-      "figlio_morto"
+      "mangiato_figlio"
     ],
     "lit": [],
     "history": []
@@ -1004,8 +1009,7 @@
     "question": "quindi alla fine hanno mangiato il figlio",
     "answer": "yes",
     "cards": [
-      "carne_umana",
-      "figlio_morto"
+      "mangiato_figlio"
     ],
     "lit": [],
     "history": []
@@ -1251,8 +1255,8 @@
   {"group": "unclear", "question": "Il gabbiano aveva un nome?", "answer": "irrelevant", "cards": [], "lit": [], "history": []},
   {"group": "solution", "question": "Quindi l'uomo si è ucciso perché ha capito che la carne che aveva mangiato non era di gabbiano ma era il figlio morto", "answer": "yes", "cards": ["soluzione"], "lit": ["t_pasto", "d_inganno"], "history": []},
   {"group": "solution", "question": "Ha capito cosa aveva mangiato?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "solution", "question": "Sull'isola ha mangiato suo figlio?", "answer": "yes", "cards": ["carne_umana", "figlio", "figlio_morto", "isola", "terza_persona"], "lit": [], "history": []},
-  {"group": "solution", "question": "Al ristorante ha capito di aver mangiato suo figlio?", "answer": "yes", "cards": ["carne_umana", "figlio_morto"], "lit": [], "history": []},
+  {"group": "solution", "question": "Sull'isola ha mangiato suo figlio?", "answer": "yes", "cards": ["mangiato_figlio", "isola"], "lit": [], "history": []},
+  {"group": "solution", "question": "Al ristorante ha capito di aver mangiato suo figlio?", "answer": "yes", "cards": ["soluzione"], "lit": [], "history": []},
   {"group": "invalid", "question": "Dove devo cercare?", "answer": "invalid", "cards": [], "lit": [], "history": []},
   {"group": "invalid", "question": "Cosa devo chiedere adesso?", "answer": "invalid", "cards": [], "lit": [], "history": []},
   {"group": "invalid", "question": "Dammi un indizio", "answer": "invalid", "cards": [], "lit": [], "history": []},

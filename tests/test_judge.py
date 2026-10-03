@@ -128,6 +128,23 @@ def test_quote_with_an_apostrophe_matches_the_transcription(puzzle):
     assert judge.cards("Il ristorante centra?", answer("no", "Il ristorante c'entra?"), [], []) == ["ristorante_no"]
 
 
+def test_quote_with_other_punctuation_still_counts(puzzle):
+    """The matcher quotes with a comma where the player said "e": every quoted word was said, so it counts."""
+    judge, _ = make_judge(puzzle, matches=[match([("annegato, loro sono finiti", "d_tragedia")])],
+                          stated={puzzle.card_text["d_tragedia"]: True})
+    question = "Il figlio è annegato e loro sono finiti su un'isola?"
+    lit = ["naufragio", "isola", "figlio_morto"]
+    assert judge.cards(question, answer("yes", question), [], lit) == ["d_tragedia"]
+
+
+def test_empty_quote_is_dropped(puzzle):
+    """A card proposed without any quoted word is dropped before verification."""
+    judge, models = make_judge(puzzle, matches=[match([("", "isola")])])
+    assert judge.cards("C'entra il mare?", answer("yes", "C'entra il mare?"), [], []) == []
+    assert models.verify_calls == []
+
+
+
 def test_key_card_needs_its_word(puzzle):
     """cieco stays hidden without a blindness word, even if matcher and verifier agree."""
     judge, _ = make_judge(puzzle, matches=[match([("problemi alla vista", "cieco")])],
@@ -179,16 +196,6 @@ def test_solution_needs_every_element(puzzle):
     judge, _ = make_judge(puzzle, matches=[match(elements=["figlio_mangiato"])],
                           stated={text: True for text in elements.values()})
     assert puzzle.root in judge.cards(question, answer("yes", question), [], final)
-
-
-def test_solution_waits_for_the_final_thread(puzzle):
-    """Before the meal and the deception are lit, a right solution does not win and is not verified."""
-    elements = puzzle.solution_elements
-    question = "Al ristorante ha capito di aver mangiato suo figlio"
-    judge, models = make_judge(puzzle, matches=[match(elements=list(elements))],
-                               stated={text: True for text in elements.values()})
-    assert puzzle.root not in judge.cards(question, answer("yes", question), [], [])
-    assert models.verify_calls == []
 
 
 def test_trigger_word_lights_a_door_card_after_yes(puzzle):

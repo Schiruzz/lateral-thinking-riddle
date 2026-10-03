@@ -24,7 +24,7 @@
       "points": 10
     },
     "figlio": {
-      "text": "L'altra persona era il loro figlio",
+      "text": "C'entra il loro figlio",
       "points": 20
     },
     "cieco": {
@@ -81,6 +81,10 @@
     },
     "carne_umana": {
       "text": "L'uomo ha mangiato carne umana",
+      "points": 40
+    },
+    "mangiato_figlio": {
+      "text": "Ha mangiato suo figlio",
       "points": 40
     },
     "gabbiani": {
@@ -158,6 +162,10 @@
     "carne_umana": [
       "passato"
     ],
+    "mangiato_figlio": [
+      "carne_umana", 
+      "figlio_morto"
+    ],
     "gabbiani": [
       "passato"
     ],
@@ -188,7 +196,7 @@
       "id": "t_pasto",
       "children": [
         "d_tragedia",
-        "carne_umana"
+        "mangiato_figlio"
       ],
       "text": "Sull'isola hanno mangiato il corpo del figlio"
     },
@@ -263,7 +271,19 @@
     ]
   },
   "trigger_words": {
-    "passato": ["passat", "anni prima", "anni fa", "tempo fa", "ricord"]
+    "passato": [
+      "passat",
+      "anni prima",
+      "anni fa",
+      "tempo fa",
+      "ricord"
+    ],
+    "moglie": [
+      "moglie"
+    ],
+    "figlio": [
+      "figli"
+    ]
   },
   "zones": {
     "past": [
@@ -276,6 +296,7 @@
       "fame",
       "figlio_morto",
       "carne_umana",
+      "mangiato_figlio",
       "gabbiani",
       "gabbiano_creduto",
       "motivo",
@@ -297,7 +318,7 @@
     ],
     "t_pasto": [
       "d_tragedia",
-      "carne_umana"
+      "mangiato_figlio"
     ],
     "d_inganno": [
       "bugia",
@@ -420,6 +441,13 @@
       "question": "Senza cibo, come sono sopravvissuti?"
     },
     {
+      "card": "mangiato_figlio",
+      "after": [
+        "carne_umana"
+      ], 
+      "question": "Di chi era quella carne?"
+    },
+    {
       "card": "d_tragedia",
       "after": [
         "naufragio",
@@ -429,13 +457,12 @@
       "question": "Metti insieme i pezzi: cosa è successo nel naufragio?"
     },
     {
-      "card": "t_pasto",
+      "card": "t_pasto", 
       "after": [
-        "d_tragedia",
-        "carne_umana"
-      ],
-      "question": "Di chi era quella carne?"
-    },
+        "d_tragedia", 
+        "mangiato_figlio"
+        ], 
+      "question": "Metti insieme i pezzi: cosa è successo sull'isola?"},
     {
       "card": "gabbiano_creduto",
       "after": [
