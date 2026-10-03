@@ -123,3 +123,10 @@ def test_intermediate_cards_give_way_to_the_shipwreck(game):
     assert "incidente" not in game.board()["cards"] and "mare" in game.board()["cards"]
     game.unlock(["naufragio"])
     assert not {"incidente", "mare", "barca"} & set(game.board()["cards"])
+
+
+def test_guides_stay_visible_while_the_past_is_sealed(game):
+    """A guide to a past card stands in the restaurant until the past opens."""
+    assert all(g["zone"] == "restaurant" for g in game.board()["guides"])
+    game.unlock(["passato"])
+    assert {g["zone"] for g in game.board()["guides"]} == {"restaurant", "past"}

@@ -105,8 +105,10 @@ class Game:
                     "cards": list(dict.fromkeys(in_view(c) for c in puzzle.needs[d["id"]])),   # no duplicates
                     "question": questions.pop(d["id"], None),
                 })
-        # a guide stands where the player is looking: next to the last card it follows, or where its target is
-        guides = [{"card": g["card"], "zone": puzzle.card_zone[(g["after"] or [g["card"]])[-1]], "question": g["question"]}
+        # a guide stands where the player is looking: next to the last card it follows, or where its target is;
+        # while the past is sealed the player only sees the restaurant, so every guide stands there
+        guides = [{"card": g["card"], "question": g["question"],
+                   "zone": puzzle.card_zone[(g["after"] or [g["card"]])[-1]] if past_open else "restaurant"}
                   for g in puzzle.guides if g["card"] in questions]
 
         return {"cards": cards, "ruled_out": ruled_out, "past_open": past_open,
