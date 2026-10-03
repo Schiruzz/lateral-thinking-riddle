@@ -59,8 +59,8 @@
       "text": "Erano su una barca",
       "points": 10
     },
-    "figlio_in_mare": {
-      "text": "Il figlio era con loro in mare",
+    "figlio_annegato": {
+      "text": "Il figlio è annegato",
       "points": 20
     },
     "naufragio": {
@@ -130,8 +130,9 @@
     "figlio": [
       "terza_persona"
     ],
-    "figlio_in_mare": [
-      "figlio", "mare"
+    "figlio_annegato": [
+      "figlio_morto",
+      "mare"
     ],
     "figlio_morto": [
       "figlio",
@@ -187,7 +188,7 @@
       "id": "d_tragedia",
       "children": [
         "naufragio",
-        "figlio_in_mare",
+        "figlio_annegato",
         "d_figlio_isola"
       ],
       "text": "Nel naufragio il figlio è annegato, loro sono finiti su un'isola senza cibo"
@@ -262,6 +263,20 @@
     "figlio_mangiato": "Ha mangiato la carne di suo figlio",
     "scoperta": "Ha capito cosa aveva mangiato"
   },
+  "element_words": {
+    "scoperta": [
+      "capi",
+      "capì",
+      "scopr",
+      "scopert",
+      "accort",
+      "accorg",
+      "conto",
+      "realizz",
+      "comprend",
+      "compres"
+    ]
+  },
   "required_words": {
     "cieco": [
       "ciec",
@@ -295,6 +310,7 @@
       "isola",
       "fame",
       "figlio_morto",
+      "figlio_annegato",
       "carne_umana",
       "mangiato_figlio",
       "gabbiani",
@@ -339,7 +355,7 @@
     {
       "card": "moglie",
       "after": [],
-      "question": "La donna è una sconosciuta?"
+      "question": "Chi è la donna?"
     },
     {
       "card": "mai_gabbiano",
@@ -381,7 +397,7 @@
       "after": [
         "incidente"
       ],
-      "question": "Erano soli?"
+      "question": "Quante persone c'erano?"
     },
     {
       "card": "barca",
@@ -402,14 +418,7 @@
       "after": [
         "terza_persona"
       ],
-      "question": "Chi era con loro?"
-    },
-    {
-      "card": "figlio_in_mare", 
-      "after": [
-        "figlio", "mare"
-        ], 
-      "question": "Il figlio era con loro?"
+      "question": "Chi era l'altra persona?"
     },
     {
       "card": "isola",
@@ -427,24 +436,31 @@
       "question": "Che fine ha fatto il figlio?"
     },
     {
+      "card": "figlio_annegato",
+      "after": [
+        "figlio_morto"
+      ],
+      "question": "Come è morto il figlio?"
+    },
+    {
       "card": "fame",
       "after": [
         "isola"
       ],
-      "question": "C'era da mangiare sull'isola?"
+      "question": "Com'era la vita sull'isola?"
     },
     {
       "card": "carne_umana",
       "after": [
         "fame"
       ],
-      "question": "Senza cibo, come sono sopravvissuti?"
+      "question": "Come sono sopravvissuti?"
     },
     {
       "card": "mangiato_figlio",
       "after": [
         "carne_umana"
-      ], 
+      ],
       "question": "Di chi era quella carne?"
     },
     {
@@ -457,18 +473,19 @@
       "question": "Metti insieme i pezzi: cosa è successo nel naufragio?"
     },
     {
-      "card": "t_pasto", 
+      "card": "t_pasto",
       "after": [
-        "d_tragedia", 
+        "d_tragedia",
         "mangiato_figlio"
-        ], 
-      "question": "Metti insieme i pezzi: cosa è successo sull'isola?"},
+      ],
+      "question": "Metti insieme i pezzi: cosa è successo sull'isola?"
+    },
     {
       "card": "gabbiano_creduto",
       "after": [
         "carne_umana"
       ],
-      "question": "Lui sapeva cosa stava mangiando?"
+      "question": "Cosa c'entra il gabbiano con l'isola?"
     },
     {
       "card": "bugia",

@@ -6,9 +6,10 @@ How a game flows:
        memory under a random id, and returns the id and the story to read aloud.
     3. The player speaks; the browser transcribes the voice to text and calls
        POST /api/games/{id}/ask with that text.
-    4. The server asks the judge, lights the confirmed cards in the Game, and
-       returns the answer, the new cards and the whole board, so the page only
-       has to draw what it receives.
+    4. The server asks the judge and streams two JSON lines (NDJSON): first the
+       answer, as soon as it is known, so the page can speak it at once; then
+       the new cards, the whole board and the score, so the page only has to
+       draw what it receives. If the cards fail, the second line is an error.
 
 State: games live in the GAMES dict, in the memory of this process. This is
 enough for a demo that runs as a single server instance; if the server
@@ -27,7 +28,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from riddle.game import Game
@@ -36,7 +37,7 @@ from riddle.puzzle import load_puzzle
 
 # loaded once when the server starts, shared by every game
 PUZZLE = load_puzzle("gabbiano", "it")
-JUDGE = Judge(PUZZLE, make_client())      # needs GCP_SA_KEY in the environment
+JUDGE = Judge(PUZZLE, make_client(), max_attempts=2)   # a player cannot wait: give up after one retry; needs GCP_SA_KEY
 STATIC_DIR = Path(__file__).parent.parent / "static"   # where index.html lives
 LOG_FILE = Path("logs/games.jsonl")  # one line per question, kept out of git
 GAMES = {}   # game id -> Game, kept in memory: the server runs as a single instance
@@ -121,21 +122,19 @@ def new_game():
 
 @app.post("/api/games/{game_id}/ask")
 def ask(game_id: str, question: Question):
-    """Judge one question of the player and update the game.
+    """Judge one question of the player and update the game, streaming the result in two lines.
 
     Args:
         game_id: The id returned by /api/games.
         question: The player's words.
 
     Returns:
-        A dict with:
-            "positive_question": the question as the judge understood it,
-                shown or read back so the player hears what was understood;
-            "answer": one of the answer ids (yes, no, partly, irrelevant, invalid);
-            "new_cards": the cards lit by this question, to announce them;
-            "board": the board to draw, from `board_view`;
-            "score": the points earned so far;
-            "won": True once the solution is lit.
+        A stream of two JSON lines (NDJSON):
+            1. "positive_question", the question as the judge understood it,
+               and "answer", one of the answer ids;
+            2. "new_cards" (card views lit by this question), "board" (from
+               `board_view`), "score", "won", "questions" (asked so far) and
+               "solution" (only once won); or {"error": "cards_failed"}.
 
     Raises:
         HTTPException: 404 if the game id is unknown, e.g. after a server restart.
@@ -144,38 +143,55 @@ def ask(game_id: str, question: Question):
     if game is None:
         raise HTTPException(status_code=404, detail="game not found")
 
-    # the judge sees the conversation so far and the lit cards, then decides
+    # the answer is decided before the stream opens: if it fails, the page gets a plain HTTP error
     start = time.perf_counter()
-    verdict = JUDGE.judge(question.text, game.history, game.lit)
-    latency = time.perf_counter() - start
-    # remember the exchange as context, unless the judge did not understand it: that does not count as a question
+    verdict = JUDGE.answer(question.text, game.history, game.lit)
+    answer_seconds = time.perf_counter() - start
+    history = list(game.history)   # the exchanges before this question: the cards' context
+    # remember the exchange, unless the judge did not understand it: that does not count as a question
     if verdict["answer"] != UNCLEAR:
         game.history.append((verdict["positive_question"], verdict["answer"]))
-    # light the confirmed cards and, in chain, the cards they imply
-    new_cards = game.unlock(verdict["cards"])
 
-    # append this question to the game log: enough to replay it and to measure the judge
-    LOG_FILE.parent.mkdir(exist_ok=True)
-    with LOG_FILE.open("a", encoding="utf-8") as log:
-        log.write(json.dumps({
-            "time": datetime.now(timezone.utc).isoformat(),
-            "game": game_id,
-            "question": question.text,
-            "positive_question": verdict["positive_question"],
-            "answer": verdict["answer"],
-            "new_cards": new_cards,
+    def stream():
+        # line 1: the answer, sent at once so the page can speak it while the cards are decided
+        yield json.dumps({"positive_question": verdict["positive_question"],
+                          "answer": verdict["answer"]}, ensure_ascii=False) + "\n"
+
+        start = time.perf_counter()
+        try:
+            card_ids = JUDGE.cards(question.text, verdict, history, game.lit)
+        except Exception as e:   # the stream is already open: report the failure as the second line
+            print(f"[error] cards failed: {e!r}")
+            yield json.dumps({"error": "cards_failed"}) + "\n"
+            return
+        cards_seconds = time.perf_counter() - start
+        # light the confirmed cards and, in chain, the cards they imply
+        new_cards = game.unlock(card_ids)
+
+        # append this question to the game log: enough to replay it and to measure each step
+        LOG_FILE.parent.mkdir(exist_ok=True)
+        with LOG_FILE.open("a", encoding="utf-8") as log:
+            log.write(json.dumps({
+                "time": datetime.now(timezone.utc).isoformat(),
+                "game": game_id,
+                "question": question.text,
+                "positive_question": verdict["positive_question"],
+                "answer": verdict["answer"],
+                "new_cards": new_cards,
+                "score": game.score,
+                "won": game.won(),
+                "answer_seconds": round(answer_seconds, 2),
+                "cards_seconds": round(cards_seconds, 2),
+            }, ensure_ascii=False) + "\n")
+
+        # line 2: what the page draws
+        yield json.dumps({
+            "new_cards": [card_view(card) for card in new_cards],
+            "board": board_view(game),
             "score": game.score,
             "won": game.won(),
-            "latency": round(latency, 2),
-        }, ensure_ascii=False) + "\n")
+            "questions": len(game.history),
+            "solution": PUZZLE.solution if game.won() else None,   # revealed only once the case is solved
+        }, ensure_ascii=False) + "\n"
 
-    return {
-        "positive_question": verdict["positive_question"],
-        "answer": verdict["answer"],
-        "new_cards": [card_view(card) for card in new_cards],
-        "board": board_view(game),
-        "score": game.score,
-        "won": game.won(),
-        "questions": len(game.history),                              # questions asked so far
-        "solution": PUZZLE.solution if game.won() else None,         # revealed only once the case is solved
-    }
+    return StreamingResponse(stream(), media_type="application/x-ndjson")

@@ -209,8 +209,7 @@ form.typed input { flex: 1; max-width: 420px; background: var(--ink-soft); borde
 
 // answers as the player reads and hears them
 const ANSWER_TEXT = {yes: "Sì", no: "No", partly: "Sì, ma non solo", irrelevant: "Non importa",
-                     invalid: "Domanda non valida: chiedi con un si o no", unclear: "Non ho capito, puoi ripetere?",
-                     open: "Chiedi con un sì o un no"};
+                     invalid: "Domanda non valida: chiedi con un sì o un no", unclear: "Non ho capito, puoi ripetere?"};
 const LABELS = {deduction: "DEDUZIONE", theory: "TEORIA"};   // label on top of the wide cards
 const $ = (id) => document.getElementById(id);
 let gameId = null;
@@ -242,6 +241,7 @@ async function ask(text) {
   $("question").textContent = `«${text}»`;   // shown at once, replaced by the judge's version
   $("answer").textContent = "…";
   $("answer").className = "answer";
+  const lines = [];   // the parsed lines of the reply: the answer, then the cards
   try {
     const response = await fetch(`/api/games/${gameId}/ask`, {
       method: "POST",
@@ -249,25 +249,50 @@ async function ask(text) {
       body: JSON.stringify({text}),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    showTurn(await response.json());
+    // the reply is a stream of JSON lines: handle each one as soon as it is complete
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      let end;
+      while ((end = buffer.indexOf("\n")) >= 0) {
+        lines.push(JSON.parse(buffer.slice(0, end)));
+        buffer = buffer.slice(end + 1);
+        if (lines.length === 1) showAnswer(lines[0]);
+        else showCards({...lines[0], ...lines[1]});   // the cards with the answer they belong to
+      }
+    }
+    if (lines.length < 2) throw new Error("stream ended early");
   } catch (error) {
-    $("answer").textContent = "Errore, riprova";
+    if (!lines.length) $("answer").textContent = "Errore, riprova";   // an answer already shown stays
     console.error(error);
   } finally {
-    setBusy(false);
+    setBusy(false);   // the microphone comes back only when the whole turn is done
   }
 }
 
-function showTurn(data) {
-  // subtitle: the question as the judge understood it, then the answer
+function showAnswer(data) {
+  // subtitle: the question as the judge understood it, then the answer, spoken at once
   $("question").textContent = `«${data.positive_question}»`;
   $("answer").textContent = ANSWER_TEXT[data.answer];
   $("answer").className = `answer ${data.answer}`;
+  speak(ANSWER_TEXT[data.answer]);
+}
+
+function showCards(data) {
+  // the answer is already shown: if the cards failed, the board catches up at the next question
+  if (data.error) {
+    console.error(data.error);
+    return;
+  }
   renderBoard(data.board, data.new_cards);
-  if (!["unclear", "open"].includes(data.answer)) addToLog(data);   // not understood or not yes/no: does not count
+  if (data.answer !== "unclear") addToLog(data);   // not understood: does not count as a question
   $("questions").textContent = data.questions;
   $("score").textContent = data.score;
-  speakTurn(data);
+  speakCards(data);
   if (data.won) showWin(data);
 }
 
@@ -426,8 +451,7 @@ function speak(text) {
   speechSynthesis.speak(utterance);
 }
 
-function speakTurn(data) {
-  speak(ANSWER_TEXT[data.answer]);
+function speakCards(data) {
   const found = data.new_cards.filter((card) => card.kind !== "ruled_out");
   if (data.won) speak("Caso risolto!");
   else if (found.length) speak(`${found[0].kind === "theory" ? "Nuova teoria" : "Nuovo indizio"}: ${found[0].text}`);   // the first card is the one earned

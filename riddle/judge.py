@@ -122,20 +122,23 @@ class Judge:
         puzzle: The `Puzzle` being judged.
         client: The Vertex AI client.
         model: The model of the arbiter and the matcher; the verifier uses `VERIFY_MODEL`.
+        max_attempts: Calls per request before giving up on a retryable error.
         arbiter_config: The arbiter's config, the same for the whole game.
     """
 
-    def __init__(self, puzzle, client, model=JUDGE_MODEL):
+    def __init__(self, puzzle, client, model=JUDGE_MODEL, max_attempts=MAX_ATTEMPTS):
         """Prepare the parts of the prompts that never change during a game.
 
         Args:
             puzzle: The `Puzzle` to judge.
             client: A `genai.Client`, e.g. from `make_client`.
             model: The model of the arbiter and the matcher, kept as a parameter to compare models.
+            max_attempts: Calls per request before giving up: high for evaluation, low in a live game.
         """
         self.puzzle = puzzle
         self.client = client
         self.model = model
+        self.max_attempts = max_attempts
 
         # card lists shown to the matcher, one "id: text" per line
         self.fact_lines = "\n".join(f"- {cid}: {c['text']}" for cid, c in puzzle.facts.items())
@@ -229,17 +232,21 @@ PUZZLE NOTES:
         exclusions = [card for card in candidates if card in self.puzzle.exclusions]
         to_verify = [card for card in candidates if card not in self.puzzle.exclusions]
         # the player wins by stating every key element, whatever is on the board;
-        # when the matcher sees any solution element, all of them are verified
+        # when the matcher sees any solution element, all of them are checked:
+        # elements with element words by those words alone, the others by the verifier
         elements = list(self.puzzle.solution_elements) if answer == YES and match["solution_elements"] else []
+        by_words = [e for e in elements if e in self.puzzle.element_words]
+        by_verifier = [e for e in elements if e not in self.puzzle.element_words]
 
         # facts may use the context for references; deductions and the solution must be in the player's words
         checks_to_run = [(self.puzzle.card_text[card], context if card in self.puzzle.facts else self.no_context)
                          for card in to_verify]
-        checks_to_run += [(self.puzzle.solution_elements[e], self.no_context) for e in elements]
+        checks_to_run += [(self.puzzle.solution_elements[e], self.no_context) for e in by_verifier]
         with ThreadPoolExecutor() as pool:
             checks = list(pool.map(lambda item: self.verify(item[0], verdict["positive_question"], answer, item[1]),
                                    checks_to_run))
         card_checks, element_checks = checks[:len(to_verify)], checks[len(to_verify):]
+        element_checks += [any(stem in question.lower() for stem in self.puzzle.element_words[e]) for e in by_words]
 
         cards = exclusions + [card for card, ok in zip(to_verify, card_checks) if ok]
         # door cards light from their trigger words after a yes, with no model involved,
@@ -270,12 +277,12 @@ PUZZLE NOTES:
 
     def _call(self, model, contents, config):
         """Call a model, retrying on rate limit (429), overload (503), deadline (504) and timeouts with growing waits."""
-        for attempt in range(MAX_ATTEMPTS):
+        for attempt in range(self.max_attempts):
             try:
                 return self.client.models.generate_content(model=model, contents=contents, config=config)
             except (errors.APIError, httpx.TimeoutException) as e:
                 reason = getattr(e, "code", "timeout")   # timeouts carry no HTTP code
-                if reason not in (429, 503, 504, "timeout") or attempt == MAX_ATTEMPTS - 1:
+                if reason not in (429, 503, 504, "timeout") or attempt == self.max_attempts - 1:
                     raise
                 wait = 2 ** attempt   # 1, 2, 4, 8, 16 s: rate limits are short bursts
                 print(f"[retry] {model} got {reason}, waiting {wait} s")   # shows in the uvicorn terminal

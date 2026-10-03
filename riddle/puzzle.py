@@ -72,6 +72,7 @@ class Puzzle:
         self.solution_elements = data["solution_elements"]
         self.required_words = data["required_words"]
         self.trigger_words = data["trigger_words"]
+        self.element_words = data["element_words"]
         self.theories = data["theories"]
         self.guides = data["guides"]
         self.judge_notes = data["judge_notes"]
@@ -103,12 +104,17 @@ class Puzzle:
         # every id used anywhere must be a card
         used = [c for d in self.deductions for c in d["children"]]
         used += [c for cards in self.prerequisites.values() for c in cards]
-        used += list(self.prerequisites) + list(self.required_words)
+        used += list(self.prerequisites) + list(self.required_words) + list(self.trigger_words)
         used += [c for keys in self.theories.values() for c in keys]
         used += [c for g in self.guides for c in [g["card"], *g["after"]]]
         unknown = set(used) - set(self.card_text)
         if unknown:
             raise ValueError(f"unknown card ids: {sorted(unknown)}")
+
+        # element words must belong to solution elements
+        unknown_elements = set(self.element_words) - set(self.solution_elements)
+        if unknown_elements:
+            raise ValueError(f"unknown solution element ids: {sorted(unknown_elements)}")
 
         # theories are deductions with a different unlock rule
         deduction_ids = {d["id"] for d in self.deductions}

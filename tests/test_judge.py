@@ -184,18 +184,30 @@ def test_verifier_sees_the_story(puzzle):
     assert puzzle.story in models.verify_calls[0]
 
 
-def test_solution_needs_every_element(puzzle):
-    """The solution is won only when every element is confirmed by the verifier."""
+def test_solution_needs_the_verified_element(puzzle):
+    """Saying "capito" is not enough: the verifier must confirm what he ate."""
+    judge, _ = make_judge(puzzle, matches=[match(elements=["scoperta"])])
+    question = "Ha capito cosa aveva mangiato?"
+    assert puzzle.root not in judge.cards(question, answer("yes", question), [], [])
+
+
+def test_solution_needs_the_discovery_words(puzzle):
+    """Eating the son, without saying he understood it, is not the solution."""
     elements = puzzle.solution_elements
-    final = ["t_pasto", "d_inganno"]   # the theories that put the final thread on the board
-    question = "Al ristorante ha capito di aver mangiato suo figlio"
     judge, _ = make_judge(puzzle, matches=[match(elements=["figlio_mangiato"])],
                           stated={elements["figlio_mangiato"]: True})
-    assert puzzle.root not in judge.cards(question, answer("yes", question), [], final)
+    question = "Ha mangiato suo figlio?"
+    assert puzzle.root not in judge.cards(question, answer("yes", question), [], [])
 
-    judge, _ = make_judge(puzzle, matches=[match(elements=["figlio_mangiato"])],
-                          stated={text: True for text in elements.values()})
-    assert puzzle.root in judge.cards(question, answer("yes", question), [], final)
+
+def test_discovery_is_decided_by_words_alone(puzzle):
+    """With the verified element and a discovery word, the solution is won; the verifier never sees the discovery."""
+    elements = puzzle.solution_elements
+    judge, models = make_judge(puzzle, matches=[match(elements=["figlio_mangiato"])],
+                               stated={elements["figlio_mangiato"]: True})
+    question = "Al ristorante ha capito di aver mangiato suo figlio"
+    assert puzzle.root in judge.cards(question, answer("yes", question), [], [])
+    assert not any(elements["scoperta"] in call for call in models.verify_calls)
 
 
 def test_trigger_word_lights_a_door_card_after_yes(puzzle):

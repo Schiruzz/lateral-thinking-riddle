@@ -97,7 +97,7 @@
     "question": "Il figlio è annegato?",
     "answer": "yes",
     "cards": [
-      "figlio_morto"
+      "figlio_annegato"
     ],
     "lit": [],
     "history": []
@@ -1283,5 +1283,5 @@
   {"group": "chain", "question": "Il sapore era diverso?", "answer": "yes", "cards": ["sapore"], "lit": [], "history": []},
   {"group": "chain", "question": "L'ha ordinato per verificare qualcosa?", "answer": "yes", "cards": ["verifica"], "lit": [], "history": []},
   {"group": "chain", "question": "L'ha ordinato apposta?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "chain", "question": "Il figlio era con loro sulla barca?", "answer": "yes", "cards": ["figlio_in_mare", "barca"], "lit": ["figlio", "mare"], "history": []}
+  {"group": "chain", "question": "Il figlio era con loro sulla barca?", "answer": "yes", "cards": ["barca"], "lit": ["figlio", "mare"], "history": []}
 ]
