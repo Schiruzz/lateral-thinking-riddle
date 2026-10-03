@@ -388,6 +388,26 @@
     "history": []
   },
   {
+    "group": "false_lead",
+    "question": "Erano in tanti?",
+    "answer": "no",
+    "cards": [],
+    "lit": [
+      "incidente"
+    ],
+    "history": []
+  },
+  {
+    "group": "false_lead",
+    "question": "Erano più di 20?",
+    "answer": "no",
+    "cards": [],
+    "lit": [
+      "incidente"
+    ],
+    "history": []
+  },
+  {
     "group": "irrelevant",
     "question": "Era un ristorante di pesce?",
     "answer": "irrelevant",
@@ -1257,6 +1277,7 @@
   {"group": "strategy", "question": "Devo capire chi è la donna?", "answer": "yes", "cards": [], "lit": [], "history": []},
   {"group": "strategy", "question": "È importante il sapore della carne?", "answer": "yes", "cards": [], "lit": [], "history": []},
   {"group": "strategy", "question": "Devo pensare al cuoco?", "answer": "irrelevant", "cards": [], "lit": [], "history": []},
+  {"group": "strategy", "question": "Importa il numero di persone?", "answer": "yes", "cards": [], "lit": ["incidente"],"history": []},
   {"group": "chain", "question": "C'è stato un incidente?", "answer": "yes", "cards": ["incidente"], "lit": [], "history": []},
   {"group": "chain", "question": "È successo in mare?", "answer": "yes", "cards": ["mare"], "lit": ["incidente"], "history": []},
   {"group": "chain", "question": "Erano su una nave?", "answer": "yes", "cards": ["barca"], "lit": ["mare"], "history": []},

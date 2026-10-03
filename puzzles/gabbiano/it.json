@@ -4,7 +4,7 @@
   "solution": "Anni prima l'uomo, cieco, la moglie e il loro figlio fanno naufragio. Il figlio annega in mare durante il naufragio, non sull'isola; i genitori raggiungono un'isola senza cibo, dove ci sono molti gabbiani, e il mare vi porta il corpo del figlio già morto. Affamati, i genitori sono costretti a mangiarne la carne, ma la moglie, per farlo sopravvivere, gli dice che è gabbiano, e lui, sentendo i gabbiani, le crede. Negli anni gli resta un dubbio. Prima del ristorante non aveva mai mangiato gabbiano: sull'isola aveva mangiato suo figlio. Al ristorante ordina gabbiano apposta per verificare: il sapore è diverso da quello che ricordava, capisce che quello dell'isola non era gabbiano ma suo figlio, e si uccide.",
   "solution_facts": [
     "Years before the restaurant, the man was already blind.",
-    "He, his wife and their son were on a boat at sea. It sank: a shipwreck.",
+    "He, his wife and their son were on a boat at sea, only the three of them. It sank: a shipwreck.",
     "The son drowned in the sea during the shipwreck. Nobody killed him.",
     "The man and his wife reached an island with no food and many gulls. The sea brought the son's body there.",
     "Starving, they ate the son's flesh.",
@@ -364,7 +364,7 @@
       "after": [
         "incidente"
       ],
-      "question": "Quante persone c'erano?"
+      "question": "Chi c'era oltre a loro due?"
     },
     {
       "card": "barca",
