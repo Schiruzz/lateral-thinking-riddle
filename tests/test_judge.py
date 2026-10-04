@@ -210,6 +210,14 @@ def test_discovery_is_decided_by_words_alone(puzzle):
     assert not any(elements["scoperta"] in call for call in models.verify_calls)
 
 
+def test_discovery_word_starts_the_solution_check(puzzle):
+    """With a discovery word the solution is checked even when the matcher sees no element."""
+    elements = puzzle.solution_elements
+    judge, _ = make_judge(puzzle, matches=[match()], stated={elements["figlio_mangiato"]: True})
+    question = "Hanno mangiato il figlio morto e lui scoprendolo si è tolto la vita"
+    assert puzzle.root in judge.cards(question, answer("yes", question), [], [])
+
+
 def test_trigger_word_lights_a_door_card_after_yes(puzzle):
     """The stem "ricord" lights the past card after a yes, even when the models propose nothing."""
     judge, models = make_judge(puzzle, matches=[match()])

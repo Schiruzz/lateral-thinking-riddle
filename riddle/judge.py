@@ -236,9 +236,10 @@ PUZZLE NOTES:
         exclusions = [card for card in candidates if card in self.puzzle.exclusions]
         to_verify = [card for card in candidates if card not in self.puzzle.exclusions]
         # the player wins by stating every key element, whatever is on the board;
-        # when the matcher sees any solution element, all of them are checked:
-        # elements with element words by those words alone, the others by the verifier
-        elements = list(self.puzzle.solution_elements) if answer == YES and match["solution_elements"] else []
+        # all of them are checked when the matcher sees any, or when the player says an element word
+        # ("scoperto"): the win must not depend on the matcher alone
+        said_element = any(stem in question.lower() for stems in self.puzzle.element_words.values() for stem in stems)
+        elements = list(self.puzzle.solution_elements) if answer == YES and (match["solution_elements"] or said_element) else []
         by_words = [e for e in elements if e in self.puzzle.element_words]
         by_verifier = [e for e in elements if e not in self.puzzle.element_words]
 
