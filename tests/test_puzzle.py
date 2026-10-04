@@ -30,4 +30,4 @@ def test_gabbiano_matches_the_notebook():
     assert len(puzzle.facts) == 21
     assert len(puzzle.deductions) == 9
     assert puzzle.points[puzzle.root] == 550
-    assert len(load_tests("gabbiano", "it")) == 151
+    assert len(load_tests("gabbiano", "it")) == 154

@@ -408,6 +408,17 @@
     "history": []
   },
   {
+    "group": "false_lead",
+    "question": "La vita sull'isola era una merda",
+    "answer": "yes",
+    "cards": [],
+    "lit": [
+      "naufragio",
+      "isola"
+    ],
+    "history": []
+  },
+  {
     "group": "irrelevant",
     "question": "Era un ristorante di pesce?",
     "answer": "irrelevant",
@@ -1263,6 +1274,40 @@
   {"group": "solution", "question": "Sull'isola ha mangiato suo figlio?", "answer": "yes", "cards": ["mangiato_figlio", "isola"], "lit": [], "history": []},
   {"group": "solution", "question": "Al ristorante ha capito di aver mangiato suo figlio?", "answer": "yes", "cards": ["soluzione"], "lit": [], "history": []},
   {"group": "invalid", "question": "Dove devo cercare?", "answer": "invalid", "cards": [], "lit": [], "history": []},
+    {
+    "group": "solution",
+    "question": "Hanno mangiato il figlio morto e lei lui scoprendolo si è tolto la vita",
+    "answer": "yes",
+    "cards": [
+      "soluzione"
+    ],
+    "lit": [
+      "moglie",
+      "figlio_annegato",
+      "barca",
+      "naufragio",
+      "isola",
+      "fame"
+    ],
+    "history": []
+  },
+  {
+    "group": "solution",
+    "question": "nel naufragio il figlio è morto e gli altri a loro insaputa le hanno dato come cibo loro se ne sono accorti e lui si è tolta la vita",
+    "answer": "yes",
+    "cards": [
+      "soluzione"
+    ],
+    "lit": [
+      "moglie",
+      "figlio_annegato",
+      "barca",
+      "naufragio",
+      "isola",
+      "fame"
+    ],
+    "history": []
+  },
   {"group": "invalid", "question": "Cosa devo chiedere adesso?", "answer": "invalid", "cards": [], "lit": [], "history": []},
   {"group": "invalid", "question": "Dammi un indizio", "answer": "invalid", "cards": [], "lit": [], "history": []},
   {"group": "invalid", "question": "Sono sulla strada giusta?", "answer": "invalid", "cards": [], "lit": [], "history": []},
