@@ -143,13 +143,17 @@ def make_client():
     Returns:
         A `genai.Client` bound to Vertex AI.
     """
+    # every call gives up after CALL_TIMEOUT_MS: _call then retries it, instead of waiting for ever
+    http_options = types.HttpOptions(timeout=CALL_TIMEOUT_MS)
     key = os.environ.get("GCP_SA_KEY")
     if key is None:
-        return genai.Client(vertexai=True, project=os.environ["GOOGLE_CLOUD_PROJECT"], location="global")
+        return genai.Client(vertexai=True, project=os.environ["GOOGLE_CLOUD_PROJECT"], location="global",
+                            http_options=http_options)
     info = json.loads(key)
     credentials = service_account.Credentials.from_service_account_info(
         info, scopes=["https://www.googleapis.com/auth/cloud-platform"])
-    return genai.Client(vertexai=True, project=info["project_id"], location="global", credentials=credentials)
+    return genai.Client(vertexai=True, project=info["project_id"], location="global", credentials=credentials,
+                        http_options=http_options)
 
 
 class Judge:
