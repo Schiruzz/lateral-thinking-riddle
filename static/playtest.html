@@ -17,7 +17,13 @@ h1 { font-size: .9rem; font-weight: 800; letter-spacing: .12em; text-transform: 
 .story { background: var(--ink-soft); border-left: 4px solid var(--red); padding: 10px 14px;
   font-family: var(--type); font-size: 1.1rem; line-height: 1.5; }
 .help { color: var(--muted); font-size: .9rem; }
-form { display: flex; gap: 8px; margin: 16px 0; }
+.voice { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
+.mic { width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--red); background: var(--ink-soft);
+  color: var(--paper); font-size: 1.6rem; cursor: pointer; flex-shrink: 0; }
+.mic.listening { background: var(--red); }
+.mic:disabled { opacity: .4; cursor: wait; }
+.transcript { font-family: var(--type); min-height: 1.5em; }
+form { display: flex; gap: 8px; margin: 8px 0 16px; }
 input { flex: 1; padding: 10px; font-size: 1rem; background: var(--paper); color: var(--ink); border: none; }
 button { padding: 10px 14px; background: var(--red); color: var(--paper); border: none; cursor: pointer; font-weight: 600; }
 button:disabled { opacity: .5; cursor: wait; }
@@ -31,9 +37,14 @@ ol { padding-left: 20px; font-family: var(--type); line-height: 1.6; }
 <main>
   <h1 id="title">Caso</h1>
   <p class="story" id="story"></p>
-  <p class="help">Fai domande a cui si risponde sì o no. Quando pensi di aver capito, racconta la tua spiegazione.</p>
+  <p class="help" id="help">Premi il microfono (o la barra spaziatrice) e fai una domanda a cui si risponde sì o no.
+    Quando pensi di aver capito, racconta la tua spiegazione. Puoi anche scrivere.</p>
+  <div class="voice">
+    <button class="mic" id="mic" aria-label="Fai una domanda">🎤</button>
+    <p class="transcript" id="transcript"></p>
+  </div>
   <form id="form">
-    <input id="question" maxlength="200" autocomplete="off" placeholder="La tua domanda" required>
+    <input id="question" maxlength="200" autocomplete="off" placeholder="Oppure scrivi la tua domanda" required>
     <button id="send">Chiedi</button>
   </form>
   <p class="error" id="error"></p>
@@ -47,6 +58,7 @@ const ANSWER_TEXT = {yes: "Sì", no: "No", partly: "Sì, ma non solo", irrelevan
 const GAME = crypto.randomUUID();   // groups this game's lines in the server log
 const history = [];                 // (positive question, answer) pairs, sent with every question
 const $ = id => document.getElementById(id);
+let busy = false;
 
 // load the story from the server: the page itself knows nothing of the puzzle
 fetch("/api/playtest").then(r => r.json()).then(data => {
@@ -54,22 +66,29 @@ fetch("/api/playtest").then(r => r.json()).then(data => {
   $("story").textContent = data.story;
 });
 
-$("form").addEventListener("submit", async event => {
-  event.preventDefault();
-  const text = $("question").value.trim();
-  $("send").disabled = true;
+function setBusy(value) {
+  busy = value;
+  $("mic").disabled = value;
+  $("send").disabled = value;
+}
+
+// ---------- one question, typed or spoken ----------
+async function ask(text, mode) {
+  text = text.trim();
+  if (!text || busy) return;
+  setBusy(true);
   $("error").textContent = "";
   try {
     const response = await fetch("/api/playtest/ask", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({game: GAME, text, history}),
+      body: JSON.stringify({game: GAME, text, history, mode}),
     });
     if (!response.ok) throw new Error(response.status);
     const data = await response.json();
     // as in the game, an unclear question does not count as an exchange
     if (data.answer !== "unclear") history.push([data.positive_question, data.answer]);
-    // show the player's own words, newest first
+    // show the player's own words (as transcribed), newest first
     const item = document.createElement("li");
     item.append(`${text} — `);
     const answer = document.createElement("span");
@@ -77,13 +96,83 @@ $("form").addEventListener("submit", async event => {
     answer.textContent = ANSWER_TEXT[data.answer];
     item.append(answer);
     $("log").prepend(item);
-    $("question").value = "";
+    speak(ANSWER_TEXT[data.answer]);
   } catch (e) {
     $("error").textContent = "Qualcosa non ha funzionato, riprova.";
   } finally {
-    $("send").disabled = false;
-    $("question").focus();
+    setBusy(false);
   }
+}
+
+// ---------- voice out: the browser reads the answer ----------
+function speak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "it-IT";
+  speechSynthesis.speak(utterance);
+}
+
+// ---------- voice in: press, speak, stop (as in index.html) ----------
+const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+let heard = "";           // words transcribed so far for the current question
+let sent = false;         // true once the current question has been sent
+let silenceTimer = null;
+
+// send what was heard (only once) and stop listening
+function finish() {
+  clearTimeout(silenceTimer);
+  recognizer.stop();
+  if (heard && !sent) {
+    sent = true;
+    ask(heard, "voice");
+  }
+}
+
+if (Recognition) {
+  recognizer = new Recognition();
+  recognizer.lang = "it-IT";
+  recognizer.interimResults = true;   // show the words while the player speaks
+  recognizer.onstart = () => { heard = ""; sent = false; };
+  recognizer.onresult = (event) => {
+    const result = event.results[event.results.length - 1];
+    heard = result[0].transcript;
+    $("transcript").textContent = heard;
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(finish, 2000);   // transcript unchanged for 2 s: send it
+    if (result.isFinal) finish();               // the browser detected the pause by itself
+  };
+  recognizer.onend = () => {
+    $("mic").classList.remove("listening");
+    finish();   // some browsers (iPhone) end without a final result
+  };
+} else {
+  // no speech recognition in this browser (e.g. Firefox): typing only
+  $("mic").hidden = true;
+  $("help").textContent = "Il riconoscimento vocale non è disponibile in questo browser: scrivi le domande.";
+}
+
+function listen() {
+  if (!recognizer || busy) return;
+  if ($("mic").classList.contains("listening")) { finish(); return; }   // second press: send now
+  speechSynthesis.cancel();   // stop reading, so the microphone does not hear the page
+  $("transcript").textContent = "";
+  $("mic").classList.add("listening");
+  recognizer.start();
+}
+
+// ---------- controls ----------
+$("mic").addEventListener("click", listen);
+document.addEventListener("keydown", (event) => {
+  // the space bar works like the microphone button, except while typing
+  if (event.code === "Space" && document.activeElement.tagName !== "INPUT") {
+    event.preventDefault();
+    listen();
+  }
+});
+$("form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  ask($("question").value, "text");
+  $("question").value = "";
 });
 
 // the solution is fetched only when the player asks for it
@@ -93,6 +182,8 @@ $("reveal").addEventListener("click", async () => {
   $("solution").hidden = false;
   $("reveal").hidden = true;
   $("form").hidden = true;   // the game is over: no more questions after reading the solution
+  $("mic").hidden = true;
+  speechSynthesis.cancel();
 });
 </script>
 </body>

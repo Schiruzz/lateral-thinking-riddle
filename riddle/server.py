@@ -23,6 +23,7 @@ Then open http://localhost:8000 (the page) or http://localhost:8000/docs
 import json
 import time
 from datetime import datetime, timezone
+from typing import Literal
 
 import uuid
 from pathlib import Path
@@ -63,6 +64,7 @@ class PlaytestQuestion(BaseModel):
     game: str = Field(max_length=40)   # random id made by the page, groups the log lines of one game
     text: str = Field(max_length=MAX_QUESTION_LENGTH)
     history: list[tuple[str, str]] = Field(default_factory=list, max_length=MAX_HISTORY)
+    mode: Literal["voice", "text"] = "text"   # how the question was given: transcription errors differ from typos
 
 
 def card_view(card):
@@ -257,6 +259,7 @@ def playtest_ask(question: PlaytestQuestion):
         "puzzle": "baita",
         "game": question.game,
         "question": question.text,
+        "mode": question.mode,
         "history": question.history,
         "positive_question": verdict["positive_question"],
         "answer": verdict["answer"],
