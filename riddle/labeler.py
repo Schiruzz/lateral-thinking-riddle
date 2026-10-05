@@ -29,7 +29,7 @@ from riddle.puzzle import ANSWERS, PUZZLES_DIR, load_arbiter, load_tests
 
 LABELER_MODEL = "gemini-3.5-flash-lite"   # Flash on Vertex answered in 2 s or never: Lite is stable; checked by validate
 MAX_ATTEMPTS = 6
-LABEL_TIMEOUT_MS = 14_000   # a call with long reasoning takes up to a minute: past two, it hung
+LABEL_TIMEOUT_MS = 10_000   # a call with long reasoning takes up to a minute: past two, it hung
 
 LABELER_PROMPT = """You label test questions for a lateral thinking puzzle played by voice. A player who
 does not know the hidden truth asks questions about a mysterious situation; a host who
