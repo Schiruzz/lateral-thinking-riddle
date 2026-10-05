@@ -10,6 +10,7 @@ once, from the raw data.
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 PUZZLES_DIR = Path(__file__).parent.parent / "puzzles"
 ANSWERS = ("yes", "no", "irrelevant", "invalid", "partly", "unclear")   # the judge's possible answers
@@ -208,3 +209,24 @@ def load_tests(name, language):
     """
     path = PUZZLES_DIR / name / f"tests.{language}.json"
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_arbiter(name, language):
+    """Load only what the arbiter reads from `puzzles/<name>/arbiter.<language>.json`.
+
+    Used to test the arbiter on a puzzle that has no cards yet. The card
+    sections are left empty: `Judge.__init__` builds the matcher's lists from
+    them, and `Judge.answer` reads `card_text` for the cards already lit.
+
+    Args:
+        name: Folder name of the puzzle, e.g. "baita".
+        language: Language code of the file, e.g. "it".
+
+    Returns:
+        An object with the fields of the file ("title", "story", "solution",
+        "solution_facts", "judge_notes") and empty card sections.
+    """
+    path = PUZZLES_DIR / name / f"arbiter.{language}.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    # no cards: the arbiter never sees them, and nothing can be lit
+    return SimpleNamespace(**data, facts={}, exclusions={}, solution_elements={}, card_text={})
