@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playtest</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0f0f; --ink-soft: #1c1c1c; --paper: #efe6d2; --red: #b3121b; --muted: #8b8478;
+  --type: "Special Elite", "Courier New", monospace;
+  --sans: "Inter", system-ui, sans-serif;
+}
+body { margin: 0; background: var(--ink); color: var(--paper); font-family: var(--sans); }
+main { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+h1 { font-size: .9rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.story { background: var(--ink-soft); border-left: 4px solid var(--red); padding: 10px 14px;
+  font-family: var(--type); font-size: 1.1rem; line-height: 1.5; }
+.help { color: var(--muted); font-size: .9rem; }
+form { display: flex; gap: 8px; margin: 16px 0; }
+input { flex: 1; padding: 10px; font-size: 1rem; background: var(--paper); color: var(--ink); border: none; }
+button { padding: 10px 14px; background: var(--red); color: var(--paper); border: none; cursor: pointer; font-weight: 600; }
+button:disabled { opacity: .5; cursor: wait; }
+button.ghost { background: none; border: 1px solid var(--muted); }
+ol { padding-left: 20px; font-family: var(--type); line-height: 1.6; }
+.answer { color: var(--red); font-weight: bold; }
+.error { color: var(--red); }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Caso</h1>
+  <p class="story" id="story"></p>
+  <p class="help">Fai domande a cui si risponde sì o no. Quando pensi di aver capito, racconta la tua spiegazione.</p>
+  <form id="form">
+    <input id="question" maxlength="200" autocomplete="off" placeholder="La tua domanda" required>
+    <button id="send">Chiedi</button>
+  </form>
+  <p class="error" id="error"></p>
+  <ol id="log" reversed></ol>
+  <button class="ghost" id="reveal">Mi fermo qui: mostra la soluzione</button>
+  <p class="story" id="solution" hidden></p>
+</main>
+<script>
+const ANSWER_TEXT = {yes: "Sì", no: "No", partly: "Sì, ma non solo", irrelevant: "Non importa",
+                     invalid: "Domanda non valida: chiedi con un sì o un no", unclear: "Non ho capito, puoi ripetere?"};
+const GAME = crypto.randomUUID();   // groups this game's lines in the server log
+const history = [];                 // (positive question, answer) pairs, sent with every question
+const $ = id => document.getElementById(id);
+
+// load the story from the server: the page itself knows nothing of the puzzle
+fetch("/api/playtest").then(r => r.json()).then(data => {
+  $("title").textContent = data.title;
+  $("story").textContent = data.story;
+});
+
+$("form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const text = $("question").value.trim();
+  $("send").disabled = true;
+  $("error").textContent = "";
+  try {
+    const response = await fetch("/api/playtest/ask", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({game: GAME, text, history}),
+    });
+    if (!response.ok) throw new Error(response.status);
+    const data = await response.json();
+    // as in the game, an unclear question does not count as an exchange
+    if (data.answer !== "unclear") history.push([data.positive_question, data.answer]);
+    // show the player's own words, newest first
+    const item = document.createElement("li");
+    item.append(`${text} — `);
+    const answer = document.createElement("span");
+    answer.className = "answer";
+    answer.textContent = ANSWER_TEXT[data.answer];
+    item.append(answer);
+    $("log").prepend(item);
+    $("question").value = "";
+  } catch (e) {
+    $("error").textContent = "Qualcosa non ha funzionato, riprova.";
+  } finally {
+    $("send").disabled = false;
+    $("question").focus();
+  }
+});
+
+// the solution is fetched only when the player asks for it
+$("reveal").addEventListener("click", async () => {
+  const data = await fetch("/api/playtest/solution").then(r => r.json());
+  $("solution").textContent = data.solution;
+  $("solution").hidden = false;
+  $("reveal").hidden = true;
+  $("form").hidden = true;   // the game is over: no more questions after reading the solution
+});
+</script>
+</body>
+</html>
