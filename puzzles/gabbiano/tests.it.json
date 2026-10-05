@@ -551,7 +551,7 @@
   {
     "group": "partly",
     "question": "Il ristorante c'entra?",
-    "answer": "partly",
+    "answer": "yes",
     "cards": ["ristorante_no"],
     "lit": [],
     "history": []
@@ -559,7 +559,7 @@
   {
     "group": "partly",
     "question": "È successo qualcosa al ristorante?",
-    "answer": "partly",
+    "answer": "yes",
     "cards": ["ristorante_no"],
     "lit": [],
     "history": []
@@ -567,7 +567,7 @@
   {
     "group": "partly",
     "question": "È morto per ciò che ha mangiato?",
-    "answer": "partly",
+    "answer": "yes",
     "cards": [],
     "lit": [],
     "history": []
@@ -575,7 +575,7 @@
   {
     "group": "partly",
     "question": "La causa è nel ristorante?",
-    "answer": "partly",
+    "answer": "no",
     "cards": ["ristorante_no"],
     "lit": [],
     "history": []
@@ -1265,7 +1265,7 @@
       ]
     ]
   },
-  {"group": "unclear", "question": "la carne era variata", "answer": "unclear", "cards": [], "lit": [], "history": []},
+  {"group": "unclear", "question": "la carne era variata", "answer": "no", "cards": [], "lit": [], "history": []},
   {"group": "unclear", "question": "sé figlio nave fatto isola", "answer": "unclear", "cards": [], "lit": [], "history": []},
   {"group": "unclear", "question": "era cieca la vista del menù quando", "answer": "unclear", "cards": [], "lit": [], "history": []},
   {"group": "unclear", "question": "Il gabbiano aveva un nome?", "answer": "irrelevant", "cards": [], "lit": [], "history": []},
@@ -1315,13 +1315,13 @@
   {"group": "open_question", "question": "Chi è la donna?", "answer": "invalid", "cards": [], "lit": [], "history": []},
   {"group": "open_question", "question": "Cosa è successo anni prima?", "answer": "invalid", "cards": [], "lit": [], "history": []},
   {"group": "open_question", "question": "L'ha ordinato perché gli piaceva il gabbiano?", "answer": "no", "cards": [], "lit": [], "history": []},
-  {"group": "spoken", "question": "Il ristorante centra?", "answer": "partly", "cards": ["ristorante_no"], "lit": [], "history": []},
+  {"group": "spoken", "question": "Il ristorante centra?", "answer": "yes", "cards": ["ristorante_no"], "lit": [], "history": []},
   {"group": "var_past", "question": "La carne gli ha ricordato qualcosa del passato?", "answer": "yes", "cards": ["passato"], "lit": [], "history": []},
   {"group": "strategy", "question": "Devo capire il luogo?", "answer": "yes", "cards": [], "lit": [], "history": []},
   {"group": "strategy", "question": "Devo concentrarmi sul passato?", "answer": "yes", "cards": ["passato"], "lit": [], "history": []},
   {"group": "strategy", "question": "Devo capire chi è la donna?", "answer": "yes", "cards": [], "lit": [], "history": []},
   {"group": "strategy", "question": "È importante il sapore della carne?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "strategy", "question": "Devo pensare al cuoco?", "answer": "irrelevant", "cards": [], "lit": [], "history": []},
+  {"group": "strategy", "question": "Devo pensare al cuoco?", "answer": "no", "cards": [], "lit": [], "history": []},
   {"group": "strategy", "question": "Importa il numero di persone?", "answer": "yes", "cards": [], "lit": ["incidente"],"history": []},
   {"group": "chain", "question": "C'è stato un incidente?", "answer": "yes", "cards": ["incidente"], "lit": [], "history": []},
   {"group": "chain", "question": "È successo in mare?", "answer": "yes", "cards": ["mare"], "lit": ["incidente"], "history": []},

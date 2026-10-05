@@ -13,7 +13,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 PUZZLES_DIR = Path(__file__).parent.parent / "puzzles"
-ANSWERS = ("yes", "no", "irrelevant", "invalid", "partly", "unclear")   # the judge's possible answers
+ANSWERS = ("yes", "no", "irrelevant", "invalid", "unclear")   # the judge's possible answers
 DEDUCTION_BONUS = 20
 
 
