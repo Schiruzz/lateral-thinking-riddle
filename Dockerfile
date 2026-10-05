@@ -1,6 +1,8 @@
 FROM python:3.12-slim
 
 WORKDIR /app
+# print writes at once: Cloud Run collects stdout, and buffered lines arrive late or never
+ENV PYTHONUNBUFFERED=1
 
 # dependencies first: this layer is rebuilt only when requirements.txt changes
 COPY requirements.txt .

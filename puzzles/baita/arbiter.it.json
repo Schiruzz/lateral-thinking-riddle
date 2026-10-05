@@ -1,0 +1,18 @@
+{
+  "title": "La baita",
+  "story": "Cinque amici passano il weekend in una baita isolata dalla neve. La mattina dopo quattro si svegliano e trovano il quinto morto nel suo letto. La porta della sua stanza era chiusa a chiave da dentro e fuori, sulla neve, non c'è nessuna impronta.",
+  "solution": "Il quinto amico dormiva da solo al piano terra, nella stanza con la stufa a legna; gli altri dormivano di sopra. Prima di andare a letto ha caricato la stufa al massimo e ha chiuso la porta a chiave, come faceva sempre. Durante la notte la neve ha ostruito il comignolo: il fumo non usciva più e la stanza si è riempita di monossido di carbonio, un gas senza odore. È morto nel sonno. Nessuno l'ha ucciso.",
+  "solution_facts": [
+    "Five friends spent the weekend in a mountain cabin, cut off by the snow. Only the five of them were there.",
+    "The fifth friend slept alone in the ground-floor room, where there was a wood-burning stove. The other four slept upstairs.",
+    "Before going to bed he loaded the stove to the maximum and locked his door from inside, as he always did.",
+    "During the night the snow blocked the chimney of the stove.",
+    "The smoke could no longer get out, and his room filled with carbon monoxide, a gas with no smell.",
+    "He died in his sleep, poisoned by the gas, without waking up.",
+    "Nobody killed him: it was an accident.",
+    "The gas stayed in his locked room; the others slept far from it and survived.",
+    "In the morning the four friends found him dead. Nobody had entered or left the cabin, so there were no footprints in the snow.",
+    "NOT TRUE: one of the friends or someone from outside killed him; poison; a secret passage or the window; a heart attack or an illness; he froze to death."
+  ],
+  "judge_notes": []
+}
