@@ -89,6 +89,25 @@ def test_rewrite_that_splits_an_apostrophe_is_kept(puzzle):
     assert judge.answer("Sono rimasti su un'isola senza cibo?", [], [])["answer"] == "yes"
 
 
+@pytest.mark.parametrize("said, rewritten", [
+    ("il morto e morto di infarto", "Il morto è morto di infarto?"),        # accent put back
+    ("era gia morto prima della neve", "Era già morto prima della neve?"),  # accent put back
+    ("e stato uno dei 4 amici", "È stato uno dei quattro amici?"),          # digit spelled out
+    ("c e stata una fuga di gas", "C'è stata una fuga di gas?"),            # apostrophe and accent put back
+])
+def test_rewrite_that_only_fixes_spelling_is_kept(puzzle, said, rewritten):
+    """Accents, digits and apostrophes put back by the arbiter are spelling, not new words."""
+    judge, _ = make_judge(puzzle, [answer("no", rewritten)])
+    assert judge.answer(said, [], [])["answer"] == "no"
+
+
+def test_rewrite_that_changes_a_word_is_still_unclear(puzzle):
+    """A transcription slip the arbiter repairs is a guess: "variata" is not "avariata"."""
+    judge, _ = make_judge(puzzle, [answer("no", "La carne era avariata?")])
+    assert judge.answer("la carne era variata", [], [])["answer"] == "unclear"
+
+
+
 def test_arbiter_never_sees_the_cards(puzzle):
     """The arbiter knows the solution facts but no card list: answering and finding cards stay apart."""
     judge, _ = make_judge(puzzle)

@@ -6,10 +6,14 @@ Run from the repository root:
 """
 
 import argparse
+import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from riddle.judge import JUDGE_MODEL, Judge, make_client
-from riddle.puzzle import load_arbiter, load_puzzle, load_tests
+from riddle.puzzle import PUZZLES_DIR, load_arbiter, load_puzzle, load_tests
+
+EVAL_WORKERS = 8   # questions judged at once: minutes instead of most of an hour, within the rate limit
 
 
 def evaluate(judge, tests):
@@ -86,10 +90,11 @@ def evaluate_answers(judge, tests, runs):
     """Ask the arbiter every test question several times, without cards.
 
     Repeating the runs separates stable mistakes from the normal swing
-    between runs.
+    between runs. Every question of every run is independent, so they are
+    all asked in parallel.
 
     Args:
-        judge: A `Judge` built on a puzzle from `load_arbiter`.
+        judge: A `Judge` built on a puzzle from `load_arbiter` or `load_puzzle`.
         tests: Test cases from `load_tests`.
         runs: How many times every question is asked.
 
@@ -99,12 +104,17 @@ def evaluate_answers(judge, tests, runs):
     """
     rows = [{"group": case["group"], "question": case["question"], "expected_answer": case["answer"],
              "answers": [], "rewritten": []} for case in tests]
-    for run in range(1, runs + 1):
-        for i, (case, row) in enumerate(zip(tests, rows), 1):
-            print(f"\r{judge.model}: run {run}/{runs}, {i}/{len(tests)}", end="", flush=True)
-            verdict = judge.answer(case["question"], case["history"], case["lit"])
+    jobs = [(i, case) for _ in range(runs) for i, case in enumerate(tests)]
+    with ThreadPoolExecutor(max_workers=EVAL_WORKERS) as pool:
+        futures = {pool.submit(judge.answer, case["question"], case["history"], case["lit"]): i
+                   for i, case in jobs}
+        # answers arrive in any order: each goes to its question's row, and runs are only counted
+        for done, future in enumerate(as_completed(futures), 1):
+            verdict = future.result()
+            row = rows[futures[future]]
             row["answers"].append(verdict["answer"])
             row["rewritten"].append(verdict["positive_question"])
+            print(f"\r{judge.model}: {done}/{len(jobs)}", end="", flush=True)
     print()
     return rows
 
@@ -147,17 +157,28 @@ def main():
     parser.add_argument("--answers-only", action="store_true",
                         help="judge only the answers, on a puzzle with only the arbiter's fields")
     parser.add_argument("--runs", type=int, default=3, help="runs per question with --answers-only")
+    parser.add_argument("--tests", default=None, help="test set, e.g. simulated (default: the main one)")
+    parser.add_argument("--grep", default=None,
+                        help="with --answers-only, judge only the questions matching this pattern, e.g. \"cause naturali|infarto\"")
     args = parser.parse_args()
 
     # the arbiter alone: the puzzle has no cards, so there is nothing else to judge
     if args.answers_only:
-        judge = Judge(load_arbiter(args.puzzle, args.language), make_client(), args.model)
-        report_answers(evaluate_answers(judge, load_tests(args.puzzle, args.language), args.runs), args.runs)
+        # a full puzzle works too: its cards give the arbiter the context of the cards lit in a test
+        arbiter_only = (PUZZLES_DIR / args.puzzle / f"arbiter.{args.language}.json").exists()
+        puzzle = (load_arbiter if arbiter_only else load_puzzle)(args.puzzle, args.language)
+        judge = Judge(puzzle, make_client(), args.model)
+        tests = load_tests(args.puzzle, args.language, args.tests)
+        # a quick check after a change: only the questions it touches
+        if args.grep:
+            tests = [case for case in tests if re.search(args.grep, case["question"], re.IGNORECASE)]
+            print(f"questions matching {args.grep!r}: {len(tests)}")
+        report_answers(evaluate_answers(judge, tests, args.runs), args.runs)
         return
 
     puzzle = load_puzzle(args.puzzle, args.language)
     judge = Judge(puzzle, make_client(), args.model)
-    report(evaluate(judge, load_tests(args.puzzle, args.language)))
+    report(evaluate(judge, load_tests(args.puzzle, args.language, args.tests)))
 
 
 if __name__ == "__main__":

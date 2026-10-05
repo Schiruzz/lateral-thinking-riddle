@@ -196,18 +196,20 @@ def load_puzzle(name, language):
     return Puzzle(json.loads(path.read_text(encoding="utf-8")))
 
 
-def load_tests(name, language):
-    """Load the labelled test questions from `puzzles/<name>/tests.<language>.json`.
+def load_tests(name, language, kind=None):
+    """Load the labelled test questions from `puzzles/<name>/tests[.<kind>].<language>.json`.
 
     Args:
         name: Folder name of the puzzle.
         language: Language code of the file.
+        kind: Which test set, e.g. "simulated"; None for the main one.
 
     Returns:
         A list of test cases, each with "group", "question", "answer",
         "cards", "lit" and "history".
     """
-    path = PUZZLES_DIR / name / f"tests.{language}.json"
+    prefix = f"tests.{kind}" if kind else "tests"
+    path = PUZZLES_DIR / name / f"{prefix}.{language}.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
 
