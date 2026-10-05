@@ -14,6 +14,7 @@ import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
+import unicodedata
 
 import httpx
 from google import genai
@@ -31,6 +32,9 @@ CALL_TIMEOUT_MS = 10_000   # a healthy call takes 1-2 s: after 10 s it is abando
 NEGATION = re.compile(r"\bnon\b", re.IGNORECASE)
 WORD = re.compile(r"\w+")   # words, accented letters included
 APOSTROPHE = re.compile(r"['’]")
+# digits the arbiter may spell out: "4 amici" and "quattro amici" are the same words
+DIGITS = {"0": "zero", "1": "uno", "2": "due", "3": "tre", "4": "quattro", "5": "cinque",
+          "6": "sei", "7": "sette", "8": "otto", "9": "nove", "10": "dieci"}
 
 ARBITER_STEPS = """HOW TO ANSWER A QUESTION: follow the steps in order.
 
@@ -97,6 +101,35 @@ def normalize(text):
         text: Any text from the player or the judge.
     """
     return APOSTROPHE.sub("", text.lower())
+
+
+def strip_accents(text):
+    """Return the text without accents.
+
+    Fast typing drops accents that the arbiter puts back ("e morto" -> "è morto",
+    "gia" -> "già"): without accents they are the same words.
+
+    Args:
+        text: Any text from the player or the judge.
+    """
+    return "".join(c for c in unicodedata.normalize("NFD", text) if not unicodedata.combining(c))
+
+
+def words(text):
+    """Return the words of a text in its two readings of apostrophes, without accents, digits spelled out.
+
+    "c'è" reads as "ce" (as voice transcription writes it) and as "c e" (as fast
+    typing writes it): a word counts as said if it appears in either reading.
+
+    Args:
+        text: Any text from the player or the judge.
+
+    Returns:
+        Two sets of words: apostrophes removed, and apostrophes as spaces.
+    """
+    text = strip_accents(text.lower())
+    readings = (APOSTROPHE.sub("", text), APOSTROPHE.sub(" ", text))
+    return [{DIGITS.get(w, w) for w in WORD.findall(reading)} for reading in readings]
 
 
 def make_client():
@@ -191,10 +224,12 @@ PUZZLE NOTES:
         # a negated question is judged again on its positive form, so the answer cannot follow the negation
         if NEGATION.search(question):
             verdict = ask(verdict["positive_question"])
-        # the rewrite may only remove words (negation, fillers): a word the player did not say means a guess
-        # apostrophes read both ways: "un'isola" counts as "unisola" and as "un" + "isola"
-        said_words = set(WORD.findall(normalize(question))) | set(WORD.findall(question.lower()))
-        if set(WORD.findall(normalize(verdict["positive_question"]))) - said_words:
+        # the rewrite may only remove words (negation, fillers): a word the player did not say means a guess;
+        # accents, digits and apostrophes are only spelling, so they never make a word new
+        said_joined, said_split = words(question)
+        said = said_joined | said_split
+        rewrite_joined, rewrite_split = words(verdict["positive_question"])
+        if not (rewrite_joined <= said or rewrite_split <= said):
             verdict["answer"] = UNCLEAR
         return verdict
 
