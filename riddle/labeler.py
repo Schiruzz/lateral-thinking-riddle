@@ -7,20 +7,29 @@ then it labels simulated games, and only its disagreements with the arbiter
 are reviewed by hand.
 
 Run from the repository root:
-    python -m riddle.labeler validate --puzzle baita
+    python -m riddle.labeler validate --puzzle baita   # against the hand labels
+    python -m riddle.labeler label --puzzle baita      # simulated games -> logs/review.baita.json
+    python -m riddle.labeler build --puzzle baita      # reviewed labels -> tests.simulated.it.json
 """
 
 import argparse
 import json
+import random
 import time
+from collections import Counter
+from pathlib import Path
+import httpx
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from google.genai import errors, types
 
 from riddle.judge import make_client
-from riddle.puzzle import ANSWERS, load_arbiter, load_tests
+from riddle.puzzle import ANSWERS, PUZZLES_DIR, load_arbiter, load_tests
 
-LABELER_MODEL = "gemini-3.5-flash"   # stronger than the arbiter: offline, so slow calls are fine
+LABELER_MODEL = "gemini-3.5-flash-lite"   # Flash on Vertex answered in 2 s or never: Lite is stable; checked by validate
 MAX_ATTEMPTS = 6
+LABEL_TIMEOUT_MS = 14_000   # a call with long reasoning takes up to a minute: past two, it hung
 
 LABELER_PROMPT = """You label test questions for a lateral thinking puzzle played by voice. A player who
 does not know the hidden truth asks questions about a mysterious situation; a host who
@@ -113,7 +122,8 @@ class Labeler:
         self.config = types.GenerateContentConfig(
             system_instruction=prompt, temperature=0,
             response_mime_type="application/json", response_schema=LABEL_SCHEMA,
-            thinking_config=types.ThinkingConfig(thinking_level="high"))   # the hard cases need reasoning
+            thinking_config=types.ThinkingConfig(thinking_level="high"),   # the hard cases need reasoning
+            http_options=types.HttpOptions(timeout=LABEL_TIMEOUT_MS))      # a hung call fails and is retried
 
     def label(self, question, earlier_questions):
         """Label one question.
@@ -123,7 +133,7 @@ class Labeler:
             earlier_questions: The player's earlier questions in the same game, oldest first.
 
         Returns:
-            A dict with "answer", "confident" and "reason".
+            A dict with "answer", "confident" and "reason", or None if the service kept failing.
         """
         earlier = "\n".join(f"- {q}" for q in earlier_questions) or "- none"
         contents = f"EARLIER QUESTIONS:\n{earlier}\n\nNEW QUESTION: {question}"
@@ -131,10 +141,15 @@ class Labeler:
             try:
                 response = self.client.models.generate_content(model=self.model, contents=contents, config=self.config)
                 return json.loads(response.text)
-            except errors.APIError as e:
-                # rate limits and overloads pass: wait longer each time, then give up
-                if e.code not in (429, 503, 504) or attempt == MAX_ATTEMPTS - 1:
-                    raise
+            except (errors.APIError, httpx.TimeoutException) as e:
+                reason = getattr(e, "code", "timeout")   # timeouts carry no HTTP code
+                if reason not in (429, 503, 504, "timeout"):
+                    raise   # a real error, e.g. a bad request: stop and show it
+                if attempt == MAX_ATTEMPTS - 1:
+                    # the service kept failing: skip this question rather than lose the whole run
+                    print(f"\n[failed] {question}")
+                    return None
+                print(f"[retry] {self.model} got {reason}, waiting {2 ** attempt} s")
                 time.sleep(2 ** attempt)
 
 
@@ -148,13 +163,21 @@ def validate(labeler, tests):
         labeler: The `Labeler` to check.
         tests: Test cases from `load_tests`; groups ending in "_doubtful" hold doubtful hand labels.
     """
-    rows = []
-    for i, case in enumerate(tests, 1):
-        print(f"\r{labeler.model}: {i}/{len(tests)}", end="", flush=True)
-        label = labeler.label(case["question"], [q for q, _ in case["history"]])
-        rows.append({**label, "question": case["question"], "expected": case["answer"],
-                     "doubtful": case["group"].endswith("_doubtful")})
+    # in parallel, as in label_log: one slow call no longer holds up all the others
+    labels = [None] * len(tests)
+    with ThreadPoolExecutor(max_workers=LABEL_WORKERS) as pool:
+        futures = {pool.submit(labeler.label, case["question"], [q for q, _ in case["history"]]): i
+                   for i, case in enumerate(tests)}
+        for done, future in enumerate(as_completed(futures), 1):
+            labels[futures[future]] = future.result()
+            print(f"\r{labeler.model}: {done}/{len(tests)}", end="", flush=True)
     print()
+    # a label is None when the service kept failing: leave that question out
+    rows = [{**label, "question": case["question"], "expected": case["answer"],
+             "doubtful": case["group"].endswith("_doubtful")} for case, label in zip(tests, labels) if label]
+    failed = len(tests) - len(rows)
+    if failed:
+        print(f"failed: {failed} (left out)")
 
     def agreement(sub):
         return f"{sum(r['answer'] == r['expected'] for r in sub)}/{len(sub)}" if sub else "-"
@@ -177,18 +200,114 @@ def validate(labeler, tests):
             print(f"    labeller: {r['answer']}{'' if r['confident'] else ' (not confident)'}: {r['reason']}")
 
 
+REVIEW_SHARE = 0.1   # share of agreements checked by hand: both may be wrong in the same way
+LABEL_WORKERS = 8   # parallel labelling calls: enough for speed, few enough for the rate limit
+
+
+def label_log(labeler, puzzle_name):
+    """Label every simulated question and write the ones a person must review.
+
+    Each question is labelled with the player's own earlier words in the same
+    game, unclear questions included. The labels are compared with the answer
+    the arbiter gave during the game.
+
+    Args:
+        labeler: The `Labeler` of the puzzle.
+        puzzle_name: Folder name of the puzzle, e.g. "baita".
+    """
+    review_file = Path(f"logs/review.{puzzle_name}.json")
+    # never overwrite a review already started by hand
+    if review_file.exists():
+        raise SystemExit(f"{review_file} already exists: delete it to label again")
+
+    rows = [json.loads(line) for line in open(f"logs/simulated.{puzzle_name}.jsonl", encoding="utf-8")]
+    # the player's earlier words come from the log, so every label can be asked at once
+    earlier = {}   # game -> the player's questions so far
+    for row in rows:
+        before = earlier.setdefault(row["game"], [])
+        row["earlier"] = list(before)
+        before.append(row["question"])
+    # each call takes several seconds of reasoning: in parallel they take minutes, not most of an hour
+    labels = [None] * len(rows)
+    with ThreadPoolExecutor(max_workers=LABEL_WORKERS) as pool:
+        futures = {pool.submit(labeler.label, r["question"], r["earlier"]): i for i, r in enumerate(rows)}
+        # labels arrive in any order: count them as they come, and put each one back in its place
+        for done, future in enumerate(as_completed(futures), 1):
+            labels[futures[future]] = future.result()
+            print(f"\r{labeler.model}: {done}/{len(rows)}", end="", flush=True)
+    print()
+    for row, label in zip(rows, labels):
+        row["label"] = label
+    # all the labels, so that build needs no model calls
+    Path(f"logs/labeled.{puzzle_name}.json").write_text(
+        json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    agree = [r for r in rows if r["label"]["answer"] == r["answer"]]
+    print(f"agreement: {len(agree)}/{len(rows)}")
+    for persona in dict.fromkeys(r["persona"] for r in rows):
+        sub = [r for r in rows if r["persona"] == persona]
+        print(f"  {persona:<11} {sum(r in agree for r in sub)}/{len(sub)}")
+    # the kinds of disagreement show the kinds of mistake at a glance
+    print("\ndisagreements (arbiter -> labeller):")
+    for (got, label), n in Counter((r["answer"], r["label"]["answer"]) for r in rows
+                                   if r not in agree).most_common():
+        print(f"  {got} -> {label}: {n}")
+
+    # to review: every disagreement, every doubtful label, and a fixed random share of the agreements
+    to_check = [(r, "disagreement") for r in rows if r not in agree]
+    to_check += [(r, "not confident") for r in agree if not r["label"]["confident"]]
+    sure = [r for r in agree if r["label"]["confident"]]
+    to_check += [(r, "random check") for r in random.Random(0).sample(sure, round(len(sure) * REVIEW_SHARE))]
+    review = [{"timestamp": r["timestamp"], "why": why, "persona": r["persona"], "earlier": r["earlier"],
+               "question": r["question"], "arbiter": r["answer"], "labeller": r["label"]["answer"],
+               "confident": r["label"]["confident"], "reason": r["label"]["reason"], "final": ""}
+              for r, why in to_check]
+    review_file.write_text(json.dumps(review, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"\nto review: {len(review)} -> {review_file} (write the right answer in \"final\")")
+
+
+def build_simulated(puzzle_name, language):
+    """Write the simulated questions as test cases, with the reviewed labels where given.
+
+    Args:
+        puzzle_name: Folder name of the puzzle.
+        language: Language code of the test file.
+    """
+    rows = json.loads(Path(f"logs/labeled.{puzzle_name}.json").read_text(encoding="utf-8"))
+    review = json.loads(Path(f"logs/review.{puzzle_name}.json").read_text(encoding="utf-8"))
+    final = {item["timestamp"]: item["final"] for item in review if item["final"]}
+    unknown = set(final.values()) - set(ANSWERS)
+    if unknown:
+        raise SystemExit(f"unknown answers in the review: {sorted(unknown)}")
+
+    # the reviewed answer wins; otherwise the labeller's
+    tests = [{"group": r["persona"], "question": r["question"],
+              "answer": final.get(r["timestamp"], r["label"]["answer"]),
+              "cards": [], "lit": [], "history": r["history"]} for r in rows]
+    path = PUZZLES_DIR / puzzle_name / f"tests.simulated.{language}.json"
+    path.write_text(json.dumps(tests, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"test cases: {len(tests)} ({len(final)} reviewed by hand) -> {path}")
+
+
 def main():
-    """Parse the command line and validate the labeller on a puzzle's hand labels."""
-    parser = argparse.ArgumentParser(description="Check the reference labeller against hand labels.")
-    parser.add_argument("step", choices=["validate"])
+    """Parse the command line and run one step: validate, label or build."""
+    parser = argparse.ArgumentParser(description="Reference labeller for test questions.")
+    parser.add_argument("step", choices=["validate", "label", "build"],
+                        help="validate on hand labels, label the simulated games, or build their test cases")
     parser.add_argument("--puzzle", default="baita")
     parser.add_argument("--language", default="it")
     parser.add_argument("--model", default=LABELER_MODEL)
     args = parser.parse_args()
 
-    puzzle = load_arbiter(args.puzzle, args.language)
-    labeler = Labeler(puzzle, make_client(), args.model)
-    validate(labeler, load_tests(args.puzzle, args.language))
+    # build only reads files: no model needed
+    if args.step == "build":
+        build_simulated(args.puzzle, args.language)
+        return
+    labeler = Labeler(load_arbiter(args.puzzle, args.language), make_client(), args.model)
+    if args.step == "validate":
+        validate(labeler, load_tests(args.puzzle, args.language))
+    else:
+        label_log(labeler, args.puzzle)
 
 
 if __name__ == "__main__":
