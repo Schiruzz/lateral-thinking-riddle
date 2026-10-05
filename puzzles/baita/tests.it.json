@@ -1,0 +1,1597 @@
+[
+  {
+    "group": "author_doubtful",
+    "question": "devo capire chi l'ha ucciso",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "author",
+    "question": "devo capire cosa l'ha ucciso",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "devo capire chi l'ha ucciso",
+        "irrelevant"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text_doubtful",
+    "question": "Nevicava?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "playtest_text",
+    "question": "Le impronte sono state coperte dalla neve?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Nevicava",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Si è chiuso lui a chiave?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Nevicava",
+        "yes"
+      ],
+      [
+        "Le impronte sono state coperte dalla neve?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "È stato ucciso?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Nevicava",
+        "yes"
+      ],
+      [
+        "Le impronte sono state coperte dalla neve?",
+        "no"
+      ],
+      [
+        "Si è chiuso lui a chiave?",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text_doubtful",
+    "question": "La finestra era aperta?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Nevicava",
+        "yes"
+      ],
+      [
+        "Le impronte sono state coperte dalla neve?",
+        "no"
+      ],
+      [
+        "Si è chiuso lui a chiave?",
+        "yes"
+      ],
+      [
+        "È stato ucciso",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Aveva un camino all’interno della stanza?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Nevicava",
+        "yes"
+      ],
+      [
+        "Le impronte sono state coperte dalla neve?",
+        "no"
+      ],
+      [
+        "Si è chiuso lui a chiave?",
+        "yes"
+      ],
+      [
+        "È stato ucciso",
+        "no"
+      ],
+      [
+        "La finestra era aperta?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Aveva spento il fuoco prima di addormentarsi?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Nevicava",
+        "yes"
+      ],
+      [
+        "Le impronte sono state coperte dalla neve?",
+        "no"
+      ],
+      [
+        "Si è chiuso lui a chiave?",
+        "yes"
+      ],
+      [
+        "È stato ucciso",
+        "no"
+      ],
+      [
+        "La finestra era aperta?",
+        "no"
+      ],
+      [
+        "Aveva un camino all’interno della stanza?",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Quindi è morto per intossicazione da monissido di carbonio?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Nevicava",
+        "yes"
+      ],
+      [
+        "Le impronte sono state coperte dalla neve?",
+        "no"
+      ],
+      [
+        "Si è chiuso lui a chiave?",
+        "yes"
+      ],
+      [
+        "È stato ucciso",
+        "no"
+      ],
+      [
+        "La finestra era aperta?",
+        "no"
+      ],
+      [
+        "Aveva un camino all’interno della stanza?",
+        "yes"
+      ],
+      [
+        "Aveva spento il fuoco prima di addormentarsi?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "C’era un passaggio segreto?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "playtest_text",
+    "question": "E stato uno dei quattro amici?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "È stato ucciso da uno dei suoi amici",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "È morto per una malattia?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Si è suicidato?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "È morto per cause naturali?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Per il freddo?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Erano vecchi gli amici?",
+    "answer": "irrelevant",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "È importante il fatto che fossero nella neve",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Quindi la neve c’entra con la sua morte",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Morto assiderato?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text_doubtful",
+    "question": "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text_doubtful",
+    "question": "La camera aveva qualche buco?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Era in stanza da solo?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Lui voleva morire?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "È stato sfortunato quindi?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "La neve gli è caduta addosso",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ],
+      [
+        "È stato sfortunato quindi?",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Era allergico alla neve",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ],
+      [
+        "È stato sfortunato quindi?",
+        "yes"
+      ],
+      [
+        "La neve gli è caduta addosso",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text_doubtful",
+    "question": "I quattro amici sono inutili in questo indovinello?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ],
+      [
+        "È stato sfortunato quindi?",
+        "yes"
+      ],
+      [
+        "La neve gli è caduta addosso",
+        "no"
+      ],
+      [
+        "Era allergico alla neve",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text_doubtful",
+    "question": "Gli amici potevano evitare che lui morisse",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ],
+      [
+        "È stato sfortunato quindi?",
+        "yes"
+      ],
+      [
+        "La neve gli è caduta addosso",
+        "no"
+      ],
+      [
+        "Era allergico alla neve",
+        "no"
+      ],
+      [
+        "I quattro amici sono inutili in questo indovinello?",
+        "irrelevant"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text_doubtful",
+    "question": "La neve l’ha colpito in qualche modo?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ],
+      [
+        "È stato sfortunato quindi?",
+        "yes"
+      ],
+      [
+        "La neve gli è caduta addosso",
+        "no"
+      ],
+      [
+        "Era allergico alla neve",
+        "no"
+      ],
+      [
+        "I quattro amici sono inutili in questo indovinello?",
+        "irrelevant"
+      ],
+      [
+        "Gli amici potevano evitare che lui morisse",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "L’ha colpito in una ferita?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ],
+      [
+        "È stato sfortunato quindi?",
+        "yes"
+      ],
+      [
+        "La neve gli è caduta addosso",
+        "no"
+      ],
+      [
+        "Era allergico alla neve",
+        "no"
+      ],
+      [
+        "I quattro amici sono inutili in questo indovinello?",
+        "irrelevant"
+      ],
+      [
+        "Gli amici potevano evitare che lui morisse",
+        "no"
+      ],
+      [
+        "La neve l’ha colpito in qualche modo?",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "L’ha colpito in punti vitali?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ],
+      [
+        "È stato sfortunato quindi?",
+        "yes"
+      ],
+      [
+        "La neve gli è caduta addosso",
+        "no"
+      ],
+      [
+        "Era allergico alla neve",
+        "no"
+      ],
+      [
+        "I quattro amici sono inutili in questo indovinello?",
+        "irrelevant"
+      ],
+      [
+        "Gli amici potevano evitare che lui morisse",
+        "no"
+      ],
+      [
+        "La neve l’ha colpito in qualche modo?",
+        "yes"
+      ],
+      [
+        "L'ha colpito in una ferita",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "In bocca?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ],
+      [
+        "È stato sfortunato quindi?",
+        "yes"
+      ],
+      [
+        "La neve gli è caduta addosso",
+        "no"
+      ],
+      [
+        "Era allergico alla neve",
+        "no"
+      ],
+      [
+        "I quattro amici sono inutili in questo indovinello?",
+        "irrelevant"
+      ],
+      [
+        "Gli amici potevano evitare che lui morisse",
+        "no"
+      ],
+      [
+        "La neve l’ha colpito in qualche modo?",
+        "yes"
+      ],
+      [
+        "L'ha colpito in una ferita",
+        "no"
+      ],
+      [
+        "L'ha colpito in punti vitali?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Ha acceso una stufa?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "C’era un passaggio segreto?",
+        "no"
+      ],
+      [
+        "È stato ucciso da uno dei suoi amici",
+        "no"
+      ],
+      [
+        "È morto per una malattia?",
+        "no"
+      ],
+      [
+        "Si è suicidato?",
+        "no"
+      ],
+      [
+        "È morto per cause naturali?",
+        "yes"
+      ],
+      [
+        "Per il freddo?",
+        "no"
+      ],
+      [
+        "Erano vecchi gli amici?",
+        "irrelevant"
+      ],
+      [
+        "È importante il fatto che fossero nella neve",
+        "yes"
+      ],
+      [
+        "Quindi la neve c’entra con la sua morte",
+        "yes"
+      ],
+      [
+        "Morto assiderato?",
+        "no"
+      ],
+      [
+        "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
+        "yes"
+      ],
+      [
+        "La camera aveva qualche buco?",
+        "irrelevant"
+      ],
+      [
+        "Era in stanza da solo?",
+        "yes"
+      ],
+      [
+        "Lui voleva morire?",
+        "no"
+      ],
+      [
+        "È stato sfortunato quindi?",
+        "yes"
+      ],
+      [
+        "La neve gli è caduta addosso",
+        "no"
+      ],
+      [
+        "Era allergico alla neve",
+        "no"
+      ],
+      [
+        "I quattro amici sono inutili in questo indovinello?",
+        "irrelevant"
+      ],
+      [
+        "Gli amici potevano evitare che lui morisse",
+        "no"
+      ],
+      [
+        "La neve l’ha colpito in qualche modo?",
+        "yes"
+      ],
+      [
+        "L'ha colpito in una ferita",
+        "no"
+      ],
+      [
+        "L'ha colpito in punti vitali?",
+        "no"
+      ],
+      [
+        "In bocca?",
+        "no"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text",
+    "question": "Stava bene",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "playtest_text",
+    "question": "Era morto di cause naturali?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Stava bene",
+        "irrelevant"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text_doubtful",
+    "question": "Era giovane e sano?",
+    "answer": "irrelevant",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Stava bene",
+        "irrelevant"
+      ],
+      [
+        "Era morto di cause naturali?",
+        "yes"
+      ]
+    ]
+  },
+  {
+    "group": "playtest_text_doubtful",
+    "question": "Era già morto venerdì?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": [
+      [
+        "Stava bene",
+        "irrelevant"
+      ],
+      [
+        "Era morto di cause naturali?",
+        "yes"
+      ],
+      [
+        "Era giovane e sano",
+        "irrelevant"
+      ]
+    ]
+  }
+]
