@@ -2,10 +2,12 @@
 
 import pytest
 
-from riddle.puzzle import ANSWERS, PUZZLES_DIR, load_puzzle, load_tests
+from riddle.puzzle import ANSWERS, PUZZLES_DIR, load_arbiter, load_puzzle, load_tests
 
 # every puzzle in every language: files named like "it.json", "en.json"
 PUZZLE_FILES = sorted(PUZZLES_DIR.glob("*/??.json"))
+# puzzles with only the arbiter's fields: files named like "arbiter.it.json"
+ARBITER_FILES = sorted(PUZZLES_DIR.glob("*/arbiter.*.json"))
 
 
 @pytest.mark.parametrize("path", PUZZLE_FILES, ids=str)
@@ -31,3 +33,11 @@ def test_gabbiano_matches_the_notebook():
     assert len(puzzle.deductions) == 9
     assert puzzle.points[puzzle.root] == 550
     assert len(load_tests("gabbiano", "it")) == 154
+
+
+@pytest.mark.parametrize("path", ARBITER_FILES, ids=str)
+def test_arbiter_file_loads(path):
+    """Every arbiter-only puzzle loads with a story and its solution facts."""
+    language = path.name.split(".")[1]   # "arbiter.it.json" -> "it"
+    puzzle = load_arbiter(path.parent.name, language)
+    assert puzzle.story and puzzle.solution_facts
