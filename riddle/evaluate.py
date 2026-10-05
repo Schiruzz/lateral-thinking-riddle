@@ -9,7 +9,7 @@ import argparse
 import time
 
 from riddle.judge import JUDGE_MODEL, Judge, make_client
-from riddle.puzzle import load_arbiter, load_puzzle, load_tests
+from riddle.puzzle import PUZZLES_DIR, load_arbiter, load_puzzle, load_tests
 
 
 def evaluate(judge, tests):
@@ -147,17 +147,22 @@ def main():
     parser.add_argument("--answers-only", action="store_true",
                         help="judge only the answers, on a puzzle with only the arbiter's fields")
     parser.add_argument("--runs", type=int, default=3, help="runs per question with --answers-only")
+    parser.add_argument("--tests", default=None, help="test set, e.g. simulated (default: the main one)")
     args = parser.parse_args()
 
     # the arbiter alone: the puzzle has no cards, so there is nothing else to judge
     if args.answers_only:
-        judge = Judge(load_arbiter(args.puzzle, args.language), make_client(), args.model)
-        report_answers(evaluate_answers(judge, load_tests(args.puzzle, args.language), args.runs), args.runs)
+        # a full puzzle works too: its cards give the arbiter the context of the cards lit in a test
+        arbiter_only = (PUZZLES_DIR / args.puzzle / f"arbiter.{args.language}.json").exists()
+        puzzle = (load_arbiter if arbiter_only else load_puzzle)(args.puzzle, args.language)
+        judge = Judge(puzzle, make_client(), args.model)
+        tests = load_tests(args.puzzle, args.language, args.tests)
+        report_answers(evaluate_answers(judge, tests, args.runs), args.runs)
         return
 
     puzzle = load_puzzle(args.puzzle, args.language)
     judge = Judge(puzzle, make_client(), args.model)
-    report(evaluate(judge, load_tests(args.puzzle, args.language)))
+    report(evaluate(judge, load_tests(args.puzzle, args.language, args.tests)))
 
 
 if __name__ == "__main__":
