@@ -41,6 +41,8 @@ class Riddle:
         scenes: Scenes by id.
         exclusions: False leads by id.
         victory: Victory elements by id.
+        key_facts: Ids of the facts the verifier protects: leaps (S), twists (C)
+            and every fact that presupposes one.
     """
 
     def __init__(self, data):
@@ -63,6 +65,9 @@ class Riddle:
         self.exclusions = by_id(data["exclusions"], "exclusion")
         self.victory = by_id(data["victory"], "victory")
         self.check()
+        # a fact that presupposes a leap or a twist would bring it along: it is protected too
+        self.key_facts = {fact_id for fact_id in self.facts
+                          if any(self.facts[f]["role"] in ("S", "C") for f in self.closure([fact_id]))}
 
     def check(self):
         """Check that every id the riddle uses exists, so the engine never meets an unknown one.

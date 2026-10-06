@@ -14,7 +14,7 @@
     {"id": "ristorante", "name": "Il ristorante", "sealed": false}
   ],
   "facts": [
-    {"id": "passato", "text": "C'entra qualcosa del suo passato.", "scene": "anni_prima", "role": "S", "requires": []},
+    {"id": "passato", "text": "C'entra qualcosa del suo passato.", "scene": "anni_prima", "role": "P", "requires": []},
     {"id": "cieco", "text": "L'uomo è cieco.", "scene": "ristorante", "role": "P", "requires": []},
     {"id": "cieco_prima", "text": "Era già cieco anni prima.", "scene": "anni_prima", "role": "P", "requires": ["cieco", "passato"]},
     {"id": "moglie", "text": "La donna è sua moglie.", "scene": "ristorante", "role": "P", "requires": []},

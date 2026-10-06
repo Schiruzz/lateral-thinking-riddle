@@ -60,3 +60,9 @@ def test_duplicate_ids_are_refused():
 def test_detective_counts_needed_facts_plus_half():
     assert load_riddle("baita", "it").detective() == 5
     assert load_riddle("gabbiano", "it").detective() == 14
+
+
+def test_key_facts_are_leaps_twists_and_what_presupposes_them(baita, gabbiano):
+    """The verifier protects leaps and twists, and the facts that would bring one along."""
+    assert baita.key_facts == {"gas", "monossido", "comignolo", "gas_intrappolato"}
+    assert gabbiano.key_facts == {"mangiato_figlio", "gabbiano_creduto", "dubbio", "sapore"}
