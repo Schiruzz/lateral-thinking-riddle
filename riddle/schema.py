@@ -9,6 +9,27 @@ import json
 from riddle.puzzle import PUZZLES_DIR
 
 
+def by_id(items, kind):
+    """Index items by their id, refusing duplicates.
+
+    Args:
+        items: A list of dicts, each with an "id" key.
+        kind: What the items are, used in the error message (e.g. "fact").
+
+    Returns:
+        A dict from id to item, in the order of the list.
+
+    Raises:
+        ValueError: If two items share an id.
+    """
+    ids = [item["id"] for item in items]
+    # a plain dict would silently keep only the last item with a repeated id
+    duplicates = sorted({item_id for item_id in ids if ids.count(item_id) > 1})
+    if duplicates:
+        raise ValueError(f"duplicate {kind} ids: {duplicates}")
+    return {item["id"]: item for item in items}
+
+
 class Riddle:
     """A riddle in the card schema.
 
@@ -30,17 +51,18 @@ class Riddle:
             data: The parsed content of a riddle file.
 
         Raises:
-            ValueError: If an id points to a fact or scene that does not exist.
+          ValueError: If two items share an id, or an id points to a fact or
+              scene that does not exist.
         """
         self.id = data["id"]
         self.title = data["title"]
         self.story = data["story"]
         self.truth = data["truth"]
         # dicts keep the order of the file: facts stay in time order
-        self.facts = {fact["id"]: fact for fact in data["facts"]}
-        self.scenes = {scene["id"]: scene for scene in data["scenes"]}
-        self.exclusions = {exclusion["id"]: exclusion for exclusion in data["exclusions"]}
-        self.victory = {element["id"]: element for element in data["victory"]}
+        self.facts = by_id(data["facts"], "fact")
+        self.scenes = by_id(data["scenes"], "scene")
+        self.exclusions = by_id(data["exclusions"], "exclusion")
+        self.victory = by_id(data["victory"], "victory")
         self.check()
 
     def check(self):
@@ -106,3 +128,13 @@ def load_riddle(name, language):
     """
     path = PUZZLES_DIR / name / f"arbiter.{language}.json"
     return Riddle(json.loads(path.read_text(encoding="utf-8")))
+
+
+
+def by_id(items, kind):
+    """Index items by id, refusing duplicates (a dict would silently keep the last)."""
+    ids = [item["id"] for item in items]
+    duplicates = sorted({i for i in ids if ids.count(i) > 1})
+    if duplicates:
+        raise ValueError(f"duplicate {kind} ids: {duplicates}")
+    return {item["id"]: item for item in items}

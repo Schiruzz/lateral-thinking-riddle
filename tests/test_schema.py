@@ -1,8 +1,7 @@
 """Checks of the card schema's structure: no API calls, safe to run on every push."""
 
 import pytest
-
-from riddle.schema import Riddle, load_riddle
+from riddle.schema import Riddle, load_riddle, by_id
 
 
 @pytest.fixture
@@ -51,3 +50,8 @@ def test_unknown_requires_is_rejected():
             "exclusions": [], "victory": []}
     with pytest.raises(ValueError, match="missing"):
         Riddle(data)
+
+
+def test_duplicate_ids_are_refused():
+    with pytest.raises(ValueError, match="duplicate exclusion ids"):
+        by_id([{"id": "veleno_cibo"}, {"id": "veleno_cibo"}], "exclusion")
