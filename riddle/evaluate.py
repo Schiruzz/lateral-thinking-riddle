@@ -255,6 +255,14 @@ def main():
     parser.add_argument("--no-verifier", action="store_true", help="with --facts, the matcher without the verifier")
     args = parser.parse_args()
 
+    # the matcher alone: what each question adds to the game
+    if args.facts:
+        matcher = Matcher(load_riddle(args.puzzle, args.language), make_client(), args.model,
+                          use_verifier=not args.no_verifier)
+        report_facts(evaluate_facts(matcher, load_tests(args.puzzle, args.language, args.tests)))
+        return
+
+
     # the arbiter alone: the puzzle has no cards, so there is nothing else to judge
     if args.answers_only:
         # a full puzzle works too: its cards give the arbiter the context of the cards lit in a test
