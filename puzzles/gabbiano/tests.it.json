@@ -567,9 +567,7 @@
     "group": "partly",
     "question": "È successo qualcosa al ristorante?",
     "answer": "yes",
-    "cards": [
-      "ristorante_no"
-    ],
+    "cards": [],
     "lit": [],
     "history": []
   },
