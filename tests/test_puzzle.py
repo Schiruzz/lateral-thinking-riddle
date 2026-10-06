@@ -1,5 +1,5 @@
 """Data checks for every puzzle file: no API calls, safe to run on every push."""
-
+import json
 import pytest
 
 from riddle.puzzle import ANSWERS, PUZZLES_DIR, load_arbiter, load_puzzle, load_tests
@@ -44,3 +44,14 @@ def test_arbiter_file_loads(path):
     language = path.name.split(".")[1]   # "arbiter.it.json" -> "it"
     puzzle = load_arbiter(path.parent.name, language)
     assert puzzle.story and puzzle.solution_facts
+
+
+@pytest.mark.parametrize("path", ARBITER_FILES, ids=str)
+def test_arbiter_reads_victory_claims_after_facts(path):
+    """The arbiter reads the facts in time order, then the victory claims, then NOT TRUE."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    puzzle = load_arbiter(path.parent.name, path.name.split(".")[1])
+    facts = [fact["text"] for fact in data["facts"]]
+    claims = [element["claim"] for element in data["victory"]]
+    assert puzzle.solution_facts[:-1] == facts + claims
+    assert puzzle.solution_facts[-1].startswith("NOT TRUE: ")
