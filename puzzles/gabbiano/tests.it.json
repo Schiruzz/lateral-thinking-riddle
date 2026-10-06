@@ -264,7 +264,8 @@
     "question": "Sull'isola hanno mangiato il figlio?",
     "answer": "yes",
     "cards": [
-      "mangiato_figlio"
+      "mangiato_figlio",
+      "isola"
     ],
     "lit": [],
     "history": []
@@ -877,7 +878,7 @@
     "question": "Essendo cieco, riconosceva i gabbiani solo dal verso?",
     "answer": "yes",
     "cards": [
-      "udito"
+      "cieco_prima"
     ],
     "lit": [
       "cieco",
