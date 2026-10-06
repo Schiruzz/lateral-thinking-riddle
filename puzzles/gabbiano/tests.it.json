@@ -856,9 +856,7 @@
     "group": "deduction",
     "question": "Essendo cieco, riconosceva i gabbiani solo dal verso?",
     "answer": "yes",
-    "cards": [
-      "d_udito"
-    ],
+    "cards": ["udito"],
     "lit": [
       "cieco",
       "gabbiani"
@@ -869,9 +867,7 @@
     "group": "deduction",
     "question": "La moglie gli ha mentito per salvarlo?",
     "answer": "yes",
-    "cards": [
-      "d_pieta"
-    ],
+    "cards": [],
     "lit": [
       "bugia",
       "motivo"
@@ -882,10 +878,7 @@
     "group": "deduction",
     "question": "Sull'isola hanno mangiato il corpo del figlio?",
     "answer": "yes",
-    "cards": [
-      "d_tragedia", 
-      "mangiato_figlio"
-    ],
+    "cards": ["mangiato_figlio"],
     "lit": [
       "naufragio", "figlio_annegato", "isola",
       "carne_umana"
@@ -896,9 +889,7 @@
     "group": "deduction",
     "question": "La moglie gli ha fatto credere che fosse gabbiano e lui, essendo cieco, le ha creduto?",
     "answer": "yes",
-    "cards": [
-      "d_inganno"
-    ],
+    "cards": [],
     "lit": [
       "bugia",
       "cieco",
@@ -921,9 +912,7 @@
     "group": "deduction",
     "question": "Nel naufragio il figlio è annegato e loro sono finiti su un'isola senza cibo?",
     "answer": "yes",
-    "cards": [
-      "d_tragedia"
-    ],
+    "cards": ["figlio_annegato", "fame"],
     "lit": [
       "naufragio",
       "isola",
@@ -935,9 +924,7 @@
     "group": "deduction",
     "question": "Al ristorante ha capito di aver mangiato suo figlio?",
     "answer": "yes",
-    "cards": [
-      "soluzione"
-    ],
+    "cards": [],
     "lit": [
       "mangiato_figlio",
       "bugia", "gabbiano_creduto", "cieco"
@@ -948,9 +935,7 @@
     "group": "deduction",
     "question": "secondo me al ristorante ha capito dal sapore che anni prima aveva mangiato suo figlio",
     "answer": "yes",
-    "cards": [
-      "soluzione"
-    ],
+    "cards": ["scoperta"],
     "lit": [
       "mangiato_figlio",
       "bugia", "gabbiano_creduto", "cieco"
@@ -1269,18 +1254,16 @@
   {"group": "unclear", "question": "sé figlio nave fatto isola", "answer": "unclear", "cards": [], "lit": [], "history": []},
   {"group": "unclear", "question": "era cieca la vista del menù quando", "answer": "unclear", "cards": [], "lit": [], "history": []},
   {"group": "unclear", "question": "Il gabbiano aveva un nome?", "answer": "irrelevant", "cards": [], "lit": [], "history": []},
-  {"group": "solution", "question": "Quindi l'uomo si è ucciso perché ha capito che la carne che aveva mangiato non era di gabbiano ma era il figlio morto", "answer": "yes", "cards": ["soluzione"], "lit": ["mangiato_figlio", "bugia", "gabbiano_creduto", "cieco"], "history": []},
+  {"group": "solution", "question": "Quindi l'uomo si è ucciso perché ha capito che la carne che aveva mangiato non era di gabbiano ma era il figlio morto", "answer": "yes", "cards": [], "lit": ["mangiato_figlio", "bugia", "gabbiano_creduto", "cieco"], "history": []},
   {"group": "solution", "question": "Ha capito cosa aveva mangiato?", "answer": "yes", "cards": [], "lit": [], "history": []},
   {"group": "solution", "question": "Sull'isola ha mangiato suo figlio?", "answer": "yes", "cards": ["mangiato_figlio", "isola"], "lit": [], "history": []},
-  {"group": "solution", "question": "Al ristorante ha capito di aver mangiato suo figlio?", "answer": "yes", "cards": ["soluzione"], "lit": [], "history": []},
+  {"group": "solution", "question": "Al ristorante ha capito di aver mangiato suo figlio?", "answer": "yes", "cards": ["mangiato_figlio"], "lit": [], "history": []},
   {"group": "invalid", "question": "Dove devo cercare?", "answer": "invalid", "cards": [], "lit": [], "history": []},
     {
     "group": "solution",
     "question": "Hanno mangiato il figlio morto e lei lui scoprendolo si è tolto la vita",
     "answer": "yes",
-    "cards": [
-      "soluzione"
-    ],
+    "cards": ["mangiato_figlio"],
     "lit": [
       "moglie",
       "figlio_annegato",
@@ -1295,9 +1278,7 @@
     "group": "solution",
     "question": "nel naufragio il figlio è morto e gli altri a loro insaputa le hanno dato come cibo loro se ne sono accorti e lui si è tolta la vita",
     "answer": "yes",
-    "cards": [
-      "soluzione"
-    ],
+    "cards": ["mangiato_figlio"],
     "lit": [
       "moglie",
       "figlio_annegato",
