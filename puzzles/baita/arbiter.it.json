@@ -34,14 +34,13 @@
     {"id": "amico_colpevole", "text": "Uno degli amici l'ha ucciso.", "ruled_out_by": "non_ucciso"},
     {"id": "suicidio", "text": "Si è ucciso.", "ruled_out_by": "incidente"},
     {"id": "veleno_cibo", "text": "È stato avvelenato con il cibo o una bevanda.", "ruled_out_by": "gas"},
-    {"id": "veleno_cibo", "text": "Qualcuno l'ha avvelenato con il cibo o una bevanda.", "ruled_out_by": "gas"},
     {"id": "freddo", "text": "È morto di freddo.", "ruled_out_by": "gas"},
     {"id": "passaggio", "text": "Qualcuno è entrato da un passaggio segreto o dalla finestra.", "ruled_out_by": "nessuna_impronta"}
   ],
   "victory": [
-    {"id": "v_gas", "claim": "È morto intossicato dal gas della stufa.",
+    {"id": "v_gas", "claim": "È morto intossicato dal gas della stufa.", "requires": ["gas", "stufa"],
      "paraphrases": ["il fumo della stufa l'ha avvelenato", "monossido di carbonio dalla stufa"]},
-    {"id": "v_neve", "claim": "La neve aveva bloccato il comignolo.",
+    {"id": "v_neve", "claim": "La neve aveva bloccato il comignolo.", "requires": ["comignolo"],
      "paraphrases": ["il camino era ostruito dalla neve", "il fumo non usciva per colpa della neve"]}
   ]
 }
