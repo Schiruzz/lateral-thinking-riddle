@@ -39,9 +39,9 @@
     {"id": "passaggio", "text": "Qualcuno è entrato da un passaggio segreto o dalla finestra.", "ruled_out_by": "nessuna_impronta"}
   ],
   "victory": [
-    {"id": "v_gas", "claim": "È morto intossicato dal gas della stufa.",
+    {"id": "v_gas", "claim": "È morto intossicato dal gas della stufa.", "requires": ["gas", "stufa"],
      "paraphrases": ["il fumo della stufa l'ha avvelenato", "monossido di carbonio dalla stufa"]},
-    {"id": "v_neve", "claim": "La neve aveva bloccato il comignolo.",
+    {"id": "v_neve", "claim": "La neve aveva bloccato il comignolo.", "requires": ["comignolo"],
      "paraphrases": ["il camino era ostruito dalla neve", "il fumo non usciva per colpa della neve"]}
   ]
 }

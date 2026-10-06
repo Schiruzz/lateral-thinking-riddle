@@ -51,9 +51,9 @@
     {"id": "nessun_omicidio", "text": "Qualcuno ha ucciso il figlio.", "ruled_out_by": "figlio_annegato"}
   ],
   "victory": [
-    {"id": "v_figlio", "claim": "Sull'isola ha mangiato suo figlio.",
+    {"id": "v_figlio", "claim": "Sull'isola ha mangiato suo figlio.", "requires": ["mangiato_figlio"],
      "paraphrases": ["ha mangiato la carne del figlio", "il gabbiano dell'isola era suo figlio"]},
-    {"id": "v_scoperta", "claim": "Al ristorante ha capito cosa aveva mangiato.",
+    {"id": "v_scoperta", "claim": "Al ristorante ha capito cosa aveva mangiato.", "requires": ["scoperta"],
      "paraphrases": ["dal sapore ha scoperto la verità", "si è accorto che non era gabbiano"]}
   ]
 }
