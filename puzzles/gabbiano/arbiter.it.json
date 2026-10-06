@@ -15,7 +15,8 @@
   ],
   "facts": [
     {"id": "passato", "text": "C'entra qualcosa del suo passato.", "scene": "anni_prima", "role": "S", "requires": []},
-    {"id": "cieco", "text": "L'uomo era già cieco anni prima del ristorante.", "scene": "ristorante", "role": "S", "requires": []},
+    {"id": "cieco", "text": "L'uomo è cieco.", "scene": "ristorante", "role": "P", "requires": []},
+    {"id": "cieco_prima", "text": "Era già cieco anni prima.", "scene": "anni_prima", "role": "P", "requires": ["cieco", "passato"]},
     {"id": "moglie", "text": "La donna è sua moglie.", "scene": "ristorante", "role": "P", "requires": []},
     {"id": "terza_persona", "text": "Nella storia c'entra un'altra persona.", "scene": "anni_prima", "role": "P", "requires": []},
     {"id": "figlio", "text": "C'entra il loro figlio.", "scene": "anni_prima", "role": "P", "requires": ["terza_persona"]},
@@ -25,23 +26,21 @@
     {"id": "solo_tre", "text": "Sulla barca c'erano solo loro tre.", "scene": "anni_prima", "role": "P", "requires": ["barca"], "optional": true},
     {"id": "naufragio", "text": "Hanno fatto naufragio.", "scene": "anni_prima", "role": "P", "requires": ["barca"]},
     {"id": "figlio_morto", "text": "Il figlio è morto.", "scene": "anni_prima", "role": "P", "requires": ["figlio", "passato"]},
-    {"id": "figlio_annegato", "text": "Il figlio è annegato in mare durante il naufragio: nessuno l'ha ucciso.", "scene": "anni_prima", "role": "P", "requires": ["figlio_morto", "naufragio"]},
+    {"id": "figlio_annegato", "text": "Il figlio è annegato nel naufragio.", "scene": "anni_prima", "role": "P", "requires": ["figlio_morto", "naufragio"]},
     {"id": "isola", "text": "Lui e la moglie sono finiti su un'isola.", "scene": "anni_prima", "role": "P", "requires": ["passato"]},
     {"id": "fame", "text": "Sull'isola non c'era cibo.", "scene": "anni_prima", "role": "P", "requires": ["isola"]},
     {"id": "gabbiani", "text": "Sull'isola c'erano molti gabbiani.", "scene": "anni_prima", "role": "P", "requires": ["isola"]},
     {"id": "corpo_isola", "text": "Il mare ha portato sull'isola il corpo del figlio.", "scene": "anni_prima", "role": "P", "requires": ["figlio_annegato", "isola"]},
-    {"id": "carne_umana", "text": "Affamati, hanno mangiato carne umana.", "scene": "anni_prima", "role": "P", "requires": ["passato"]},
+    {"id": "carne_umana", "text": "Hanno mangiato carne umana.", "scene": "anni_prima", "role": "P", "requires": ["passato"]},
     {"id": "mangiato_figlio", "text": "Sull'isola ha mangiato la carne di suo figlio.", "scene": "anni_prima", "role": "S", "requires": ["carne_umana", "figlio_morto"]},
     {"id": "bugia", "text": "La moglie gli ha mentito: gli ha detto che era gabbiano.", "scene": "anni_prima", "role": "P", "requires": ["moglie"]},
     {"id": "motivo", "text": "La moglie ha mentito perché lui sopravvivesse.", "scene": "anni_prima", "role": "P", "requires": ["bugia"]},
-    {"id": "gabbiano_creduto", "text": "Credeva di mangiare gabbiano.", "scene": "anni_prima", "role": "P", "requires": ["passato"]},
-    {"id": "udito", "text": "Sentiva i gabbiani, e per questo le ha creduto.", "scene": "anni_prima", "role": "P", "requires": ["cieco", "gabbiani"]},
+    {"id": "gabbiano_creduto", "text": "Credeva di mangiare gabbiano.", "scene": "anni_prima", "role": "S", "requires": ["passato"]},
+    {"id": "udito", "text": "Sentiva i gabbiani, e per questo le ha creduto.", "scene": "anni_prima", "role": "P", "requires": ["cieco_prima", "gabbiani"]},
     {"id": "dubbio", "text": "Per anni gli è rimasto un dubbio su quel pasto.", "scene": "anni_prima", "role": "P", "requires": ["gabbiano_creduto"]},
     {"id": "mai_gabbiano", "text": "Prima del ristorante non aveva mai mangiato vero gabbiano.", "scene": "ristorante", "role": "P", "requires": [], "negative": true},
     {"id": "verifica", "text": "Al ristorante ha ordinato gabbiano apposta, per verificare.", "scene": "ristorante", "role": "P", "requires": ["mai_gabbiano"]},
-    {"id": "sapore", "text": "Il sapore era diverso da quello che ricordava.", "scene": "ristorante", "role": "C", "requires": ["verifica"]},
-    {"id": "scoperta", "text": "Dal sapore ha capito che sull'isola aveva mangiato suo figlio.", "scene": "ristorante", "role": "P", "requires": ["sapore"]},
-    {"id": "suicidio", "text": "Per questo è uscito e si è tolto la vita.", "scene": "ristorante", "role": "P", "requires": ["scoperta"]}
+    {"id": "sapore", "text": "Il sapore era diverso da quello che ricordava.", "scene": "ristorante", "role": "C", "requires": ["verifica"]}
   ],
   "exclusions": [
     {"id": "carne_ok", "text": "La carne del ristorante era avvelenata, cruda o avariata.", "ruled_out_by": null},
@@ -53,7 +52,7 @@
   "victory": [
     {"id": "v_figlio", "claim": "Sull'isola ha mangiato suo figlio.", "requires": ["mangiato_figlio"],
      "paraphrases": ["ha mangiato la carne del figlio", "il gabbiano dell'isola era suo figlio"]},
-    {"id": "v_scoperta", "claim": "Al ristorante ha capito cosa aveva mangiato.", "requires": ["scoperta"],
+    {"id": "v_scoperta", "claim": "Al ristorante ha capito cosa aveva mangiato.", "requires": ["sapore"],
      "paraphrases": ["dal sapore ha scoperto la verità", "si è accorto che non era gabbiano"]}
   ]
 }

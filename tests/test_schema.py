@@ -59,4 +59,4 @@ def test_duplicate_ids_are_refused():
 
 def test_detective_counts_needed_facts_plus_half():
     assert load_riddle("baita", "it").detective() == 5
-    assert load_riddle("gabbiano", "it").detective() == 15
+    assert load_riddle("gabbiano", "it").detective() == 14

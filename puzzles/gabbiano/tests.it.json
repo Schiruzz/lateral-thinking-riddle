@@ -127,7 +127,7 @@
     "question": "Era cieco già ai tempi del naufragio?",
     "answer": "yes",
     "cards": [
-      "cieco",
+      "cieco_prima",
       "naufragio"
     ],
     "lit": [],
@@ -158,7 +158,9 @@
     "group": "full_fact",
     "question": "Voleva verificare qualcosa?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "verifica"
+    ],
     "lit": [],
     "history": []
   },
@@ -556,9 +558,7 @@
     "group": "partly",
     "question": "Il ristorante c'entra?",
     "answer": "yes",
-    "cards": [
-      "ristorante_no"
-    ],
+    "cards": [],
     "lit": [],
     "history": []
   },
@@ -966,7 +966,7 @@
     "question": "secondo me al ristorante ha capito dal sapore che anni prima aveva mangiato suo figlio",
     "answer": "yes",
     "cards": [
-      "scoperta"
+      "sapore"
     ],
     "lit": [
       "mangiato_figlio",
@@ -1197,7 +1197,9 @@
     "group": "context",
     "question": "Ed era già morto quando è arrivato lì?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "corpo_isola"
+    ],
     "lit": [
       "figlio_morto",
       "isola"
@@ -1460,9 +1462,7 @@
     "group": "spoken",
     "question": "Il ristorante centra?",
     "answer": "yes",
-    "cards": [
-      "ristorante_no"
-    ],
+    "cards": [],
     "lit": [],
     "history": []
   },
@@ -1631,7 +1631,9 @@
     "group": "chain",
     "question": "L'ha ordinato per verificare qualcosa?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "verifica"
+    ],
     "lit": [],
     "history": []
   },
@@ -1639,7 +1641,9 @@
     "group": "chain",
     "question": "L'ha ordinato apposta?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "verifica"
+    ],
     "lit": [],
     "history": []
   },
