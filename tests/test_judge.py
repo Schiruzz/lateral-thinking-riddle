@@ -109,9 +109,10 @@ def test_rewrite_that_changes_a_word_is_still_unclear(puzzle):
 
 
 def test_arbiter_never_sees_the_cards(puzzle):
-    """The arbiter knows the solution facts but no card list: answering and finding cards stay apart."""
+    """The arbiter knows the truth and the solution facts but no card list: answering and finding cards stay apart."""
     judge, _ = make_judge(puzzle)
     prompt = judge.arbiter_config.system_instruction
+    assert puzzle.solution in prompt
     assert all(fact in prompt for fact in puzzle.solution_facts)
     assert puzzle.card_text["cieco"] not in prompt
 

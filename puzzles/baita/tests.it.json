@@ -3,7 +3,9 @@
     "group": "author_doubtful",
     "question": "devo capire chi l'ha ucciso",
     "answer": "no",
-    "cards": [],
+    "cards": [
+      "non_ucciso"
+    ],
     "lit": [],
     "history": []
   },
@@ -12,7 +14,9 @@
     "question": "devo capire cosa l'ha ucciso",
     "answer": "yes",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "non_ucciso"
+    ],
     "history": [
       [
         "devo capire chi l'ha ucciso",
@@ -45,7 +49,9 @@
     "group": "playtest_text",
     "question": "Si è chiuso lui a chiave?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "porta_lui"
+    ],
     "lit": [],
     "history": [
       [
@@ -62,8 +68,12 @@
     "group": "playtest_text",
     "question": "È stato ucciso?",
     "answer": "no",
-    "cards": [],
-    "lit": [],
+    "cards": [
+      "non_ucciso"
+    ],
+    "lit": [
+      "porta_lui"
+    ],
     "history": [
       [
         "Nevicava",
@@ -84,7 +94,10 @@
     "question": "La finestra era aperta?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "porta_lui",
+      "non_ucciso"
+    ],
     "history": [
       [
         "Nevicava",
@@ -108,8 +121,13 @@
     "group": "playtest_text",
     "question": "Aveva un camino all’interno della stanza?",
     "answer": "yes",
-    "cards": [],
-    "lit": [],
+    "cards": [
+      "stufa"
+    ],
+    "lit": [
+      "porta_lui",
+      "non_ucciso"
+    ],
     "history": [
       [
         "Nevicava",
@@ -138,7 +156,11 @@
     "question": "Aveva spento il fuoco prima di addormentarsi?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "porta_lui",
+      "non_ucciso",
+      "stufa"
+    ],
     "history": [
       [
         "Nevicava",
@@ -170,8 +192,14 @@
     "group": "playtest_text",
     "question": "Quindi è morto per intossicazione da monissido di carbonio?",
     "answer": "yes",
-    "cards": [],
-    "lit": [],
+    "cards": [
+      "monossido"
+    ],
+    "lit": [
+      "porta_lui",
+      "non_ucciso",
+      "stufa"
+    ],
     "history": [
       [
         "Nevicava",
@@ -207,7 +235,9 @@
     "group": "playtest_text",
     "question": "C’era un passaggio segreto?",
     "answer": "no",
-    "cards": [],
+    "cards": [
+      "passaggio"
+    ],
     "lit": [],
     "history": []
   },
@@ -215,8 +245,12 @@
     "group": "playtest_text",
     "question": "E stato uno dei quattro amici?",
     "answer": "no",
-    "cards": [],
-    "lit": [],
+    "cards": [
+      "amico_colpevole"
+    ],
+    "lit": [
+      "passaggio"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -228,8 +262,12 @@
     "group": "playtest_text",
     "question": "È stato ucciso da uno dei suoi amici",
     "answer": "no",
-    "cards": [],
-    "lit": [],
+    "cards": [
+      "amico_colpevole"
+    ],
+    "lit": [
+      "passaggio"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -242,7 +280,10 @@
     "question": "È morto per una malattia?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -258,8 +299,13 @@
     "group": "playtest_text",
     "question": "Si è suicidato?",
     "answer": "no",
-    "cards": [],
-    "lit": [],
+    "cards": [
+      "suicidio"
+    ],
+    "lit": [
+      "passaggio",
+      "amico_colpevole"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -280,7 +326,11 @@
     "question": "È morto per cause naturali?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -304,8 +354,14 @@
     "group": "playtest_text",
     "question": "Per il freddo?",
     "answer": "no",
-    "cards": [],
-    "lit": [],
+    "cards": [
+      "freddo"
+    ],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -334,7 +390,12 @@
     "question": "Erano vecchi gli amici?",
     "answer": "irrelevant",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -367,7 +428,12 @@
     "question": "È importante il fatto che fossero nella neve",
     "answer": "yes",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -404,7 +470,12 @@
     "question": "Quindi la neve c’entra con la sua morte",
     "answer": "yes",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -445,7 +516,12 @@
     "question": "Morto assiderato?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -490,7 +566,12 @@
     "question": "È una cosa che può benissimo succedere nella vita di tutti i giorni?",
     "answer": "yes",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -539,7 +620,12 @@
     "question": "La camera aveva qualche buco?",
     "answer": "yes",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -592,7 +678,12 @@
     "question": "Era in stanza da solo?",
     "answer": "yes",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -649,7 +740,12 @@
     "question": "Lui voleva morire?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -709,8 +805,15 @@
     "group": "playtest_text",
     "question": "È stato sfortunato quindi?",
     "answer": "yes",
-    "cards": [],
-    "lit": [],
+    "cards": [
+      "incidente"
+    ],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -775,7 +878,13 @@
     "question": "La neve gli è caduta addosso",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo",
+      "incidente"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -844,7 +953,13 @@
     "question": "Era allergico alla neve",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo",
+      "incidente"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -917,7 +1032,13 @@
     "question": "I quattro amici sono inutili in questo indovinello?",
     "answer": "yes",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo",
+      "incidente"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -994,7 +1115,13 @@
     "question": "Gli amici potevano evitare che lui morisse",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo",
+      "incidente"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -1075,7 +1202,13 @@
     "question": "La neve l’ha colpito in qualche modo?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo",
+      "incidente"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -1160,7 +1293,13 @@
     "question": "L’ha colpito in una ferita?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo",
+      "incidente"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -1249,7 +1388,13 @@
     "question": "L’ha colpito in punti vitali?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo",
+      "incidente"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -1342,7 +1487,13 @@
     "question": "In bocca?",
     "answer": "no",
     "cards": [],
-    "lit": [],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo",
+      "incidente"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",
@@ -1438,8 +1589,16 @@
     "group": "playtest_text",
     "question": "Ha acceso una stufa?",
     "answer": "yes",
-    "cards": [],
-    "lit": [],
+    "cards": [
+      "stufa"
+    ],
+    "lit": [
+      "passaggio",
+      "amico_colpevole",
+      "suicidio",
+      "freddo",
+      "incidente"
+    ],
     "history": [
       [
         "C’era un passaggio segreto?",

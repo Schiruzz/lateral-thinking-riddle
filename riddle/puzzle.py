@@ -217,7 +217,9 @@ def load_arbiter(name, language):
     """Load what the arbiter reads from a puzzle written in the card schema.
 
     The schema has one list of facts, in time order: they are the solution the
-    arbiter judges against. The exclusions become the arbiter's "NOT TRUE" line.
+    arbiter judges against. The victory claims follow them, so the arbiter knows
+    the conclusion without a duplicate fact. The exclusions become the arbiter's
+    "NOT TRUE" line.
     The card sections the old judge expects stay empty: the arbiter never sees them.
 
     Args:
@@ -232,9 +234,11 @@ def load_arbiter(name, language):
     data = json.loads(path.read_text(encoding="utf-8"))
     # the facts are the solution: one list, read by the arbiter as it is written
     facts = [fact["text"] for fact in data["facts"]]
+    # the victory claims state the conclusion the facts lead to
+    claims = [element["claim"] for element in data["victory"]]
     not_true = "NOT TRUE: " + "; ".join(exclusion["text"] for exclusion in data["exclusions"])
     # cards lit in a test reach the arbiter as established facts: their text comes from the schema
     card_text = {item["id"]: item["text"] for item in data["facts"] + data["exclusions"]}
     return SimpleNamespace(title=data["title"], story=data["story"], solution=data["truth"],
-                           solution_facts=facts + [not_true], judge_notes=[],
+                           solution_facts=facts + claims + [not_true], judge_notes=[],
                            facts={}, exclusions={}, solution_elements={}, card_text=card_text)

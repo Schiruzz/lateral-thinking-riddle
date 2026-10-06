@@ -127,7 +127,7 @@
     "question": "Era cieco già ai tempi del naufragio?",
     "answer": "yes",
     "cards": [
-      "cieco",
+      "cieco_prima",
       "naufragio"
     ],
     "lit": [],
@@ -158,7 +158,9 @@
     "group": "full_fact",
     "question": "Voleva verificare qualcosa?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "verifica"
+    ],
     "lit": [],
     "history": []
   },
@@ -203,7 +205,9 @@
     "group": "partial_fact",
     "question": "La moglie nascondeva qualcosa?",
     "answer": "yes",
-    "cards": ["moglie"],
+    "cards": [
+      "moglie"
+    ],
     "lit": [],
     "history": []
   },
@@ -223,7 +227,7 @@
     "lit": [],
     "history": []
   },
-    {
+  {
     "group": "partial_fact",
     "question": "Sono finiti su un'isola?",
     "answer": "yes",
@@ -233,7 +237,7 @@
     "lit": [],
     "history": []
   },
-    {
+  {
     "group": "partial_fact",
     "question": "Aveva già mangiato gabbiano?",
     "answer": "no",
@@ -260,7 +264,8 @@
     "question": "Sull'isola hanno mangiato il figlio?",
     "answer": "yes",
     "cards": [
-      "mangiato_figlio"
+      "mangiato_figlio",
+      "isola"
     ],
     "lit": [],
     "history": []
@@ -504,7 +509,9 @@
     "group": "negation",
     "question": "Quello dell'isola era davvero gabbiano?",
     "answer": "no",
-    "cards": ["isola"],
+    "cards": [
+      "isola"
+    ],
     "lit": [],
     "history": []
   },
@@ -552,7 +559,7 @@
     "group": "partly",
     "question": "Il ristorante c'entra?",
     "answer": "yes",
-    "cards": ["ristorante_no"],
+    "cards": [],
     "lit": [],
     "history": []
   },
@@ -560,7 +567,7 @@
     "group": "partly",
     "question": "È successo qualcosa al ristorante?",
     "answer": "yes",
-    "cards": ["ristorante_no"],
+    "cards": [],
     "lit": [],
     "history": []
   },
@@ -576,7 +583,9 @@
     "group": "partly",
     "question": "La causa è nel ristorante?",
     "answer": "no",
-    "cards": ["ristorante_no"],
+    "cards": [
+      "ristorante_no"
+    ],
     "lit": [],
     "history": []
   },
@@ -584,7 +593,9 @@
     "group": "partly",
     "question": "Tutto si svolge nel ristorante?",
     "answer": "no",
-    "cards": ["ristorante_no"],
+    "cards": [
+      "ristorante_no"
+    ],
     "lit": [],
     "history": []
   },
@@ -728,7 +739,9 @@
     "group": "var_wife",
     "question": "La donna è stata sincera?",
     "answer": "no",
-    "cards": ["bugia"],
+    "cards": [
+      "bugia"
+    ],
     "lit": [],
     "history": []
   },
@@ -736,7 +749,9 @@
     "group": "var_wife",
     "question": "La donna gli ha mentito?",
     "answer": "yes",
-    "cards": ["bugia"],
+    "cards": [
+      "bugia"
+    ],
     "lit": [],
     "history": []
   },
@@ -800,7 +815,9 @@
     "group": "var_past",
     "question": "Gli ha ricordato qualcosa?",
     "answer": "yes",
-    "cards": ["passato"],
+    "cards": [
+      "passato"
+    ],
     "lit": [],
     "history": []
   },
@@ -808,7 +825,9 @@
     "group": "var_past",
     "question": "Gli ha ricordato un evento traumatico?",
     "answer": "yes",
-    "cards": ["passato"],
+    "cards": [
+      "passato"
+    ],
     "lit": [],
     "history": []
   },
@@ -857,7 +876,7 @@
     "question": "Essendo cieco, riconosceva i gabbiani solo dal verso?",
     "answer": "yes",
     "cards": [
-      "d_udito"
+      "cieco_prima"
     ],
     "lit": [
       "cieco",
@@ -869,9 +888,7 @@
     "group": "deduction",
     "question": "La moglie gli ha mentito per salvarlo?",
     "answer": "yes",
-    "cards": [
-      "d_pieta"
-    ],
+    "cards": [],
     "lit": [
       "bugia",
       "motivo"
@@ -883,11 +900,12 @@
     "question": "Sull'isola hanno mangiato il corpo del figlio?",
     "answer": "yes",
     "cards": [
-      "d_tragedia", 
       "mangiato_figlio"
     ],
     "lit": [
-      "naufragio", "figlio_annegato", "isola",
+      "naufragio",
+      "figlio_annegato",
+      "isola",
       "carne_umana"
     ],
     "history": []
@@ -896,9 +914,7 @@
     "group": "deduction",
     "question": "La moglie gli ha fatto credere che fosse gabbiano e lui, essendo cieco, le ha creduto?",
     "answer": "yes",
-    "cards": [
-      "d_inganno"
-    ],
+    "cards": [],
     "lit": [
       "bugia",
       "cieco",
@@ -913,8 +929,7 @@
     "cards": [
       "passato"
     ],
-    "lit": [
-    ],
+    "lit": [],
     "history": []
   },
   {
@@ -922,7 +937,8 @@
     "question": "Nel naufragio il figlio è annegato e loro sono finiti su un'isola senza cibo?",
     "answer": "yes",
     "cards": [
-      "d_tragedia"
+      "figlio_annegato",
+      "fame"
     ],
     "lit": [
       "naufragio",
@@ -935,12 +951,12 @@
     "group": "deduction",
     "question": "Al ristorante ha capito di aver mangiato suo figlio?",
     "answer": "yes",
-    "cards": [
-      "soluzione"
-    ],
+    "cards": [],
     "lit": [
       "mangiato_figlio",
-      "bugia", "gabbiano_creduto", "cieco"
+      "bugia",
+      "gabbiano_creduto",
+      "cieco"
     ],
     "history": []
   },
@@ -949,11 +965,13 @@
     "question": "secondo me al ristorante ha capito dal sapore che anni prima aveva mangiato suo figlio",
     "answer": "yes",
     "cards": [
-      "soluzione"
+      "sapore"
     ],
     "lit": [
       "mangiato_figlio",
-      "bugia", "gabbiano_creduto", "cieco"
+      "bugia",
+      "gabbiano_creduto",
+      "cieco"
     ],
     "history": []
   },
@@ -963,7 +981,7 @@
     "answer": "yes",
     "cards": [],
     "lit": [
-      "mai_gabbiano", 
+      "mai_gabbiano",
       "sapore"
     ],
     "history": []
@@ -1178,7 +1196,9 @@
     "group": "context",
     "question": "Ed era già morto quando è arrivato lì?",
     "answer": "yes",
-    "cards": [],
+    "cards": [
+      "corpo_isola"
+    ],
     "lit": [
       "figlio_morto",
       "isola"
@@ -1265,21 +1285,94 @@
       ]
     ]
   },
-  {"group": "unclear", "question": "la carne era variata", "answer": "no", "cards": [], "lit": [], "history": []},
-  {"group": "unclear", "question": "sé figlio nave fatto isola", "answer": "unclear", "cards": [], "lit": [], "history": []},
-  {"group": "unclear", "question": "era cieca la vista del menù quando", "answer": "unclear", "cards": [], "lit": [], "history": []},
-  {"group": "unclear", "question": "Il gabbiano aveva un nome?", "answer": "irrelevant", "cards": [], "lit": [], "history": []},
-  {"group": "solution", "question": "Quindi l'uomo si è ucciso perché ha capito che la carne che aveva mangiato non era di gabbiano ma era il figlio morto", "answer": "yes", "cards": ["soluzione"], "lit": ["mangiato_figlio", "bugia", "gabbiano_creduto", "cieco"], "history": []},
-  {"group": "solution", "question": "Ha capito cosa aveva mangiato?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "solution", "question": "Sull'isola ha mangiato suo figlio?", "answer": "yes", "cards": ["mangiato_figlio", "isola"], "lit": [], "history": []},
-  {"group": "solution", "question": "Al ristorante ha capito di aver mangiato suo figlio?", "answer": "yes", "cards": ["soluzione"], "lit": [], "history": []},
-  {"group": "invalid", "question": "Dove devo cercare?", "answer": "invalid", "cards": [], "lit": [], "history": []},
-    {
+  {
+    "group": "unclear",
+    "question": "la carne era variata",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "unclear",
+    "question": "sé figlio nave fatto isola",
+    "answer": "unclear",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "unclear",
+    "question": "era cieca la vista del menù quando",
+    "answer": "unclear",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "unclear",
+    "question": "Il gabbiano aveva un nome?",
+    "answer": "irrelevant",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "solution",
+    "question": "Quindi l'uomo si è ucciso perché ha capito che la carne che aveva mangiato non era di gabbiano ma era il figlio morto",
+    "answer": "yes",
+    "cards": [],
+    "lit": [
+      "mangiato_figlio",
+      "bugia",
+      "gabbiano_creduto",
+      "cieco"
+    ],
+    "history": []
+  },
+  {
+    "group": "solution",
+    "question": "Ha capito cosa aveva mangiato?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "solution",
+    "question": "Sull'isola ha mangiato suo figlio?",
+    "answer": "yes",
+    "cards": [
+      "mangiato_figlio",
+      "isola"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "solution",
+    "question": "Al ristorante ha capito di aver mangiato suo figlio?",
+    "answer": "yes",
+    "cards": [
+      "mangiato_figlio"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "invalid",
+    "question": "Dove devo cercare?",
+    "answer": "invalid",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
     "group": "solution",
     "question": "Hanno mangiato il figlio morto e lei lui scoprendolo si è tolto la vita",
     "answer": "yes",
     "cards": [
-      "soluzione"
+      "mangiato_figlio"
     ],
     "lit": [
       "moglie",
@@ -1296,7 +1389,7 @@
     "question": "nel naufragio il figlio è morto e gli altri a loro insaputa le hanno dato come cibo loro se ne sono accorti e lui si è tolta la vita",
     "answer": "yes",
     "cards": [
-      "soluzione"
+      "mangiato_figlio"
     ],
     "lit": [
       "moglie",
@@ -1308,31 +1401,262 @@
     ],
     "history": []
   },
-  {"group": "invalid", "question": "Cosa devo chiedere adesso?", "answer": "invalid", "cards": [], "lit": [], "history": []},
-  {"group": "invalid", "question": "Dammi un indizio", "answer": "invalid", "cards": [], "lit": [], "history": []},
-  {"group": "invalid", "question": "Sono sulla strada giusta?", "answer": "invalid", "cards": [], "lit": [], "history": []},
-  {"group": "open_question", "question": "Perché ha ordinato il gabbiano?", "answer": "invalid", "cards": [], "lit": [], "history": []},
-  {"group": "open_question", "question": "Chi è la donna?", "answer": "invalid", "cards": [], "lit": [], "history": []},
-  {"group": "open_question", "question": "Cosa è successo anni prima?", "answer": "invalid", "cards": [], "lit": [], "history": []},
-  {"group": "open_question", "question": "L'ha ordinato perché gli piaceva il gabbiano?", "answer": "no", "cards": [], "lit": [], "history": []},
-  {"group": "spoken", "question": "Il ristorante centra?", "answer": "yes", "cards": ["ristorante_no"], "lit": [], "history": []},
-  {"group": "var_past", "question": "La carne gli ha ricordato qualcosa del passato?", "answer": "yes", "cards": ["passato"], "lit": [], "history": []},
-  {"group": "strategy", "question": "Devo capire il luogo?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "strategy", "question": "Devo concentrarmi sul passato?", "answer": "yes", "cards": ["passato"], "lit": [], "history": []},
-  {"group": "strategy", "question": "Devo capire chi è la donna?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "strategy", "question": "È importante il sapore della carne?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "strategy", "question": "Devo pensare al cuoco?", "answer": "no", "cards": [], "lit": [], "history": []},
-  {"group": "strategy", "question": "Importa il numero di persone?", "answer": "yes", "cards": [], "lit": ["incidente"],"history": []},
-  {"group": "chain", "question": "C'è stato un incidente?", "answer": "yes", "cards": ["incidente"], "lit": [], "history": []},
-  {"group": "chain", "question": "È successo in mare?", "answer": "yes", "cards": ["mare"], "lit": ["incidente"], "history": []},
-  {"group": "chain", "question": "Erano su una nave?", "answer": "yes", "cards": ["barca"], "lit": ["mare"], "history": []},
-  {"group": "chain", "question": "La barca è affondata?", "answer": "yes", "cards": ["naufragio"], "lit": ["barca"], "history": []},
-  {"group": "chain", "question": "Sono finiti su un'isola?", "answer": "yes", "cards": ["isola"], "lit": [], "history": []},
-  {"group": "chain", "question": "Sull'isola c'era da mangiare?", "answer": "no", "cards": ["fame"], "lit": ["isola"], "history": []},
-  {"group": "chain", "question": "La moglie gli ha mentito?", "answer": "yes", "cards": ["bugia", "moglie"], "lit": [], "history": []},
-  {"group": "chain", "question": "L'uomo ci vedeva?", "answer": "no", "cards": ["cieco"], "lit": [], "history": []},
-  {"group": "chain", "question": "Il sapore era diverso?", "answer": "yes", "cards": ["sapore"], "lit": [], "history": []},
-  {"group": "chain", "question": "L'ha ordinato per verificare qualcosa?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "chain", "question": "L'ha ordinato apposta?", "answer": "yes", "cards": [], "lit": [], "history": []},
-  {"group": "chain", "question": "Il figlio era con loro sulla barca?", "answer": "yes", "cards": ["barca"], "lit": ["figlio", "mare"], "history": []}
+  {
+    "group": "invalid",
+    "question": "Cosa devo chiedere adesso?",
+    "answer": "invalid",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "invalid",
+    "question": "Dammi un indizio",
+    "answer": "invalid",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "invalid",
+    "question": "Sono sulla strada giusta?",
+    "answer": "invalid",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "open_question",
+    "question": "Perché ha ordinato il gabbiano?",
+    "answer": "invalid",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "open_question",
+    "question": "Chi è la donna?",
+    "answer": "invalid",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "open_question",
+    "question": "Cosa è successo anni prima?",
+    "answer": "invalid",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "open_question",
+    "question": "L'ha ordinato perché gli piaceva il gabbiano?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "spoken",
+    "question": "Il ristorante centra?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "var_past",
+    "question": "La carne gli ha ricordato qualcosa del passato?",
+    "answer": "yes",
+    "cards": [
+      "passato"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "strategy",
+    "question": "Devo capire il luogo?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "strategy",
+    "question": "Devo concentrarmi sul passato?",
+    "answer": "yes",
+    "cards": [
+      "passato"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "strategy",
+    "question": "Devo capire chi è la donna?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "strategy",
+    "question": "È importante il sapore della carne?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "strategy",
+    "question": "Devo pensare al cuoco?",
+    "answer": "no",
+    "cards": [],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "strategy",
+    "question": "Importa il numero di persone?",
+    "answer": "yes",
+    "cards": [],
+    "lit": [
+      "incidente"
+    ],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "C'è stato un incidente?",
+    "answer": "yes",
+    "cards": [
+      "incidente"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "È successo in mare?",
+    "answer": "yes",
+    "cards": [
+      "mare"
+    ],
+    "lit": [
+      "incidente"
+    ],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "Erano su una nave?",
+    "answer": "yes",
+    "cards": [
+      "barca"
+    ],
+    "lit": [
+      "mare"
+    ],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "La barca è affondata?",
+    "answer": "yes",
+    "cards": [
+      "naufragio"
+    ],
+    "lit": [
+      "barca"
+    ],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "Sono finiti su un'isola?",
+    "answer": "yes",
+    "cards": [
+      "isola"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "Sull'isola c'era da mangiare?",
+    "answer": "no",
+    "cards": [
+      "fame"
+    ],
+    "lit": [
+      "isola"
+    ],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "La moglie gli ha mentito?",
+    "answer": "yes",
+    "cards": [
+      "bugia",
+      "moglie"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "L'uomo ci vedeva?",
+    "answer": "no",
+    "cards": [
+      "cieco"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "Il sapore era diverso?",
+    "answer": "yes",
+    "cards": [
+      "sapore"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "L'ha ordinato per verificare qualcosa?",
+    "answer": "yes",
+    "cards": [
+      "verifica"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "L'ha ordinato apposta?",
+    "answer": "yes",
+    "cards": [
+      "verifica"
+    ],
+    "lit": [],
+    "history": []
+  },
+  {
+    "group": "chain",
+    "question": "Il figlio era con loro sulla barca?",
+    "answer": "yes",
+    "cards": [
+      "barca"
+    ],
+    "lit": [
+      "figlio",
+      "mare"
+    ],
+    "history": []
+  }
 ]
