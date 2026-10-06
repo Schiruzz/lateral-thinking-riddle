@@ -253,7 +253,8 @@ class Judge:
         self.element_lines = "\n".join(f"- {eid}: {text}" for eid, text in puzzle.solution_elements.items())
         self.no_context = self._context([], [])   # links and the solution must be stated by the player alone
 
-        # the arbiter knows the solution, one fact per line, and the puzzle notes, but no cards
+        # the arbiter knows the whole truth as a story, the solution one fact per line, and the
+        # puzzle notes, but no cards: the facts are the steps of the game, the story has every detail
         facts = "\n".join(f"{i}. {fact}" for i, fact in enumerate(puzzle.solution_facts, 1))
         notes = "\n".join(f"- {note}" for note in puzzle.judge_notes)
         arbiter_prompt = f"""You are the judge of a lateral thinking puzzle played by voice. The
@@ -261,6 +262,9 @@ player asks yes/no questions about the story; you know the secret solution. You 
 answer: other steps decide what the player has discovered.
 
 STORY: {puzzle.story}
+
+TRUTH (secret, the whole hidden story):
+{puzzle.solution}
 
 SOLUTION FACTS (secret, in time order):
 {facts}
