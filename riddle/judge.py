@@ -196,6 +196,32 @@ def make_client():
                         http_options=http_options)
 
 
+def call_model(client, model, contents, config, max_attempts):
+    """Call a model, retrying on rate limit (429), overload (503), deadline (504) and timeouts with growing waits.
+
+    Args:
+        client: A `genai.Client`.
+        model: The model name.
+        contents: The text sent to the model.
+        config: The model's `GenerateContentConfig`.
+        max_attempts: Calls before giving up on a retryable error.
+
+    Returns:
+        The model's response.
+    """
+    for attempt in range(max_attempts):
+        try:
+            return client.models.generate_content(model=model, contents=contents, config=config)
+        except (errors.APIError, httpx.TimeoutException) as e:
+            reason = getattr(e, "code", "timeout")   # timeouts carry no HTTP code
+            if reason not in (429, 503, 504, "timeout") or attempt == max_attempts - 1:
+                raise
+            wait = 2 ** attempt   # 1, 2, 4, 8, 16 s: rate limits are short bursts
+            print(f"[retry] {model} got {reason}, waiting {wait} s")   # shows in the uvicorn terminal
+            time.sleep(wait)
+
+
+
 class Judge:
     """Judge of one puzzle: answers questions, then decides which cards they unlock.
 
@@ -360,17 +386,8 @@ PUZZLE NOTES:
         return json.loads(self._call(VERIFY_MODEL, contents, VERIFY_CONFIG).text)["stated"]
 
     def _call(self, model, contents, config):
-        """Call a model, retrying on rate limit (429), overload (503), deadline (504) and timeouts with growing waits."""
-        for attempt in range(self.max_attempts):
-            try:
-                return self.client.models.generate_content(model=model, contents=contents, config=config)
-            except (errors.APIError, httpx.TimeoutException) as e:
-                reason = getattr(e, "code", "timeout")   # timeouts carry no HTTP code
-                if reason not in (429, 503, 504, "timeout") or attempt == self.max_attempts - 1:
-                    raise
-                wait = 2 ** attempt   # 1, 2, 4, 8, 16 s: rate limits are short bursts
-                print(f"[retry] {model} got {reason}, waiting {wait} s")   # shows in the uvicorn terminal
-                time.sleep(wait)
+        """Call a model with retries, see `call_model`."""
+        return call_model(self.client, model, contents, config, self.max_attempts)
 
     def _context(self, history, lit):
         """Build the context: the story, what the player has established, then the last exchanges.
@@ -426,6 +443,139 @@ SOLUTION ELEMENTS: list one only after yes, when the question states it entirely
             "propertyOrdering": ["cards", "solution_elements"],
         }
         # a short reasoning makes the matcher check every card instead of stopping at the first that fits
+        return types.GenerateContentConfig(system_instruction=prompt, temperature=0,
+                                           response_mime_type="application/json", response_schema=schema,
+                                           thinking_config=types.ThinkingConfig(thinking_level="low"))
+
+
+
+MATCHER_RULES = """HOW TO FIND THE FACTS
+1. For every fact or false lead you return, first write in "quote" the exact words of the question that state it.
+2. Facts: return one only if the question, with its answer, states or directly implies the whole fact: if a person, object, place, time or reason in the fact is missing, return nothing. Being about the same topic is not enough.
+3. A "no" states the opposite of the question: "Did someone force her to stop playing? -> no" states "Nobody forced her to stop".
+4. False leads: return one when the "no" rules out that lead; quote the words that state the lead.
+5. Use the context only to resolve references (pronouns, "there", "it").
+"""
+
+
+class Matcher:
+    """Finds which facts and false leads an answered question states, on a riddle in the card schema.
+
+    It does not judge whether the question is true: the arbiter has already answered.
+    It is offered only what the player has not found yet.
+
+    Attributes:
+        riddle: The `Riddle` being played.
+        client: A `genai.Client`, e.g. from `make_client`.
+        model: The matcher's model.
+        use_verifier: Whether each proposed fact is checked again on its own.
+        max_attempts: Calls per request before giving up on a retryable error.
+    """
+
+    def __init__(self, riddle, client, model=JUDGE_MODEL, use_verifier=True, max_attempts=MAX_ATTEMPTS):
+        """Keep the riddle and the settings of the calls.
+
+        Args:
+            riddle: The `Riddle` being played.
+            client: A `genai.Client`, e.g. from `make_client`.
+            model: The matcher's model, a parameter to compare models.
+            use_verifier: False to measure the matcher without the verifier (ablation).
+            max_attempts: Calls per request: high for evaluation, low in a live game.
+        """
+        self.riddle = riddle
+        self.client = client
+        self.model = model
+        self.use_verifier = use_verifier
+        self.max_attempts = max_attempts
+
+    def match(self, question, verdict, history, session):
+        """Decide which facts and false leads an answered question states.
+
+        Args:
+            question: The player's words.
+            verdict: The verdict from `Judge.answer`.
+            history: (positive question, answer) pairs before this question.
+            session: The `Session` of the game, for what is already found.
+
+        Returns:
+            A pair of lists: the ids of the facts and the ids of the false leads.
+        """
+        answer = verdict["answer"]
+        # irrelevant, invalid or unclear questions state nothing: no call at all
+        if answer not in (YES, NO):
+            return [], []
+        facts = [fact_id for fact_id in self.riddle.facts if fact_id not in session.found]
+        # a false lead is closed only by a "no"
+        leads = [lead_id for lead_id in self.riddle.exclusions
+                 if lead_id not in session.excluded] if answer == NO else []
+        if not facts and not leads:
+            return [], []
+
+        context = self._context(history, session)
+        contents = (f"{context}\n\nPLAYER'S WORDS: {question}\n"
+                    f"QUESTION: {verdict['positive_question']}\nANSWER: {answer}")
+        items = json.loads(call_model(self.client, self.model, contents,
+                                      self._config(facts, leads), self.max_attempts).text)["items"]
+
+        # keep only what is quoted with words the player said, in any order and with any punctuation
+        said = f"{question} {verdict['positive_question']}"
+        said_words = set(WORD.findall(normalize(said))) | set(WORD.findall(said.lower()))
+        quoted = [item["id"] for item in items
+                  if WORD.findall(item["quote"]) and set(WORD.findall(normalize(item["quote"]))) <= said_words]
+        found_facts = [item_id for item_id in quoted if item_id in self.riddle.facts]
+        found_leads = [item_id for item_id in quoted if item_id in self.riddle.exclusions]
+
+        # false leads follow from the "no" itself, so only facts are verified
+        if self.use_verifier and found_facts:
+            with ThreadPoolExecutor() as pool:
+                checks = list(pool.map(lambda fact_id: self._verify(fact_id, verdict, context), found_facts))
+            found_facts = [fact_id for fact_id, ok in zip(found_facts, checks) if ok]
+        return found_facts, found_leads
+
+    def _verify(self, fact_id, verdict, context):
+        """Ask the verifier whether the question, with its answer, states the whole fact."""
+        contents = (f"{context}\n\nQUESTION: {verdict['positive_question']}\nANSWER: {verdict['answer']}\n"
+                    f"CARD: {self.riddle.facts[fact_id]['text']}")
+        return json.loads(call_model(self.client, VERIFY_MODEL, contents, VERIFY_CONFIG,
+                                     self.max_attempts).text)["stated"]
+
+    def _context(self, history, session):
+        """Build the context: the story, the facts already found, then the last exchanges."""
+        older, recent = history[:-HISTORY_SIZE], history[-HISTORY_SIZE:]
+        established = [fact["text"] for fact_id, fact in self.riddle.facts.items() if fact_id in session.found]
+        established += [f"{q} -> {a}" for q, a in older]
+        established_lines = "\n".join(f"- {line}" for line in established) or "- none"
+        recent_lines = "\n".join(f"- {q} -> {a}" for q, a in recent) or "- none"
+        return (f"STORY: {self.riddle.story}\n\n"
+                f"ALREADY ESTABLISHED:\n{established_lines}\n\nPREVIOUS EXCHANGES:\n{recent_lines}")
+
+    def _config(self, facts, leads):
+        """Build the matcher's config: the facts and false leads it can return now, nothing else."""
+        fact_lines = "\n".join(f"- {fact_id}: {self.riddle.facts[fact_id]['text']}" for fact_id in facts) or "- none"
+        lead_lines = "\n".join(f"- {lead_id}: {self.riddle.exclusions[lead_id]['text']}" for lead_id in leads) or "- none"
+        prompt = f"""You find what a player's question has established in a lateral thinking
+puzzle played by voice. The question has already been answered: you do not judge whether
+it is true, you only read what the player's words, together with that answer, establish.
+
+FACTS not found yet (id: fact):
+{fact_lines}
+
+FALSE LEADS still open (id: false lead):
+{lead_lines}
+
+{MATCHER_RULES}"""
+        schema = {
+            "type": "OBJECT",
+            "properties": {"items": {"type": "ARRAY", "items": {
+                "type": "OBJECT",
+                # the schema accepts only what is on offer now
+                "properties": {"quote": {"type": "STRING"}, "id": {"type": "STRING", "enum": facts + leads}},
+                "required": ["quote", "id"],
+                "propertyOrdering": ["quote", "id"],
+            }}},
+            "required": ["items"],
+        }
+        # a short reasoning makes the matcher check every fact instead of stopping at the first that fits
         return types.GenerateContentConfig(system_instruction=prompt, temperature=0,
                                            response_mime_type="application/json", response_schema=schema,
                                            thinking_config=types.ThinkingConfig(thinking_level="low"))
