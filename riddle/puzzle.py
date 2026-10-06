@@ -214,21 +214,25 @@ def load_tests(name, language, kind=None):
 
 
 def load_arbiter(name, language):
-    """Load only what the arbiter reads from `puzzles/<name>/arbiter.<language>.json`.
+    """Load what the arbiter reads from a puzzle written in the card schema.
 
-    Used to test the arbiter on a puzzle that has no cards yet. The card
-    sections are left empty: `Judge.__init__` builds the matcher's lists from
-    them, and `Judge.answer` reads `card_text` for the cards already lit.
+    The schema has one list of facts, in time order: they are the solution the
+    arbiter judges against. The exclusions become the arbiter's "NOT TRUE" line.
+    The card sections the old judge expects stay empty: the arbiter never sees them.
 
     Args:
         name: Folder name of the puzzle, e.g. "baita".
         language: Language code of the file, e.g. "it".
 
     Returns:
-        An object with the fields of the file ("title", "story", "solution",
-        "solution_facts", "judge_notes") and empty card sections.
+        An object with "title", "story", "solution", "solution_facts" and
+        "judge_notes", and empty card sections.
     """
     path = PUZZLES_DIR / name / f"arbiter.{language}.json"
     data = json.loads(path.read_text(encoding="utf-8"))
-    # no cards: the arbiter never sees them, and nothing can be lit
-    return SimpleNamespace(**data, facts={}, exclusions={}, solution_elements={}, card_text={})
+    # the facts are the solution: one list, read by the arbiter as it is written
+    facts = [fact["text"] for fact in data["facts"]]
+    not_true = "NOT TRUE: " + "; ".join(exclusion["text"] for exclusion in data["exclusions"])
+    return SimpleNamespace(title=data["title"], story=data["story"], solution=data["truth"],
+                           solution_facts=facts + [not_true], judge_notes=[],
+                           facts={}, exclusions={}, solution_elements={}, card_text={})

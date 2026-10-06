@@ -1,18 +1,47 @@
 {
+  "id": "baita",
+  "language": "it",
   "title": "La baita",
+  "tone": "cupo",
   "story": "Cinque amici passano il weekend in una baita isolata dalla neve. La mattina dopo quattro si svegliano e trovano il quinto morto nel suo letto. La porta della sua stanza era chiusa a chiave da dentro e fuori, sulla neve, non c'è nessuna impronta.",
-  "solution": "Il quinto amico dormiva da solo al piano terra, nella stanza con la stufa a legna; gli altri dormivano di sopra. Prima di andare a letto ha caricato la stufa al massimo e ha chiuso la porta a chiave, come faceva sempre. Durante la notte la neve ha ostruito il comignolo: il fumo non usciva più e la stanza si è riempita di monossido di carbonio, un gas senza odore. È morto nel sonno. Nessuno l'ha ucciso.",
-  "solution_facts": [
-    "Five friends spent the weekend in a mountain cabin, cut off by the snow. Only the five of them were there.",
-    "The fifth friend slept alone in the ground-floor room, where there was a wood-burning stove. The other four slept upstairs.",
-    "Before going to bed he loaded the stove to the maximum and locked his door from inside, as he always did.",
-    "During the night the snow blocked the chimney of the stove.",
-    "The smoke could no longer get out, and his room filled with carbon monoxide, a gas with no smell.",
-    "He died in his sleep, poisoned by the gas, without waking up.",
-    "Nobody killed him: it was an accident.",
-    "The gas stayed in his locked room; the others slept far from it and survived.",
-    "In the morning the four friends found him dead. Nobody had entered or left the cabin, so there were no footprints in the snow.",
-    "NOT TRUE: one of the friends or someone from outside killed him; poison; a secret passage or the window; a heart attack or an illness; he froze to death."
+  "truth": "Il quinto amico dormiva da solo al piano terra, nella stanza con la stufa a legna; gli altri dormivano di sopra. Prima di andare a letto ha caricato la stufa al massimo e ha chiuso la porta a chiave, come faceva sempre. Durante la notte la neve ha ostruito il comignolo: il fumo non usciva più e la stanza si è riempita di monossido di carbonio, un gas senza odore. È morto nel sonno. Nessuno l'ha ucciso.",
+  "obvious_answer": "L'ha ucciso uno dei quattro amici.",
+  "assumption": "C'è un colpevole.",
+  "knowledge": [
+    "Il monossido di carbonio non ha odore e uccide nel sonno.",
+    "Se il comignolo è ostruito, il fumo della stufa resta nella stanza."
   ],
-  "judge_notes": []
+  "scenes": [
+    {"id": "notte", "name": "La notte", "sealed": true},
+    {"id": "mattina", "name": "La mattina", "sealed": false}
+  ],
+  "facts": [
+    {"id": "solo_cinque", "text": "Nella baita c'erano solo i cinque amici.", "scene": "notte", "role": "P", "requires": [], "optional": true},
+    {"id": "stufa", "text": "Nella sua stanza c'era una stufa a legna.", "scene": "notte", "role": "P", "requires": []},
+    {"id": "altri_sopra", "text": "Gli altri quattro dormivano al piano di sopra.", "scene": "notte", "role": "P", "requires": [], "optional": true},
+    {"id": "stufa_carica", "text": "Prima di dormire ha caricato la stufa al massimo.", "scene": "notte", "role": "P", "requires": ["stufa"]},
+    {"id": "porta_lui", "text": "La porta l'ha chiusa a chiave lui, come faceva sempre.", "scene": "notte", "role": "P", "requires": []},
+    {"id": "comignolo", "text": "Durante la notte la neve ha ostruito il comignolo della stufa.", "scene": "notte", "role": "S", "requires": ["stufa"]},
+    {"id": "gas", "text": "È morto avvelenato da un gas.", "scene": "notte", "role": "S", "requires": []},
+    {"id": "monossido", "text": "La stanza si è riempita di monossido di carbonio.", "scene": "notte", "role": "P", "requires": ["gas"]},
+    {"id": "nel_sonno", "text": "È morto nel sonno, senza svegliarsi.", "scene": "notte", "role": "P", "requires": []},
+    {"id": "gas_intrappolato", "text": "La porta chiusa ha tenuto il gas solo nella sua stanza: per questo gli altri sono vivi.", "scene": "notte", "role": "C", "requires": ["monossido", "porta_lui"]},
+    {"id": "non_ucciso", "text": "Nessuno l'ha ucciso.", "scene": "mattina", "role": "P", "requires": [], "negative": true},
+    {"id": "incidente", "text": "È morto per un incidente.", "scene": "mattina", "role": "P", "requires": []},
+    {"id": "nessuna_impronta", "text": "Nessuno è entrato o uscito dalla baita durante la notte: per questo non ci sono impronte.", "scene": "mattina", "role": "P", "requires": [], "negative": true}
+  ],
+  "exclusions": [
+    {"id": "amico_colpevole", "text": "Uno degli amici l'ha ucciso.", "ruled_out_by": "non_ucciso"},
+    {"id": "suicidio", "text": "Si è ucciso.", "ruled_out_by": "incidente"},
+    {"id": "veleno_cibo", "text": "È stato avvelenato con il cibo o una bevanda.", "ruled_out_by": "gas"},
+    {"id": "veleno_cibo", "text": "Qualcuno l'ha avvelenato con il cibo o una bevanda.", "ruled_out_by": "gas"},
+    {"id": "freddo", "text": "È morto di freddo.", "ruled_out_by": "gas"},
+    {"id": "passaggio", "text": "Qualcuno è entrato da un passaggio segreto o dalla finestra.", "ruled_out_by": "nessuna_impronta"}
+  ],
+  "victory": [
+    {"id": "v_gas", "claim": "È morto intossicato dal gas della stufa.",
+     "paraphrases": ["il fumo della stufa l'ha avvelenato", "monossido di carbonio dalla stufa"]},
+    {"id": "v_neve", "claim": "La neve aveva bloccato il comignolo.",
+     "paraphrases": ["il camino era ostruito dalla neve", "il fumo non usciva per colpa della neve"]}
+  ]
 }
