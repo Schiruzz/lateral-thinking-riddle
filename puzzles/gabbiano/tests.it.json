@@ -887,7 +887,7 @@
       "mangiato_figlio"
     ],
     "lit": [
-      "d_tragedia",
+      "naufragio", "figlio_annegato", "isola",
       "carne_umana"
     ],
     "history": []
@@ -939,8 +939,8 @@
       "soluzione"
     ],
     "lit": [
-      "t_pasto",
-      "d_inganno"
+      "mangiato_figlio",
+      "bugia", "gabbiano_creduto", "cieco"
     ],
     "history": []
   },
@@ -952,8 +952,8 @@
       "soluzione"
     ],
     "lit": [
-      "t_pasto",
-      "d_inganno"
+      "mangiato_figlio",
+      "bugia", "gabbiano_creduto", "cieco"
     ],
     "history": []
   },
@@ -1269,7 +1269,7 @@
   {"group": "unclear", "question": "sé figlio nave fatto isola", "answer": "unclear", "cards": [], "lit": [], "history": []},
   {"group": "unclear", "question": "era cieca la vista del menù quando", "answer": "unclear", "cards": [], "lit": [], "history": []},
   {"group": "unclear", "question": "Il gabbiano aveva un nome?", "answer": "irrelevant", "cards": [], "lit": [], "history": []},
-  {"group": "solution", "question": "Quindi l'uomo si è ucciso perché ha capito che la carne che aveva mangiato non era di gabbiano ma era il figlio morto", "answer": "yes", "cards": ["soluzione"], "lit": ["t_pasto", "d_inganno"], "history": []},
+  {"group": "solution", "question": "Quindi l'uomo si è ucciso perché ha capito che la carne che aveva mangiato non era di gabbiano ma era il figlio morto", "answer": "yes", "cards": ["soluzione"], "lit": ["mangiato_figlio", "bugia", "gabbiano_creduto", "cieco"], "history": []},
   {"group": "solution", "question": "Ha capito cosa aveva mangiato?", "answer": "yes", "cards": [], "lit": [], "history": []},
   {"group": "solution", "question": "Sull'isola ha mangiato suo figlio?", "answer": "yes", "cards": ["mangiato_figlio", "isola"], "lit": [], "history": []},
   {"group": "solution", "question": "Al ristorante ha capito di aver mangiato suo figlio?", "answer": "yes", "cards": ["soluzione"], "lit": [], "history": []},

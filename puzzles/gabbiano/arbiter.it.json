@@ -1,0 +1,59 @@
+{
+  "id": "gabbiano",
+  "language": "it",
+  "title": "Il gabbiano",
+  "tone": "cupo",
+  "warnings": ["suicidio", "cannibalismo"],
+  "story": "Un uomo e una donna entrano in un ristorante. Lui ordina carne di gabbiano, ne assaggia un boccone, esce e si toglie la vita. Perché?",
+  "truth": "Anni prima l'uomo, cieco, la moglie e il loro figlio fanno naufragio. Il figlio annega in mare durante il naufragio, non sull'isola; i genitori raggiungono un'isola senza cibo, dove ci sono molti gabbiani, e il mare vi porta il corpo del figlio già morto. Affamati, i genitori sono costretti a mangiarne la carne, ma la moglie, per farlo sopravvivere, gli dice che è gabbiano, e lui, sentendo i gabbiani, le crede. Negli anni gli resta un dubbio. Prima del ristorante non aveva mai mangiato gabbiano: sull'isola aveva mangiato suo figlio. Al ristorante ordina gabbiano apposta per verificare: il sapore è diverso da quello che ricordava, capisce che quello dell'isola non era gabbiano ma suo figlio, e si uccide.",
+  "obvious_answer": "La carne era avvelenata o avariata.",
+  "assumption": "La causa è nel ristorante.",
+  "knowledge": ["Un cieco riconosce gli animali dal verso."],
+  "scenes": [
+    {"id": "anni_prima", "name": "Anni prima", "sealed": true},
+    {"id": "ristorante", "name": "Il ristorante", "sealed": false}
+  ],
+  "facts": [
+    {"id": "passato", "text": "C'entra qualcosa del suo passato.", "scene": "anni_prima", "role": "S", "requires": []},
+    {"id": "cieco", "text": "L'uomo era già cieco anni prima del ristorante.", "scene": "ristorante", "role": "S", "requires": []},
+    {"id": "moglie", "text": "La donna è sua moglie.", "scene": "ristorante", "role": "P", "requires": []},
+    {"id": "terza_persona", "text": "Nella storia c'entra un'altra persona.", "scene": "anni_prima", "role": "P", "requires": []},
+    {"id": "figlio", "text": "C'entra il loro figlio.", "scene": "anni_prima", "role": "P", "requires": ["terza_persona"]},
+    {"id": "incidente", "text": "Anni prima c'è stato un incidente.", "scene": "anni_prima", "role": "P", "requires": ["passato"]},
+    {"id": "mare", "text": "È successo in mare.", "scene": "anni_prima", "role": "P", "requires": ["incidente"]},
+    {"id": "barca", "text": "Lui, la moglie e il figlio erano su una barca.", "scene": "anni_prima", "role": "P", "requires": ["mare"]},
+    {"id": "solo_tre", "text": "Sulla barca c'erano solo loro tre.", "scene": "anni_prima", "role": "P", "requires": ["barca"], "optional": true},
+    {"id": "naufragio", "text": "Hanno fatto naufragio.", "scene": "anni_prima", "role": "P", "requires": ["barca"]},
+    {"id": "figlio_morto", "text": "Il figlio è morto.", "scene": "anni_prima", "role": "P", "requires": ["figlio", "passato"]},
+    {"id": "figlio_annegato", "text": "Il figlio è annegato in mare durante il naufragio: nessuno l'ha ucciso.", "scene": "anni_prima", "role": "P", "requires": ["figlio_morto", "naufragio"]},
+    {"id": "isola", "text": "Lui e la moglie sono finiti su un'isola.", "scene": "anni_prima", "role": "P", "requires": ["passato"]},
+    {"id": "fame", "text": "Sull'isola non c'era cibo.", "scene": "anni_prima", "role": "P", "requires": ["isola"]},
+    {"id": "gabbiani", "text": "Sull'isola c'erano molti gabbiani.", "scene": "anni_prima", "role": "P", "requires": ["isola"]},
+    {"id": "corpo_isola", "text": "Il mare ha portato sull'isola il corpo del figlio.", "scene": "anni_prima", "role": "P", "requires": ["figlio_annegato", "isola"]},
+    {"id": "carne_umana", "text": "Affamati, hanno mangiato carne umana.", "scene": "anni_prima", "role": "P", "requires": ["passato"]},
+    {"id": "mangiato_figlio", "text": "Sull'isola ha mangiato la carne di suo figlio.", "scene": "anni_prima", "role": "S", "requires": ["carne_umana", "figlio_morto"]},
+    {"id": "bugia", "text": "La moglie gli ha mentito: gli ha detto che era gabbiano.", "scene": "anni_prima", "role": "P", "requires": ["moglie"]},
+    {"id": "motivo", "text": "La moglie ha mentito perché lui sopravvivesse.", "scene": "anni_prima", "role": "P", "requires": ["bugia"]},
+    {"id": "gabbiano_creduto", "text": "Credeva di mangiare gabbiano.", "scene": "anni_prima", "role": "P", "requires": ["passato"]},
+    {"id": "udito", "text": "Sentiva i gabbiani, e per questo le ha creduto.", "scene": "anni_prima", "role": "P", "requires": ["cieco", "gabbiani"]},
+    {"id": "dubbio", "text": "Per anni gli è rimasto un dubbio su quel pasto.", "scene": "anni_prima", "role": "P", "requires": ["gabbiano_creduto"]},
+    {"id": "mai_gabbiano", "text": "Prima del ristorante non aveva mai mangiato vero gabbiano.", "scene": "ristorante", "role": "P", "requires": [], "negative": true},
+    {"id": "verifica", "text": "Al ristorante ha ordinato gabbiano apposta, per verificare.", "scene": "ristorante", "role": "P", "requires": ["mai_gabbiano"]},
+    {"id": "sapore", "text": "Il sapore era diverso da quello che ricordava.", "scene": "ristorante", "role": "C", "requires": ["verifica"]},
+    {"id": "scoperta", "text": "Dal sapore ha capito che sull'isola aveva mangiato suo figlio.", "scene": "ristorante", "role": "P", "requires": ["sapore"]},
+    {"id": "suicidio", "text": "Per questo è uscito e si è tolto la vita.", "scene": "ristorante", "role": "P", "requires": ["scoperta"]}
+  ],
+  "exclusions": [
+    {"id": "carne_ok", "text": "La carne del ristorante era avvelenata, cruda o avariata.", "ruled_out_by": null},
+    {"id": "ristorante_no", "text": "Il ristorante ha causato la sua morte.", "ruled_out_by": "passato"},
+    {"id": "moglie_no_male", "text": "La moglie voleva fargli del male.", "ruled_out_by": "motivo"},
+    {"id": "tradimento", "text": "La moglie lo tradiva.", "ruled_out_by": null},
+    {"id": "nessun_omicidio", "text": "Qualcuno ha ucciso il figlio.", "ruled_out_by": "figlio_annegato"}
+  ],
+  "victory": [
+    {"id": "v_figlio", "claim": "Sull'isola ha mangiato suo figlio.",
+     "paraphrases": ["ha mangiato la carne del figlio", "il gabbiano dell'isola era suo figlio"]},
+    {"id": "v_scoperta", "claim": "Al ristorante ha capito cosa aveva mangiato.",
+     "paraphrases": ["dal sapore ha scoperto la verità", "si è accorto che non era gabbiano"]}
+  ]
+}
