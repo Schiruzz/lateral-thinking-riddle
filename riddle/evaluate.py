@@ -208,19 +208,23 @@ def evaluate_facts(matcher, tests):
     return rows
 
 
-def report_facts(rows):
+def report_facts(rows, key_facts):
     """Print exact matches, facts given away and facts missed per group, the time, then every mistake.
 
     Args:
         rows: The rows returned by `evaluate_facts`.
+        key_facts: Ids of the riddle's key facts, counted again in their own columns.
     """
     def line(name, sub):
         exact = sum(r["got"] == r["expected"] for r in sub) / len(sub)
         extra = sum(len(r["got"] - r["expected"]) for r in sub)      # given away: the worst mistake
         missing = sum(len(r["expected"] - r["got"]) for r in sub)
-        print(f"{name:<28}{len(sub):>10}{exact:>8.0%}{extra:>7}{missing:>9}")
+        # a key fact given away spoils the discovery; a key fact missed leaves the player unrewarded
+        key_extra = sum(len((r["got"] - r["expected"]) & key_facts) for r in sub)
+        key_missing = sum(len((r["expected"] - r["got"]) & key_facts) for r in sub)
+        print(f"{name:<28}{len(sub):>10}{exact:>8.0%}{extra:>7}{missing:>9}{key_extra:>11}{key_missing:>13}")
 
-    print(f"{'group':<28}{'questions':>10}{'exact':>8}{'extra':>7}{'missing':>9}")
+    print(f"{'group':<28}{'questions':>10}{'exact':>8}{'extra':>7}{'missing':>9}{'key extra':>11}{'key missing':>13}")
     for group in dict.fromkeys(r["group"] for r in rows):
         line(group, [r for r in rows if r["group"] == group])
     line("TOTAL", rows)
@@ -259,7 +263,8 @@ def main():
     if args.facts:
         matcher = Matcher(load_riddle(args.puzzle, args.language), make_client(), args.model,
                           use_verifier=not args.no_verifier)
-        report_facts(evaluate_facts(matcher, load_tests(args.puzzle, args.language, args.tests)))
+        report_facts(evaluate_facts(matcher, load_tests(args.puzzle, args.language, args.tests)),
+                     matcher.riddle.key_facts)
         return
 
 
