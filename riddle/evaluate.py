@@ -10,8 +10,12 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from riddle.judge import JUDGE_MODEL, Judge, make_client
+from riddle.engine import Session
+from riddle.judge import JUDGE_MODEL, Judge, Matcher, make_client
 from riddle.puzzle import PUZZLES_DIR, load_arbiter, load_puzzle, load_tests
+from riddle.schema import load_riddle
+
+EVAL_WORKERS = 8   # questions judged at once: minutes instead of most of an hour, within the rate limit
 
 EVAL_WORKERS = 8   # questions judged at once: minutes instead of most of an hour, within the rate limit
 
@@ -148,6 +152,92 @@ def report_answers(rows, runs):
 
 
 
+def play(riddle, ids):
+    """Start a game and apply facts and false leads to it, as the engine would.
+
+    Args:
+        riddle: The `Riddle` being played.
+        ids: Ids of facts and false leads, mixed.
+
+    Returns:
+        The `Session` after unlocking the facts and closing the leads.
+    """
+    session = Session(riddle)
+    session.unlock([item_id for item_id in ids if item_id in riddle.facts])
+    session.exclude([item_id for item_id in ids if item_id in riddle.exclusions])
+    return session
+
+
+def evaluate_facts(matcher, tests):
+    """Match every test question and compare what it adds to the game with its label.
+
+    The matcher gets the labelled answer, not the arbiter's: it is measured on its
+    own, and the arbiter's mistakes stay in `--answers-only`. Both sides are compared
+    after the engine has applied them, so presupposed facts and leads closed by a
+    fact count as the player sees them.
+
+    Args:
+        matcher: The `Matcher` to evaluate.
+        tests: Test cases from `load_tests`.
+
+    Returns:
+        One row per test, with the expected and obtained additions and the seconds taken.
+    """
+    riddle = matcher.riddle
+
+    def run(case):
+        before = play(riddle, case["lit"])
+        known = before.found | before.excluded
+        verdict = {"positive_question": case["question"], "answer": case["answer"]}
+        start = time.time()
+        facts, leads = matcher.match(case["question"], verdict, case["history"], before)
+        seconds = time.time() - start
+        expected = play(riddle, case["lit"] + case["cards"])
+        got = play(riddle, case["lit"] + facts + leads)
+        return {"group": case["group"], "question": case["question"], "answer": case["answer"],
+                "expected": (expected.found | expected.excluded) - known,
+                "got": (got.found | got.excluded) - known, "seconds": seconds}
+
+    rows = [None] * len(tests)
+    with ThreadPoolExecutor(max_workers=EVAL_WORKERS) as pool:
+        futures = {pool.submit(run, case): i for i, case in enumerate(tests)}
+        for done, future in enumerate(as_completed(futures), 1):
+            rows[futures[future]] = future.result()
+            print(f"\r{matcher.model}: {done}/{len(tests)}", end="", flush=True)
+    print()
+    return rows
+
+
+def report_facts(rows):
+    """Print exact matches, facts given away and facts missed per group, the time, then every mistake.
+
+    Args:
+        rows: The rows returned by `evaluate_facts`.
+    """
+    def line(name, sub):
+        exact = sum(r["got"] == r["expected"] for r in sub) / len(sub)
+        extra = sum(len(r["got"] - r["expected"]) for r in sub)      # given away: the worst mistake
+        missing = sum(len(r["expected"] - r["got"]) for r in sub)
+        print(f"{name:<28}{len(sub):>10}{exact:>8.0%}{extra:>7}{missing:>9}")
+
+    print(f"{'group':<28}{'questions':>10}{'exact':>8}{'extra':>7}{'missing':>9}")
+    for group in dict.fromkeys(r["group"] for r in rows):
+        line(group, [r for r in rows if r["group"] == group])
+    line("TOTAL", rows)
+
+    # a high maximum means retries on rate limits or timeouts
+    seconds = [r["seconds"] for r in rows]
+    print(f"\nseconds per question: avg {sum(seconds) / len(seconds):.1f}, max {max(seconds):.1f}")
+
+    print("\nMISTAKES")
+    for r in rows:
+        if r["got"] != r["expected"]:
+            print(f"- [{r['group']}]  {r['question']}  -> {r['answer']}")
+            print(f"    expected:  {', '.join(sorted(r['expected'])) or '-'}")
+            print(f"    got:       {', '.join(sorted(r['got'])) or '-'}")
+
+
+
 def main():
     """Parse the command line, run the evaluation and print the report."""
     parser = argparse.ArgumentParser(description="Evaluate the judge on a puzzle's test questions.")
@@ -160,6 +250,9 @@ def main():
     parser.add_argument("--tests", default=None, help="test set, e.g. simulated (default: the main one)")
     parser.add_argument("--grep", default=None,
                         help="with --answers-only, judge only the questions matching this pattern, e.g. \"cause naturali|infarto\"")
+    parser.add_argument("--facts", action="store_true",
+                        help="judge only the matcher, on a riddle in the card schema, with the labelled answers")
+    parser.add_argument("--no-verifier", action="store_true", help="with --facts, the matcher without the verifier")
     args = parser.parse_args()
 
     # the arbiter alone: the puzzle has no cards, so there is nothing else to judge
