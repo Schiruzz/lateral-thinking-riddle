@@ -233,6 +233,8 @@ def load_arbiter(name, language):
     # the facts are the solution: one list, read by the arbiter as it is written
     facts = [fact["text"] for fact in data["facts"]]
     not_true = "NOT TRUE: " + "; ".join(exclusion["text"] for exclusion in data["exclusions"])
+    # cards lit in a test reach the arbiter as established facts: their text comes from the schema
+    card_text = {item["id"]: item["text"] for item in data["facts"] + data["exclusions"]}
     return SimpleNamespace(title=data["title"], story=data["story"], solution=data["truth"],
                            solution_facts=facts + [not_true], judge_notes=[],
-                           facts={}, exclusions={}, solution_elements={}, card_text={})
+                           facts={}, exclusions={}, solution_elements={}, card_text=card_text)
