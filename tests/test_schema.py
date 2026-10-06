@@ -55,3 +55,8 @@ def test_unknown_requires_is_rejected():
 def test_duplicate_ids_are_refused():
     with pytest.raises(ValueError, match="duplicate exclusion ids"):
         by_id([{"id": "veleno_cibo"}, {"id": "veleno_cibo"}], "exclusion")
+
+
+def test_detective_counts_needed_facts_plus_half():
+    assert load_riddle("baita", "it").detective() == 5
+    assert load_riddle("gabbiano", "it").detective() == 15

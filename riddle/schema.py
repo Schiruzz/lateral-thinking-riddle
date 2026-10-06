@@ -4,8 +4,7 @@ Only the structure lives here: what a fact presupposes and which facts can be
 found next. The state of a game (what the player has found) lives in the engine.
 """
 
-import json
-
+import json, math
 from riddle.puzzle import PUZZLES_DIR
 
 
@@ -112,6 +111,24 @@ class Riddle:
         """
         return [fact_id for fact_id, fact in self.facts.items()
                 if fact_id not in found and set(fact["requires"]) <= set(found)]
+
+
+    def detective(self):
+        """Count the questions a sharp player needs to win.
+
+        The facts needed for the victory, with everything they presuppose,
+        minus the optional ones, plus a margin of half.
+
+        Returns:
+            The number of questions, rounded up.
+        """
+        needed = self.closure(
+            fact_id for element in self.victory.values() for fact_id in element["requires"]
+        )
+        # "optional" is written in the file only when true
+        minimum = len([fact_id for fact_id in needed if not self.facts[fact_id].get("optional")])
+        # even a detective asks a few questions that lead nowhere
+        return minimum + math.ceil(minimum / 2)
 
 
 def load_riddle(name, language):
