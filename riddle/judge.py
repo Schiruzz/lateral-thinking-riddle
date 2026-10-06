@@ -468,7 +468,7 @@ class Matcher:
         riddle: The `Riddle` being played.
         client: A `genai.Client`, e.g. from `make_client`.
         model: The matcher's model.
-        use_verifier: Whether each proposed fact is checked again on its own.
+        use_verifier: Whether each proposed key fact is checked again on its own.
         max_attempts: Calls per request before giving up on a retryable error.
     """
 
@@ -525,11 +525,14 @@ class Matcher:
         found_facts = [item_id for item_id in quoted if item_id in self.riddle.facts]
         found_leads = [item_id for item_id in quoted if item_id in self.riddle.exclusions]
 
-        # false leads follow from the "no" itself, so only facts are verified
-        if self.use_verifier and found_facts:
+        # false leads follow from the "no" itself, so only facts are verified, and only key ones:
+        # a step given away costs little, a leap or a twist given away spoils the discovery
+        to_check = [fact_id for fact_id in found_facts if fact_id in self.riddle.key_facts] if self.use_verifier else []
+        if to_check:
             with ThreadPoolExecutor() as pool:
-                checks = list(pool.map(lambda fact_id: self._verify(fact_id, verdict, context), found_facts))
-            found_facts = [fact_id for fact_id, ok in zip(found_facts, checks) if ok]
+                checks = list(pool.map(lambda fact_id: self._verify(fact_id, verdict, context), to_check))
+            rejected = {fact_id for fact_id, ok in zip(to_check, checks) if not ok}
+            found_facts = [fact_id for fact_id in found_facts if fact_id not in rejected]
         return found_facts, found_leads
 
     def _verify(self, fact_id, verdict, context):

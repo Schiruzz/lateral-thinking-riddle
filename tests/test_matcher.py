@@ -59,13 +59,20 @@ def test_quote_missing_from_the_question_is_dropped(baita):
     assert models.verify_calls == []
 
 
-def test_verifier_decides_facts(baita):
-    question = "Si è chiuso lui a chiave?"
-    matcher, _ = make_matcher(baita, [("chiuso lui a chiave", "porta_lui")])
+def test_verifier_decides_key_facts(baita):
+    question = "È morto avvelenato da un gas?"
+    matcher, _ = make_matcher(baita, [("avvelenato da un gas", "gas")])
     assert matcher.match(question, verdict("yes", question), [], Session(baita)) == ([], [])
-    matcher, _ = make_matcher(baita, [("chiuso lui a chiave", "porta_lui")],
-                              stated={baita.facts["porta_lui"]["text"]: True})
+    matcher, _ = make_matcher(baita, [("avvelenato da un gas", "gas")],
+                              stated={baita.facts["gas"]["text"]: True})
+    assert matcher.match(question, verdict("yes", question), [], Session(baita)) == (["gas"], [])
+
+
+def test_steps_skip_verification(baita):
+    question = "Si è chiuso lui a chiave?"
+    matcher, models = make_matcher(baita, [("chiuso lui a chiave", "porta_lui")])
     assert matcher.match(question, verdict("yes", question), [], Session(baita)) == (["porta_lui"], [])
+    assert models.verify_calls == []
 
 
 def test_without_verifier_the_matcher_decides_alone(baita):
