@@ -7898,7 +7898,7 @@
   {
     "group": "reckless",
     "question": "Quindi si è avvelenato da solo per sbaglio?",
-    "answer": "yes",
+    "answer": "no",
     "cards": [],
     "lit": [],
     "history": [
@@ -8033,7 +8033,7 @@
   {
     "group": "reckless",
     "question": "Aspetta, si è avvelenato da solo usando qualcos'altro che non era cibo né bevanda?",
-    "answer": "yes",
+    "answer": "no",
     "cards": [],
     "lit": [],
     "history": [
