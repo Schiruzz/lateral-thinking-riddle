@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from riddle.conductor import STUCK_LINES, Conductor, stuck_line
 from riddle.conductor import Conductor
 from riddle.engine import Session
 from riddle.schema import load_riddle
@@ -92,3 +93,30 @@ def test_without_a_yes_or_no_the_reaction_is_the_sentence(baita):
     joke = "Diciamo che aveva i calzini a pois: per la storia non cambia nulla."
     result, _ = reply(baita, (joke, "", ""), "Era biondo?", answer="irrelevant")
     assert result["reply"] == joke
+
+
+def test_an_irrelevant_joke_must_say_it_does_not_matter(baita):
+    result, _ = reply(baita, ("Magari era biondo.", "", ""), "Era biondo?", answer="irrelevant")
+    assert result["reply"] == "Non conta per la storia."
+
+
+def test_an_irrelevant_joke_cannot_hide_a_yes(baita):
+    joke = "Probabilmente sì, se avessero fatto un corso. Ma per la storia non conta niente."
+    result, _ = reply(baita, (joke, "", ""), "Potevano evitarlo?", answer="irrelevant")
+    assert result["reply"] == "Non conta per la storia."
+
+
+def test_a_stuck_line_is_never_said_twice_in_a_game():
+    said_before = [f"No. {line}" for line in STUCK_LINES[:-1]]
+    assert stuck_line(said_before) == STUCK_LINES[-1]
+
+
+def test_a_joke_counts_in_whatever_field_the_model_wrote_it(baita):
+    joke = "Mah, magari avevano ottant'anni. Ma per la storia non conta niente."
+    result, _ = reply(baita, ("", joke, ""), "Erano vecchi gli amici?", answer="irrelevant")
+    assert result["reply"] == joke
+
+
+def test_c_era_is_a_pointer_not_a_new_word(baita):
+    result, _ = reply(baita, ("", "No, non c'era.", ""), "Aveva un camino nella stanza?", answer="no")
+    assert result["reply"] == "No, non c'era."

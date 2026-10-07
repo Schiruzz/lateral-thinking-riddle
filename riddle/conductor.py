@@ -10,6 +10,7 @@ sentence becomes false), and a reaction with a word of a hidden fact is dropped.
 """
 
 import json
+import random
 
 from google.genai import types
 
@@ -20,17 +21,34 @@ RECENT_SIZE = 6   # exchanges shown to the conductor, enough to notice a player 
 OWN_SIZE = 6      # the conductor's own last sentences, so it does not open the same way twice
 LONG_ANSWER = 6   # words beyond which an answer repeats the question: only counted, for the report
 # the engine's reasons for a reaction after a yes or no: without one, the answer is said alone
-REASONS = ("relief", "repeated", "stuck", "within_reach")
+REASONS = ("relief", "repeated", "within_reach")
 
 # what the player hears when the conductor's sentence fails a check
 PLAIN = {"yes": "Sì.", "no": "No.", "irrelevant": "Non conta per la storia.",
          "invalid": "Ti sembra una domanda da sì o no?", "unclear": "Eh? Non ho capito."}
-# the only words an answer may add to the player's: the answer itself
 # the only words an answer may add to the player's: the answer itself, and pronouns that
 # point back to the question ("No, non lo sono."): they keep it vague and add nothing to the story
 ANSWER_WORDS = {"si", "no", "non", "esatto", "giusto", "vero", "proprio", "cosi",
-                "lo", "la", "li", "le", "l", "ne", "ci", "c", "e", "era", "erano"}
+                "lo", "la", "li", "le", "l", "ne", "ci", "c", "e", "era", "erano", "cera", "cerano"}
 NEGATIONS = {"no", "non"}
+# an irrelevant joke must say that it does not matter, and must not hide a yes or no
+DISCLAIMERS = {"conta", "cambia", "centra", "importa", "irrilevante", "rilevante", "sposta",
+               "serve", "interessa", "influisce"}
+
+# said when the player is stuck: no word of any story, so the engine picks them without a model;
+# written by Federico (07/10), each said at most once per game
+STUCK_LINES = [
+    "Stai girando a vuoto.",
+    "Mi sa che ti stai iniziando a perdere.",
+    "Sono un po' di domande che non portano a niente, eh?",
+    "Così non ne usciamo, eh.",
+    "Mi sa che stai girando in tondo.",
+    "Siamo un po' fermi, eh.",
+    "Non stiamo andando da nessuna parte: cambia approccio.",
+    "Prova a cambiare tipo di domanda.",
+    "Ok, facciamo un respiro e ripartiamo.",
+    "Ti stai perdendo. Prova un'altra strada.",
+]
 # the answer speaks to the player: "devo capire...?" becomes "non devi capire..."
 PERSON = {"devo": "devi", "posso": "puoi", "voglio": "vuoi", "sono": "sei", "ho": "hai",
           "io": "tu", "mi": "ti", "me": "te", "mio": "tuo", "mia": "tua", "miei": "tuoi", "mie": "tue"}
@@ -67,17 +85,17 @@ WHAT YOU WRITE: three parts, joined in this order
   After irrelevant, invalid or unclear, write "".
 - "before" and "after": a reaction about the GAME, never about the story. After yes or
   no, write one only when the game gives a reason below (RELIEF, REPEATED QUESTION,
-  STUCK, WITHIN REACH); otherwise both are "". After irrelevant, invalid or unclear,
-  the reaction is the whole sentence.
+  WITHIN REACH); otherwise both are "". After irrelevant, invalid or unclear, the
+  reaction is the whole sentence.
 
 HOW YOU SPEAK
 1. Spoken Italian, short complete sentences.
 2. Never say or suggest that something is important, close, right or wrong beyond the
    answer: no "ci siamo quasi", no "indizio utile", no hypotheses of your own.
 3. No textbook sentences ("adesso le cose cambiano", "chiediti perché conta").
-4. Irony is welcome when the player is stuck or the question is irrelevant; never about
-   the facts of the story, and never with images from the story's world (its places,
-   weather, objects): they point the player somewhere.
+4. Irony is welcome when the question is irrelevant; never about the facts of the
+   story, and never with images from the story's world (its places, weather, objects):
+   they point the player somewhere.
 5. Never open two sentences in a row the same way: your last sentences are listed.
 
 WHAT THE GAME TELLS YOU, AND HOW IT SOUNDS
@@ -89,18 +107,11 @@ vary them, invent your own in the same spirit.
   "Dopo ben sei domande vaghe, abbiamo novità:" | "sì." | ""
 - REPEATED QUESTION:
   "Te lo ripeto:" | "sì." | "" / "La risposta non cambia, eh:" | "no." | ""
-- STUCK (many questions in a row without a new fact): say only that the player is going
-  nowhere, never what to leave or where to look, never a topic of the story; you do not
-  know where the solution is. After irrelevant, invalid or unclear, first say that,
-  then add the remark:
-  "" | "No." | "Stai girando a vuoto." / "" | "No." | "Mi sa che ti stai iniziando a
-  perdere. Prova un'altra strada." / "Non conta per la storia. E sono un po' di domande
-  che non portano a niente, eh?"
 - WITHIN REACH (this question found the last thing needed to solve):
   "" | "Sì." | "Ok, sembri a un ottimo punto: riesci a darmi un'ipotesi finale?" /
   "" | "Sì." | "Ok, perfetto. Ora fammi un riepilogo di tutta la storia."
 - irrelevant: a joke about the very thing asked, absurd and clearly invented, then say
-  it does not matter; never a conclusion about what happened:
+  it does not matter; never a yes or no, never a conclusion about what happened:
   "Mah, magari era nero. Ma per la storia non conta niente." / "Diciamo che aveva i
   calzini a pois: tanto per quello che è successo non cambia nulla."
 - invalid: answer what the player actually did. A vague or open question: "Questa è una
@@ -153,6 +164,28 @@ def answer_is_honest(sentence, question, verdict):
     return not (said & NEGATIONS) - text_words(verdict["positive_question"])
 
 
+def joke_is_safe(sentence):
+    """Check that an irrelevant joke says it does not matter and hides no yes or no.
+
+    "Probabilmente sì, se..." answers a question the arbiter judged irrelevant.
+
+    Args:
+        sentence: The reaction written after an irrelevant question.
+    """
+    said = text_words(sentence)
+    return bool(said & DISCLAIMERS) and not said & {"si", "no"}
+
+
+def stuck_line(said_before):
+    """Pick a line of `STUCK_LINES` not said yet in this game (any of them once all are used).
+
+    Args:
+        said_before: The conductor's earlier sentences in this game.
+    """
+    unused = [line for line in STUCK_LINES if not any(line in sentence for sentence in said_before)]
+    return random.choice(unused or STUCK_LINES)
+
+
 class Conductor:
     """Turns an answered question into the sentence the player hears.
 
@@ -190,10 +223,10 @@ class Conductor:
             said_before: The conductor's earlier sentences in this game.
 
         Returns:
-            A dict with "reply" (the sentence), "plain_answer" (the answer failed its
-            check and was cut to "Sì."/"No."), "long_answer" (the answer repeats the
-            question, to count in the report) and "revealed" (words of hidden facts
-            that made the reaction drop, empty when it passed).
+            A dict with "reply" (the sentence), "plain_answer" (the answer or the
+            irrelevant joke failed its check and was cut to the plain line), "long_answer"
+            (the answer repeats the question, to count in the report) and "revealed" 
+            (words of hidden facts that made the reaction drop, empty when it passed).
         """
         found = [fact["text"] for fact_id, fact in self.riddle.facts.items() if fact_id in session.found]
         new = [self.riddle.facts[fact_id]["text"] for fact_id in new_facts]
@@ -208,10 +241,16 @@ class Conductor:
                     f"ANSWER: {verdict['answer']}\n"
                     f"YOUR LAST SENTENCES:\n{lines(list(said_before)[-OWN_SIZE:])}\n\n"
                     f"REPEATED QUESTION: {'yes' if state['repeated'] else 'no'}\n"
-                    f"STUCK: {'yes, ' + str(state['empty_streak'] + 1) + ' questions in a row without progress' if state['stuck'] else 'no'}\n"
                     f"RELIEF: {'yes, after ' + str(state['empty_streak']) + ' questions without progress' if state['relief'] else 'no'}\n"
                     f"WITHIN REACH: {'yes' if state['within_reach'] else 'no'}")
         parts = json.loads(call_model(self.client, self.model, contents, REPLY_CONFIG, self.max_attempts).text)
+
+
+        if verdict["answer"] not in ("yes", "no"):
+            # without a yes or no the whole sentence is the reaction, whatever field the model put it in
+            whole = " ".join(part for part in (parts["before"], parts["answer"], parts["after"]) if part.strip())
+            parts = {"before": whole, "answer": "", "after": ""}
+
 
         # the answer: a yes or no said with the player's words, or just the plain yes or no
         answer, plain_answer = "", False
@@ -229,10 +268,15 @@ class Conductor:
         # after a yes or no a reaction needs a reason from the engine: the model does not choose when to react
         reason = verdict["answer"] not in ("yes", "no") or any(state[name] for name in REASONS)
         before, after = (parts["before"], parts["after"]) if reason and not revealed else ("", "")
+        if verdict["answer"] == "irrelevant" and not joke_is_safe(f"{before} {after}"):
+            before, after, plain_answer = "", "", True
 
         sentence = " ".join(part for part in (before, answer, after) if part.strip())
         # nothing left to say after irrelevant, invalid or unclear: the plain line
         sentence = sentence or PLAIN[verdict["answer"]]
+        # the engine says the player is stuck, with a line from the bank: after the answer, never instead of it
+        if state["stuck"]:
+            sentence = f"{sentence} {stuck_line(said_before)}"
         # "sì." follows a dropped "Te lo ripeto:": the sentence still starts with a capital
         return {"reply": sentence[0].upper() + sentence[1:], "plain_answer": plain_answer,
                 "long_answer": len(answer.split()) > LONG_ANSWER, "revealed": revealed}
