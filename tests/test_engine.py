@@ -51,3 +51,47 @@ def test_reachable_follows_what_was_found(baita):
     assert "stufa_carica" not in baita.reachable()
     baita.unlock(["stufa"])
     assert "stufa_carica" in baita.reachable()
+
+
+def test_the_same_question_written_differently_is_repeated(baita):
+    assert not baita.record("La stufa è accesa?", [])["repeated"]
+    assert baita.record("la stufa e' accesa", [])["repeated"]
+
+
+def test_empty_streak_counts_questions_without_new_facts(baita):
+    for question in ["Era vecchio?", "Era ricco?", "Era alto?"]:
+        baita.record(question, [])
+    assert baita.record("C'era una stufa?", baita.unlock(["stufa"]))["empty_streak"] == 3
+    assert baita.record("Era accesa?", [])["empty_streak"] == 0
+
+
+def test_victory_is_within_reach_once_when_its_facts_are_found(baita):
+    assert not baita.record("C'era una stufa?", baita.unlock(["stufa"]))["within_reach"]
+    new = baita.unlock(["gas", "comignolo"])
+    assert baita.record("La neve ha bloccato il comignolo e il gas l'ha ucciso?", new)["within_reach"]
+    assert not baita.record("Era notte?", [])["within_reach"]
+
+
+def test_relief_needs_a_new_fact_after_a_long_streak(baita):
+    for question in ["Era vecchio?", "Era ricco?", "Era alto?", "Era biondo?", "Era stanco?"]:
+        assert not baita.record(question, [], "no")["relief"]
+    assert not baita.record("Nevicava?", [], "yes")["relief"]
+    assert baita.record("C'era una stufa?", baita.unlock(["stufa"]), "yes")["relief"]
+
+
+def test_relief_never_comes_with_a_no(baita):
+    for n in range(1, 6):
+        baita.record(f"Domanda {n}?", [], "no")
+    assert not baita.record("Mancava la stufa?", baita.unlock(["stufa"]), "no")["relief"]
+
+
+def test_the_player_is_told_he_is_stuck_once_every_five_questions(baita):
+    stuck = [baita.record(f"Domanda {n}?", [], "no")["stuck"] for n in range(1, 11)]
+    assert stuck == [False] * 4 + [True] + [False] * 4 + [True]
+
+
+def test_the_player_is_never_told_he_is_stuck_after_a_yes(baita):
+    for n in range(1, 5):
+        baita.record(f"Domanda {n}?", [], "no")
+    assert not baita.record("Nevicava?", [], "yes")["stuck"]
+    assert baita.record("Domanda 6?", [], "no")["stuck"]
