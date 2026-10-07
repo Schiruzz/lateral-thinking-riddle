@@ -79,12 +79,14 @@ class Session:
         Args:
             question: The question as the arbiter rewrote it.
             new_facts: Ids of the facts this question found (from `unlock`).
-            answer: The arbiter's answer: after a yes the player is never told he is stuck.
+            answer: The arbiter's answer: relief comes only with a yes, and after
+                a yes the player is never told he is stuck.
 
         Returns:
             A dict with "repeated" (the same question was asked before),
             "empty_streak" (questions in a row without a new fact before this one),
-            "relief" (a new fact after at least `RELIEF_STREAK` questions without one),
+            "relief" (a yes that found a new fact after at least `RELIEF_STREAK`
+            questions without one),
             "stuck" (`STUCK_STREAK` more questions without a new fact since the last time
             it was said, never after a yes)
             and "within_reach" (this question found the last fact the victory needs).
@@ -95,7 +97,8 @@ class Session:
         state = {
             "repeated": key in self.asked,
             "empty_streak": self.empty_streak,
-            "relief": bool(new_facts) and self.empty_streak >= RELIEF_STREAK,
+            # a "no" can find a fact too, but "Finalmente!" before a no sounds like a yes
+            "relief": bool(new_facts) and self.empty_streak >= RELIEF_STREAK and answer == "yes",
             # said once per STUCK_STREAK questions, so it does not become a sermon at every turn
             "stuck": streak - self.stuck_from >= STUCK_STREAK and answer != "yes",
             # only the turn that completes the victory: the invitation is said once

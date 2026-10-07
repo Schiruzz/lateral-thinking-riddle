@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from riddle.conductor import STUCK_LINES, Conductor, stuck_line
+from riddle.conductor import STUCK_LINES, Conductor, pick_line
 from riddle.conductor import Conductor
 from riddle.engine import Session
 from riddle.schema import load_riddle
@@ -108,7 +108,12 @@ def test_an_irrelevant_joke_cannot_hide_a_yes(baita):
 
 def test_a_stuck_line_is_never_said_twice_in_a_game():
     said_before = [f"No. {line}" for line in STUCK_LINES[:-1]]
-    assert stuck_line(said_before) == STUCK_LINES[-1]
+    assert pick_line(STUCK_LINES, said_before) == STUCK_LINES[-1]
+
+
+def test_a_line_with_a_number_is_recognised_once_said():
+    bank = ["Dopo ben {n} domande vaghe, abbiamo novità:", "Era ora!"]
+    assert pick_line(bank, ["Dopo ben 7 domande vaghe, abbiamo novità: sì."]) == "Era ora!"
 
 
 def test_a_joke_counts_in_whatever_field_the_model_wrote_it(baita):
@@ -120,3 +125,30 @@ def test_a_joke_counts_in_whatever_field_the_model_wrote_it(baita):
 def test_c_era_is_a_pointer_not_a_new_word(baita):
     result, _ = reply(baita, ("", "No, non c'era.", ""), "Aveva un camino nella stanza?", answer="no")
     assert result["reply"] == "No, non c'era."
+
+
+
+def relief_reply(riddle, monkeypatch, line):
+    """Run the conductor on a yes that finds a fact after five empty questions, with one line in the relief bank."""
+    monkeypatch.setattr("riddle.conductor.RELIEF_LINES", [line])
+    session = Session(riddle)
+    for n in range(1, 6):
+        session.record(f"Domanda {n}?", [], "no")
+    new = session.unlock(["stufa"])
+    state = session.record("C'era una stufa?", new, "yes")
+    models = FakeModels("Finalmente!", "Sì, c'era.", "")
+    return Conductor(riddle, SimpleNamespace(models=models)).reply(
+        "C'era una stufa?", {"positive_question": "C'era una stufa?", "answer": "yes"}, [], session, new, state)
+
+
+def test_the_relief_opening_comes_from_the_bank_not_the_model(baita, monkeypatch):
+    assert relief_reply(baita, monkeypatch, "Era ora!")["reply"] == "Era ora! Sì, c'era."
+
+
+def test_a_relief_line_with_a_yes_is_the_whole_answer(baita, monkeypatch):
+    assert relief_reply(baita, monkeypatch, "Fermate tutto: è un sì!")["reply"] == "Fermate tutto: è un sì!"
+
+
+def test_a_relief_line_with_a_colon_counts_the_questions(baita, monkeypatch):
+    result = relief_reply(baita, monkeypatch, "Dopo ben {n} domande vaghe, abbiamo novità:")
+    assert result["reply"] == "Dopo ben 5 domande vaghe, abbiamo novità: sì, c'era."

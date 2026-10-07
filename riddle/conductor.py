@@ -21,7 +21,7 @@ RECENT_SIZE = 6   # exchanges shown to the conductor, enough to notice a player 
 OWN_SIZE = 6      # the conductor's own last sentences, so it does not open the same way twice
 LONG_ANSWER = 6   # words beyond which an answer repeats the question: only counted, for the report
 # the engine's reasons for a reaction after a yes or no: without one, the answer is said alone
-REASONS = ("relief", "repeated", "within_reach")
+REASONS = ("repeated", "within_reach")
 
 # what the player hears when the conductor's sentence fails a check
 PLAIN = {"yes": "Sì.", "no": "No.", "irrelevant": "Non conta per la storia.",
@@ -48,6 +48,43 @@ STUCK_LINES = [
     "Prova a cambiare tipo di domanda.",
     "Ok, facciamo un respiro e ripartiamo.",
     "Ti stai perdendo. Prova un'altra strada.",
+    "Mi sa che ci siamo incartati.",
+    "Ok, così non stiamo scoprendo niente.",
+    "Domande su domande, e ancora nulla.",
+    "Mi sa che è ora di cambiare prospettiva.",
+    "Ci stai mettendo impegno, ma per ora niente di nuovo.",
+    "Tranquillo, succede a tutti di bloccarsi un po'.",
+    "Non arrenderti, ma prova a ragionare diversamente.",
+    "Fermati un attimo e ripensa a quello che sai già.",
+    "Qui il tempo si è fermato, eh.",
+    "Sto ancora aspettando una domanda che porti da qualche parte.",
+    "Fai un passo indietro e riparti.",
+    "Dai, scuoti un po' le idee.",
+    "Sei bloccato, eh? Succede.",
+    "Mi sa che serve un'idea nuova.",
+    "Proviamo a pensarla in modo diverso?",
+]
+# said before a yes that finds a fact after many questions without one; a line with "sì" is the
+# whole answer, a line ending with ":" is followed by it; written by Federico (07/10)
+RELIEF_LINES = [
+    "Finalmente una domanda utile!",
+    "Era ora!",
+    "Finalmente si sblocca qualcosa!",
+    "Dopo ben {n} domande vaghe, abbiamo novità:",
+    "Bravo, adesso sì che ragioniamo.",
+    "Ah, ci voleva!",
+    "Non ci speravo più!",
+    "Alleluia!",
+    "Signore e signori, abbiamo un sì!",
+    "Ben fatto!",
+    "Ottima ipotesi!",
+    "Grazie a Dio!",
+    "E il pubblico esulta: sì!",
+    "È stata dura, ma eccolo qua: sì!",
+    "Sì, sì e ancora sì!",
+    "Grazie al cielo, sì!",
+    "Fermate tutto: è un sì!",
+    "Ottima domanda!",
 ]
 # the answer speaks to the player: "devo capire...?" becomes "non devi capire..."
 PERSON = {"devo": "devi", "posso": "puoi", "voglio": "vuoi", "sono": "sei", "ho": "hai",
@@ -84,8 +121,8 @@ WHAT YOU WRITE: three parts, joined in this order
   to you: answer it to the player ("Devo capire chi c'era in sala?" -> "No, non devi.").
   After irrelevant, invalid or unclear, write "".
 - "before" and "after": a reaction about the GAME, never about the story. After yes or
-  no, write one only when the game gives a reason below (RELIEF, REPEATED QUESTION,
-  WITHIN REACH); otherwise both are "". After irrelevant, invalid or unclear, the
+  no, write one only when the game gives a reason below (REPEATED QUESTION, WITHIN
+  REACH); otherwise both are "". After irrelevant, invalid or unclear, the
   reaction is the whole sentence.
 
 HOW YOU SPEAK
@@ -102,9 +139,6 @@ WHAT THE GAME TELLS YOU, AND HOW IT SOUNDS
 The examples show the tone, as before | answer | after. They are not sentences to copy:
 vary them, invent your own in the same spirit.
 - yes / no, no reason: "" | "Sì." | "" / "" | "No, non era malato." | ""
-- RELIEF (a new fact after many questions without progress):
-  "Finalmente un po' di azione!" | "Sì, la moglie c'entra." | "" /
-  "Dopo ben sei domande vaghe, abbiamo novità:" | "sì." | ""
 - REPEATED QUESTION:
   "Te lo ripeto:" | "sì." | "" / "La risposta non cambia, eh:" | "no." | ""
 - WITHIN REACH (this question found the last thing needed to solve):
@@ -176,14 +210,16 @@ def joke_is_safe(sentence):
     return bool(said & DISCLAIMERS) and not said & {"si", "no"}
 
 
-def stuck_line(said_before):
-    """Pick a line of `STUCK_LINES` not said yet in this game (any of them once all are used).
+def pick_line(bank, said_before):
+    """Pick a line of a bank not said yet in this game (any of them once all are used).
 
     Args:
+        bank: The lines to pick from, e.g. `STUCK_LINES` or `RELIEF_LINES`.
         said_before: The conductor's earlier sentences in this game.
     """
-    unused = [line for line in STUCK_LINES if not any(line in sentence for sentence in said_before)]
-    return random.choice(unused or STUCK_LINES)
+    # a line with a number is recognised by the words before it
+    unused = [line for line in bank if not any(line.split("{")[0] in sentence for sentence in said_before)]
+    return random.choice(unused or bank)
 
 
 class Conductor:
@@ -224,9 +260,9 @@ class Conductor:
 
         Returns:
             A dict with "reply" (the sentence), "plain_answer" (the answer or the
-            irrelevant joke failed its check and was cut to the plain line), "long_answer"
-            (the answer repeats the question, to count in the report) and "revealed" 
-            (words of hidden facts that made the reaction drop, empty when it passed).
+            irrelevant joke failed its check and was cut to the plain line), "long_answer" (the answer repeats the
+            question, to count in the report) and "revealed" (words of hidden facts
+            that made the reaction drop, empty when it passed).
         """
         found = [fact["text"] for fact_id, fact in self.riddle.facts.items() if fact_id in session.found]
         new = [self.riddle.facts[fact_id]["text"] for fact_id in new_facts]
@@ -241,16 +277,12 @@ class Conductor:
                     f"ANSWER: {verdict['answer']}\n"
                     f"YOUR LAST SENTENCES:\n{lines(list(said_before)[-OWN_SIZE:])}\n\n"
                     f"REPEATED QUESTION: {'yes' if state['repeated'] else 'no'}\n"
-                    f"RELIEF: {'yes, after ' + str(state['empty_streak']) + ' questions without progress' if state['relief'] else 'no'}\n"
                     f"WITHIN REACH: {'yes' if state['within_reach'] else 'no'}")
         parts = json.loads(call_model(self.client, self.model, contents, REPLY_CONFIG, self.max_attempts).text)
-
-
         if verdict["answer"] not in ("yes", "no"):
             # without a yes or no the whole sentence is the reaction, whatever field the model put it in
             whole = " ".join(part for part in (parts["before"], parts["answer"], parts["after"]) if part.strip())
             parts = {"before": whole, "answer": "", "after": ""}
-
 
         # the answer: a yes or no said with the player's words, or just the plain yes or no
         answer, plain_answer = "", False
@@ -271,12 +303,21 @@ class Conductor:
         if verdict["answer"] == "irrelevant" and not joke_is_safe(f"{before} {after}"):
             before, after, plain_answer = "", "", True
 
+        # relief: the opening comes from the bank, the model never writes it
+        if state["relief"]:
+            before = pick_line(RELIEF_LINES, said_before).format(n=state["empty_streak"])
+            if "si" in text_words(before):
+                answer = ""   # the line already says yes
+        # an answer after a colon goes on with the same sentence: "Te lo ripeto: sì."
+        if before.strip().endswith(":") and answer:
+            answer = answer[0].lower() + answer[1:]
+
         sentence = " ".join(part for part in (before, answer, after) if part.strip())
         # nothing left to say after irrelevant, invalid or unclear: the plain line
         sentence = sentence or PLAIN[verdict["answer"]]
         # the engine says the player is stuck, with a line from the bank: after the answer, never instead of it
         if state["stuck"]:
-            sentence = f"{sentence} {stuck_line(said_before)}"
+            sentence = f"{sentence} {pick_line(STUCK_LINES, said_before)}"
         # "sì." follows a dropped "Te lo ripeto:": the sentence still starts with a capital
         return {"reply": sentence[0].upper() + sentence[1:], "plain_answer": plain_answer,
                 "long_answer": len(answer.split()) > LONG_ANSWER, "revealed": revealed}

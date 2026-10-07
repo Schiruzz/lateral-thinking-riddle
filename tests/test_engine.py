@@ -74,9 +74,15 @@ def test_victory_is_within_reach_once_when_its_facts_are_found(baita):
 
 def test_relief_needs_a_new_fact_after_a_long_streak(baita):
     for question in ["Era vecchio?", "Era ricco?", "Era alto?", "Era biondo?", "Era stanco?"]:
-        assert not baita.record(question, [])["relief"]
-    assert not baita.record("Nevicava?", [])["relief"]
-    assert baita.record("C'era una stufa?", baita.unlock(["stufa"]))["relief"]
+        assert not baita.record(question, [], "no")["relief"]
+    assert not baita.record("Nevicava?", [], "yes")["relief"]
+    assert baita.record("C'era una stufa?", baita.unlock(["stufa"]), "yes")["relief"]
+
+
+def test_relief_never_comes_with_a_no(baita):
+    for n in range(1, 6):
+        baita.record(f"Domanda {n}?", [], "no")
+    assert not baita.record("Mancava la stufa?", baita.unlock(["stufa"]), "no")["relief"]
 
 
 def test_the_player_is_told_he_is_stuck_once_every_five_questions(baita):
