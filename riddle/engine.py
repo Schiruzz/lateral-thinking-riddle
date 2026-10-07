@@ -10,6 +10,7 @@ import re
 import unicodedata
 
 RELIEF_STREAK = 5   # questions without progress after which a new fact deserves a "finalmente"
+STUCK_STREAK = 5    # questions in a row without progress after which the player is going nowhere
 
 def question_key(question):
     """Return the words of a question, so that the same question typed or spoken differently matches.
@@ -33,6 +34,7 @@ class Session:
         excluded: Ids of the false leads already closed.
         asked: Keys of the questions asked so far (see `question_key`).
         empty_streak: Questions in a row that found no new fact.
+        stuck_from: The streak at which the conductor last said the player was stuck.
         reached: Whether every fact the victory needs has been found.
     """
 
@@ -47,6 +49,7 @@ class Session:
         self.excluded = set()
         self.asked = set()
         self.empty_streak = 0
+        self.stuck_from = 0
         self.reached = False
 
     def unlock(self, fact_ids):
@@ -68,7 +71,7 @@ class Session:
         }
         return [fact_id for fact_id in self.riddle.facts if fact_id in new]
 
-    def record(self, question, new_facts):
+    def record(self, question, new_facts, answer=""):
         """Record an answered question and describe the game at this turn, for the conductor.
 
         Call it after `unlock`, so that the facts this question found already count.
@@ -76,26 +79,33 @@ class Session:
         Args:
             question: The question as the arbiter rewrote it.
             new_facts: Ids of the facts this question found (from `unlock`).
+            answer: The arbiter's answer: after a yes the player is never told he is stuck.
 
         Returns:
             A dict with "repeated" (the same question was asked before),
             "empty_streak" (questions in a row without a new fact before this one),
-            "relief" (a new fact after at least `RELIEF_STREAK` questions without one)
+            "relief" (a new fact after at least `RELIEF_STREAK` questions without one),
+            "stuck" (`STUCK_STREAK` more questions without a new fact since the last time
+            it was said, never after a yes)
             and "within_reach" (this question found the last fact the victory needs).
         """
         key = question_key(question)
         reached = all(set(element["requires"]) <= self.found for element in self.riddle.victory.values())
+        streak = 0 if new_facts else self.empty_streak + 1   # including this question
         state = {
             "repeated": key in self.asked,
             "empty_streak": self.empty_streak,
             "relief": bool(new_facts) and self.empty_streak >= RELIEF_STREAK,
+            # said once per STUCK_STREAK questions, so it does not become a sermon at every turn
+            "stuck": streak - self.stuck_from >= STUCK_STREAK and answer != "yes",
             # only the turn that completes the victory: the invitation is said once
             "within_reach": reached and not self.reached,
         }
         self.asked.add(key)
         self.reached = reached
         # only a new fact is progress: a closed false lead does not end a streak
-        self.empty_streak = 0 if new_facts else self.empty_streak + 1
+        self.empty_streak = streak
+        self.stuck_from = streak if state["stuck"] else (0 if new_facts else self.stuck_from)
         return state
 
     def exclude(self, exclusion_ids):

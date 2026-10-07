@@ -77,3 +77,15 @@ def test_relief_needs_a_new_fact_after_a_long_streak(baita):
         assert not baita.record(question, [])["relief"]
     assert not baita.record("Nevicava?", [])["relief"]
     assert baita.record("C'era una stufa?", baita.unlock(["stufa"]))["relief"]
+
+
+def test_the_player_is_told_he_is_stuck_once_every_five_questions(baita):
+    stuck = [baita.record(f"Domanda {n}?", [], "no")["stuck"] for n in range(1, 11)]
+    assert stuck == [False] * 4 + [True] + [False] * 4 + [True]
+
+
+def test_the_player_is_never_told_he_is_stuck_after_a_yes(baita):
+    for n in range(1, 5):
+        baita.record(f"Domanda {n}?", [], "no")
+    assert not baita.record("Nevicava?", [], "yes")["stuck"]
+    assert baita.record("Domanda 6?", [], "no")["stuck"]

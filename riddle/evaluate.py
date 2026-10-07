@@ -18,8 +18,6 @@ from riddle.schema import load_riddle
 
 EVAL_WORKERS = 8   # questions judged at once: minutes instead of most of an hour, within the rate limit
 
-EVAL_WORKERS = 8   # questions judged at once: minutes instead of most of an hour, within the rate limit
-
 
 def evaluate(judge, tests):
     """Judge every test question and compare the result with its label.
@@ -284,7 +282,7 @@ def play_game(judge, matcher, conductor, game):
         facts, leads = matcher.match(case["question"], verdict, history, session)
         new = session.unlock(facts)
         session.exclude(leads)
-        state = session.record(verdict["positive_question"], new)
+        state = session.record(verdict["positive_question"], new, verdict["answer"])
         said = conductor.reply(case["question"], verdict, history, session, new, state,
                                [r["reply"] for r in rows])
         rows.append({"question": case["question"], "answer": verdict["answer"], "new": new, **said,
@@ -326,18 +324,21 @@ def report_conductor(games):
         for r in rows:
             # what the conductor was told, so a strange sentence can be traced to its cause
             notes = [f"found {', '.join(r['new'])}"] if r["new"] else []
-            notes += ["repeated"] * r["repeated"] + ["relief"] * r["relief"]
+            notes += ["repeated"] * r["repeated"] + ["relief"] * r["relief"] + ["stuck"] * r["stuck"]
             notes += ["within reach"] * r["within_reach"]
-            notes += [f"REVEALED {', '.join(r['revealed'])}"] if r["revealed"] else []
+            notes += ["ANSWER CUT"] * r["plain_answer"] + ["LONG ANSWER"] * r["long_answer"]
+            notes += [f"REACTION DROPPED: {', '.join(r['revealed'])}"] if r["revealed"] else []
             print(f"  ? {r['question']}")
             print(f"    [{r['answer']}] {r['reply']}" + (f"   ({'; '.join(notes)})" if notes else ""))
 
     rows = [r for game in games for r in game]
     seconds = sorted(r["seconds"] for r in rows)
     # a sentence the player hears more than once in the same set
-    replies = [r["reply"] for r in rows]
+    replies = [r["reply"] for r in rows if r["reply"] not in ("Sì.", "No.")]
     repeated = len(replies) - len(set(replies))
-    print(f"\nturns: {len(rows)}   plain answers after the check: {sum(bool(r['revealed']) for r in rows)}"
+    print(f"\nturns: {len(rows)}   answers cut to yes/no: {sum(r['plain_answer'] for r in rows)}"
+          f"   long answers: {sum(r['long_answer'] for r in rows)}"
+          f"   reactions dropped: {sum(bool(r['revealed']) for r in rows)}"
           f"   sentences heard more than once: {repeated}")
     # games run in parallel, so retries on rate limits inflate the slowest turns
     print(f"seconds per turn: p50 {seconds[len(seconds) // 2]:.1f}, p95 {seconds[int(0.95 * (len(seconds) - 1))]:.1f}")
