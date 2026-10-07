@@ -35,15 +35,19 @@ from pydantic import BaseModel, Field
 from riddle.game import Game
 from riddle.judge import UNCLEAR, Judge, make_client
 from riddle.puzzle import load_arbiter, load_puzzle
+from riddle.conductor import OPENING
+from riddle.play import Play, load_chain
 
 # loaded once when the server starts, shared by every game
 PUZZLE = load_puzzle("gabbiano", "it")
 JUDGE = Judge(PUZZLE, make_client(), max_attempts=2)   # a player cannot wait: give up after one retry; needs GCP_SA_KEY
 
-# playtest: the arbiter alone on a puzzle without cards, to collect real questions
-PLAYTEST = load_arbiter("baita", "it")
-PLAYTEST_JUDGE = Judge(PLAYTEST, make_client(), max_attempts=2)
+# playtest: the whole chain on the riddles in the card schema; one chain per riddle, shared by every game on it
+PLAYTEST_RIDDLES = ("baita", "gabbiano")
 MAX_HISTORY = 100   # a longer game is not a real playtest
+# a player cannot wait: give up after one retry
+CHAINS = {name: load_chain(name, "it", make_client(), max_attempts=2) for name in PLAYTEST_RIDDLES}
+PLAYTEST_GAMES = {}   # game id -> Play, in memory like GAMES
 
 STATIC_DIR = Path(__file__).parent.parent / "static"   # where index.html lives
 LOG_FILE = Path("logs/games.jsonl")  # one line per question, kept out of git
@@ -60,10 +64,8 @@ class Question(BaseModel):
 
 
 class PlaytestQuestion(BaseModel):
-    """Body of a playtest request: the page keeps the game, so it sends everything each time."""
-    game: str = Field(max_length=40)   # random id made by the page, groups the log lines of one game
+    """Body of a playtest question: the server keeps the game, the page sends only the words."""
     text: str = Field(max_length=MAX_QUESTION_LENGTH)
-    history: list[tuple[str, str]] = Field(default_factory=list, max_length=MAX_HISTORY)
     mode: Literal["voice", "text"] = "text"   # how the question was given: transcription errors differ from typos
 
 
@@ -222,52 +224,65 @@ def playtest_page():
     return FileResponse(STATIC_DIR / "playtest.html")
 
 
-@app.get("/api/playtest")
-def playtest_story():
-    """Return the title and the story of the playtest puzzle, never the solution."""
-    return {"title": PLAYTEST.title, "story": PLAYTEST.story}
-
-
-@app.get("/api/playtest/solution")
-def playtest_solution():
-    """Return the solution, shown when the player decides to stop."""
-    return {"solution": PLAYTEST.solution}
-
-
-@app.post("/api/playtest/ask")
-def playtest_ask(question: PlaytestQuestion):
-    """Answer one playtest question with the arbiter alone, and log it.
-
-    The server keeps nothing: the page sends the history of its game, as
-    (positive question, answer) pairs, and adds this exchange to it unless
-    the answer is unclear, as in the game.
+@app.post("/api/playtest/games")
+def playtest_new_game(riddle: str = "baita"):
+    """Start a playtest game on one riddle.
 
     Args:
-        question: The game id, the player's words and the history so far.
+        riddle: The riddle's name, from the page address (`/playtest?riddle=gabbiano`).
 
     Returns:
-        A dict with "positive_question" and "answer".
+        A dict with "id", to send back with every question, "title", "story" and
+        "opening", the sentence said before the story.
     """
-    start = time.perf_counter()
-    verdict = PLAYTEST_JUDGE.answer(question.text, question.history, [])   # no cards, nothing lit
-    answer_seconds = time.perf_counter() - start
+    if riddle not in CHAINS:
+        raise HTTPException(status_code=404, detail="riddle not found")
+    game_id = uuid.uuid4().hex   # random and unguessable, as in the game
+    PLAYTEST_GAMES[game_id] = Play(CHAINS[riddle])
+    story = CHAINS[riddle]["riddle"]
+    return {"id": game_id, "title": story.title, "story": story.story, "opening": OPENING}
 
-    # one log line per question, with its history: enough to turn it into a test case
-    entry = json.dumps({
-        "time": datetime.now(timezone.utc).isoformat(),
-        "playtest": True,
-        "puzzle": "baita",
-        "game": question.game,
-        "question": question.text,
-        "mode": question.mode,
-        "history": question.history,
-        "positive_question": verdict["positive_question"],
-        "answer": verdict["answer"],
-        "answer_seconds": round(answer_seconds, 2),
-    }, ensure_ascii=False)
+
+@app.get("/api/playtest/games/{game_id}/solution")
+def playtest_solution(game_id: str):
+    """Return the truth of the game's riddle, shown when the player decides to stop."""
+    play = PLAYTEST_GAMES.get(game_id)
+    if play is None:
+        raise HTTPException(status_code=404, detail="game not found")
+    return {"solution": play.chain["riddle"].truth}
+
+
+@app.post("/api/playtest/games/{game_id}/ask")
+def playtest_ask(game_id: str, question: PlaytestQuestion):
+    """Answer one playtest question through the whole chain, and log the turn.
+
+    Args:
+        game_id: The id from `playtest_new_game`.
+        question: The player's words and how they were given.
+
+    Returns:
+        A dict with "reply" (the sentence to say), "answer", "found" (the texts of the
+        facts this question found, for the notebook) and "questions" (asked so far).
+    """
+    play = PLAYTEST_GAMES.get(game_id)
+    if play is None:
+        raise HTTPException(status_code=404, detail="game not found")
+    if len(play.history) >= MAX_HISTORY:
+        raise HTTPException(status_code=400, detail="game too long")
+    history = list(play.history)   # before this question: the labels and the replays need it so
+    turn = play.ask(question.text)
+
+    # one log line per turn: the question with its history (a test case), what the player
+    # heard, the engine's state and the seconds of each component
+    seconds = {key: round(value, 2) for key, value in turn.items() if key.endswith("seconds")}
+    entry = json.dumps({"time": datetime.now(timezone.utc).isoformat(), "playtest": True,
+                        "puzzle": play.chain["riddle"].id, "game": game_id, "mode": question.mode,
+                        "history": history, **turn, **seconds}, ensure_ascii=False)
     print(entry)   # reaches Cloud Logging on Cloud Run
     LOG_FILE.parent.mkdir(exist_ok=True)
     with LOG_FILE.open("a", encoding="utf-8") as log:
         log.write(entry + "\n")
 
-    return {"positive_question": verdict["positive_question"], "answer": verdict["answer"]}
+    facts = play.chain["riddle"].facts
+    return {"reply": turn["reply"], "answer": turn["answer"],
+            "found": [facts[fact_id]["text"] for fact_id in turn["new"]], "questions": len(play.history)}
