@@ -26,11 +26,17 @@ REASONS = ("repeated", "within_reach")
 # what the player hears when the conductor's sentence fails a check
 PLAIN = {"yes": "Sì.", "no": "No.", "irrelevant": "Non conta per la storia.",
          "invalid": "Ti sembra una domanda da sì o no?", "unclear": "Eh? Non ho capito."}
+
+# the first sentence of every game, before the story (Federico, 07/10)
+OPENING = ("Ora ti racconto una storia con un mistero dentro. "
+           "Fammi tutte le domande che vuoi, e ti dirò se ci hai preso.")
 # the only words an answer may add to the player's: the answer itself, and pronouns that
 # point back to the question ("No, non lo sono."): they keep it vague and add nothing to the story
 ANSWER_WORDS = {"si", "no", "non", "esatto", "giusto", "vero", "proprio", "cosi",
                 "lo", "la", "li", "le", "l", "ne", "ci", "c", "e", "era", "erano", "cera", "cerano"}
+
 NEGATIONS = {"no", "non"}
+
 # an irrelevant joke must say that it does not matter, and must not hide a yes or no
 DISCLAIMERS = {"conta", "cambia", "centra", "importa", "irrilevante", "rilevante", "sposta",
                "serve", "interessa", "influisce"}

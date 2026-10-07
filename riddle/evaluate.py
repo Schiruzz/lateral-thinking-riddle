@@ -10,7 +10,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from riddle.conductor import Conductor
+from riddle.play import Play, load_chain
 from riddle.engine import Session
 from riddle.judge import JUDGE_MODEL, Judge, Matcher, make_client
 from riddle.puzzle import PUZZLES_DIR, load_arbiter, load_puzzle, load_tests
@@ -260,52 +260,37 @@ def split_games(tests):
     return games
 
 
-def play_game(judge, matcher, conductor, game):
-    """Replay one game turn by turn through the whole chain: arbiter, matcher, engine, conductor.
+def play_game(chain, game):
+    """Replay one game turn by turn, as the player would hear it.
 
-    The answers are the arbiter's, not the labels: this is a game as a player
-    would hear it, and the time of a turn is the time the player waits.
+    The answers are the arbiter's, not the labels: the turn is the one the server runs.
 
     Args:
-        judge: A `Judge` on the riddle from `load_arbiter`.
-        matcher: A `Matcher` on the same riddle.
-        conductor: A `Conductor` on the same riddle.
+        chain: The components from `load_chain`.
         game: The test cases of one game, in order.
 
     Returns:
-        One row per turn: question, answer, sentence, revealed words, state and seconds.
+        One row per turn (see `Play.ask`).
     """
-    session, history, rows = Session(conductor.riddle), [], []
-    for case in game:
-        start = time.time()
-        verdict = judge.answer(case["question"], history, sorted(session.found))
-        facts, leads = matcher.match(case["question"], verdict, history, session)
-        new = session.unlock(facts)
-        session.exclude(leads)
-        state = session.record(verdict["positive_question"], new, verdict["answer"])
-        said = conductor.reply(case["question"], verdict, history, session, new, state,
-                               [r["reply"] for r in rows])
-        rows.append({"question": case["question"], "answer": verdict["answer"], "new": new, **said,
-                     **state, "seconds": time.time() - start})
-        history.append((verdict["positive_question"], verdict["answer"]))
-    return rows
+    play = Play(chain)
+    return [play.ask(case["question"]) for case in game]
 
 
-def evaluate_conductor(judge, matcher, conductor, tests):
+def evaluate_conductor(chain, tests):
     """Replay every game of a test set, games in parallel and turns in order.
 
     Args:
-        judge, matcher, conductor: The three components, on the same riddle.
+        chain: The components from `load_chain`.
         tests: Test cases from `load_tests`.
 
     Returns:
-        One list of rows per game (see `play_game`), in the order of the test set.
+        One list of rows per game, in the order of the test set (see `play_game`).
     """
     games = split_games(tests)
     results = [None] * len(games)
     with ThreadPoolExecutor(max_workers=EVAL_WORKERS) as pool:
-        futures = {pool.submit(play_game, judge, matcher, conductor, game): i for i, game in enumerate(games)}
-        # a game takes minutes: show each one as it ends
+        futures = {pool.submit(play_game, chain, game): number for number, game in enumerate(games)}
+        # games finish in any order: show progress as they do, keep them in their place
         for done, future in enumerate(as_completed(futures), 1):
             results[futures[future]] = future.result()
             print(f"\rconductor: {done}/{len(games)} games", end="", flush=True)
@@ -342,6 +327,10 @@ def report_conductor(games):
           f"   sentences heard more than once: {repeated}")
     # games run in parallel, so retries on rate limits inflate the slowest turns
     print(f"seconds per turn: p50 {seconds[len(seconds) // 2]:.1f}, p95 {seconds[int(0.95 * (len(seconds) - 1))]:.1f}")
+        # where the wait comes from: the median of each component
+    medians = "   ".join(f"{name} {sorted(r[f'{name}_seconds'] for r in rows)[len(rows) // 2]:.1f}"
+                         for name in ("arbiter", "matcher", "conductor"))
+    print(f"median seconds per component: {medians}")
 
 
 def main():
@@ -365,11 +354,8 @@ def main():
 
     # the whole turn, as the player hears it
     if args.conductor:
-        riddle, client = load_riddle(args.puzzle, args.language), make_client()
-        judge = Judge(load_arbiter(args.puzzle, args.language), client, args.model)
-        games = evaluate_conductor(judge, Matcher(riddle, client, args.model), Conductor(riddle, client),
-                                   load_tests(args.puzzle, args.language, args.tests))
-        report_conductor(games)
+        chain = load_chain(args.puzzle, args.language, make_client(), args.model)
+        report_conductor(evaluate_conductor(chain, load_tests(args.puzzle, args.language, args.tests)))
         return
 
 
