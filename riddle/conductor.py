@@ -1,0 +1,146 @@
+"""The conductor: the sentence the player hears after each answered question.
+
+The arbiter decides what is true; the conductor only says it, like a person who
+knows the story. It never sees the truth or the facts not found yet, so it cannot
+reveal them: it gets the player's words, the answer, the facts already found and
+the state of the game from the engine. A check in code is the safety net: a word
+of a fact not found yet, that nobody has said, sends back the plain answer.
+"""
+
+import json
+
+from google.genai import types
+
+from riddle.judge import JUDGE_MODEL, MAX_ATTEMPTS, call_model, words
+
+CONDUCTOR_MODEL = JUDGE_MODEL
+RECENT_SIZE = 6   # exchanges shown to the conductor, enough to notice a player stuck on one idea
+
+# what the player hears when the conductor's sentence fails the check
+PLAIN = {"yes": "Sì.", "no": "No.", "irrelevant": "Non conta per la storia.",
+         "invalid": "Ti sembra una domanda da sì o no?", "unclear": "Eh? Non ho capito."}
+
+# common words that say nothing about a story: they never count as a revealed word
+STOPWORDS = {
+    "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "di", "del", "della", "dei", "delle",
+    "a", "al", "alla", "ai", "da", "dal", "dalla", "in", "nel", "nella", "nei", "su", "sul", "sulla",
+    "con", "per", "tra", "fra", "e", "ed", "o", "ma", "che", "non", "si", "ci", "ne", "se", "come",
+    "suo", "sua", "suoi", "loro", "lui", "lei", "era", "erano", "ha", "hanno", "aveva", "avevano",
+    "c", "l", "qualcosa", "cosa", "solo", "anche", "gia", "piu", "molto", "molti", "quel",
+    "quello", "quella", "questo", "questa", "perche",
+}
+
+# the style card written by Federico (07/10); examples from an invented story, never from a riddle under test
+CONDUCTOR_RULES = """You are the voice of a lateral thinking game played by voice, in Italian.
+You know there is a story; the player asks questions and another component has already
+decided the answer. You only say it, as a real person would at the table.
+
+WHAT YOU KNOW
+You do NOT know the solution. You know only the visible story, the facts the player has
+already found, the player's words and the answer. Never add a detail of the story that
+is not there: no guesses, no hints, no "maybe".
+
+HOW YOU SPEAK
+1. Spoken Italian, short complete sentences ("Esatto, era in sala", not "Esatto, in sala").
+2. Most of the time the answer is enough, with a little rewording: "Sì." / "No, non era
+   solo." / "Giusto, non ha finito il concerto."
+3. Never say or suggest that a fact is important.
+4. Reactions come from the game, not from the question: relief after many questions
+   without progress ("Oh, finalmente! Sì, la moglie c'entra."), irony when the player
+   keeps hammering on the same idea ("Ancora il pianoforte? Sembra proprio che ti piaccia.").
+5. No textbook sentences ("adesso le cose cambiano", "chiediti perché conta").
+6. Irony is welcome, mostly when the player is stuck or the question is irrelevant;
+   never about the facts of the story.
+7. Irrelevant question: you may joke by inventing, but say in the same sentence that it
+   does not matter ("Mah, magari era nero. Ma per la storia non conta niente.").
+8. Not a yes/no question: remind the rule with a question ("Ti sembra una domanda da sì
+   o no?"), shorter the more often you need it.
+9. Not understood: ask naturally and vary ("Eh? Non ho capito.", "Non ti sento, puoi
+   ripetere?").
+
+WHAT THE GAME TELLS YOU
+- The answer is final: never turn a yes into a no or the other way round.
+- Repeated question: say it was already asked, with the answer ("Te l'ho già detto: sì.").
+- Many questions without progress before a yes that found something: relief.
+- Everything needed to solve is found and the answer is yes: invite the player to tell
+  the whole story ("E quindi? Dimmi com'è andata.").
+
+Write only the sentence the player hears."""
+
+REPLY_CONFIG = types.GenerateContentConfig(
+    system_instruction=CONDUCTOR_RULES,
+    temperature=0.9,   # variety is the point: the check in code keeps it safe
+    response_mime_type="application/json",
+    response_schema={"type": "OBJECT", "properties": {"reply": {"type": "STRING"}}, "required": ["reply"]},
+)
+
+
+def text_words(text):
+    """Return every word of a text, in both readings of apostrophes (see `judge.words`)."""
+    plain, spaced = words(text)
+    return plain | spaced
+
+
+class Conductor:
+    """Turns an answered question into the sentence the player hears.
+
+    Attributes:
+        riddle: The `Riddle` being played.
+        client: A `genai.Client`, e.g. from `make_client`.
+        model: The conductor's model.
+        max_attempts: Calls per request before giving up on a retryable error.
+    """
+
+    def __init__(self, riddle, client, model=CONDUCTOR_MODEL, max_attempts=MAX_ATTEMPTS):
+        """Keep the riddle and the settings of the calls.
+
+        Args:
+            riddle: The `Riddle` being played.
+            client: A `genai.Client`, e.g. from `make_client`.
+            model: The conductor's model.
+            max_attempts: Calls per request: high for evaluation, low in a live game.
+        """
+        self.riddle = riddle
+        self.client = client
+        self.model = model
+        self.max_attempts = max_attempts
+
+    def reply(self, question, verdict, history, session, new_facts, state):
+        """Write the sentence for one answered question.
+
+        Args:
+            question: The player's words.
+            verdict: The verdict from `Judge.answer`.
+            history: (positive question, answer) pairs before this question.
+            session: The `Session` of the game, after `unlock`.
+            new_facts: Ids of the facts this question found.
+            state: The dict from `Session.record`.
+
+        Returns:
+            A dict with "reply" (the sentence) and "revealed" (the words that sent
+            back the plain answer, empty when the sentence passed the check).
+        """
+        found = [fact["text"] for fact_id, fact in self.riddle.facts.items() if fact_id in session.found]
+        new = [self.riddle.facts[fact_id]["text"] for fact_id in new_facts]
+        recent = history[-RECENT_SIZE:]
+        lines = lambda items: "\n".join(f"- {item}" for item in items) or "- none"
+        contents = (f"STORY: {self.riddle.story}\n\n"
+                    f"FACTS FOUND SO FAR:\n{lines(found)}\n\n"
+                    f"FOUND BY THIS QUESTION:\n{lines(new)}\n\n"
+                    f"PREVIOUS EXCHANGES:\n{lines(f'{q} -> {a}' for q, a in recent)}\n\n"
+                    f"PLAYER'S WORDS: {question}\n"
+                    f"QUESTION AS UNDERSTOOD: {verdict['positive_question']}\n"
+                    f"ANSWER: {verdict['answer']}\n"
+                    f"REPEATED QUESTION: {'yes' if state['repeated'] else 'no'}\n"
+                    f"QUESTIONS WITHOUT PROGRESS BEFORE THIS ONE: {state['empty_streak']}\n"
+                    f"EVERYTHING NEEDED TO SOLVE IS FOUND: {'yes' if state['within_reach'] else 'no'}")
+        sentence = json.loads(call_model(self.client, self.model, contents, REPLY_CONFIG,
+                                         self.max_attempts).text)["reply"]
+
+        # the safety net: words of facts not found yet that nobody has said
+        said = [question, verdict["positive_question"], self.riddle.story, *found, *(q for q, _ in recent)]
+        allowed = set().union(*(text_words(text) for text in said)) | STOPWORDS
+        hidden = set().union(*(text_words(fact["text"]) for fact_id, fact in self.riddle.facts.items()
+                               if fact_id not in session.found))
+        revealed = sorted((text_words(sentence) & hidden) - allowed)
+        return {"reply": PLAIN[verdict["answer"]] if revealed else sentence, "revealed": revealed}
