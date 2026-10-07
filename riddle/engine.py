@@ -9,6 +9,7 @@ conductor when a question is repeated or when the player is going nowhere.
 import re
 import unicodedata
 
+RELIEF_STREAK = 5   # questions without progress after which a new fact deserves a "finalmente"
 
 def question_key(question):
     """Return the words of a question, so that the same question typed or spoken differently matches.
@@ -32,6 +33,7 @@ class Session:
         excluded: Ids of the false leads already closed.
         asked: Keys of the questions asked so far (see `question_key`).
         empty_streak: Questions in a row that found no new fact.
+        reached: Whether every fact the victory needs has been found.
     """
 
     def __init__(self, riddle):
@@ -45,6 +47,7 @@ class Session:
         self.excluded = set()
         self.asked = set()
         self.empty_streak = 0
+        self.reached = False
 
     def unlock(self, fact_ids):
         """Mark facts as found, together with everything they presuppose.
@@ -76,17 +79,21 @@ class Session:
 
         Returns:
             A dict with "repeated" (the same question was asked before),
-            "empty_streak" (questions in a row without a new fact before this one)
-            and "within_reach" (every fact the victory needs is found).
+            "empty_streak" (questions in a row without a new fact before this one),
+            "relief" (a new fact after at least `RELIEF_STREAK` questions without one)
+            and "within_reach" (this question found the last fact the victory needs).
         """
         key = question_key(question)
+        reached = all(set(element["requires"]) <= self.found for element in self.riddle.victory.values())
         state = {
             "repeated": key in self.asked,
             "empty_streak": self.empty_streak,
-            "within_reach": all(set(element["requires"]) <= self.found
-                                for element in self.riddle.victory.values()),
+            "relief": bool(new_facts) and self.empty_streak >= RELIEF_STREAK,
+            # only the turn that completes the victory: the invitation is said once
+            "within_reach": reached and not self.reached,
         }
         self.asked.add(key)
+        self.reached = reached
         # only a new fact is progress: a closed false lead does not end a streak
         self.empty_streak = 0 if new_facts else self.empty_streak + 1
         return state

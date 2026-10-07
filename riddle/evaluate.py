@@ -10,6 +10,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from riddle.conductor import Conductor
 from riddle.engine import Session
 from riddle.judge import JUDGE_MODEL, Judge, Matcher, make_client
 from riddle.puzzle import PUZZLES_DIR, load_arbiter, load_puzzle, load_tests
@@ -242,6 +243,106 @@ def report_facts(rows, key_facts):
 
 
 
+def split_games(tests):
+    """Group test questions into the games they come from, in order.
+
+    A game starts at every question with an empty history.
+
+    Args:
+        tests: Test cases from `load_tests`, in game order.
+
+    Returns:
+        A list of games, each a list of test cases.
+    """
+    games = []
+    for case in tests:
+        if not case["history"] or not games:
+            games.append([])
+        games[-1].append(case)
+    return games
+
+
+def play_game(judge, matcher, conductor, game):
+    """Replay one game turn by turn through the whole chain: arbiter, matcher, engine, conductor.
+
+    The answers are the arbiter's, not the labels: this is a game as a player
+    would hear it, and the time of a turn is the time the player waits.
+
+    Args:
+        judge: A `Judge` on the riddle from `load_arbiter`.
+        matcher: A `Matcher` on the same riddle.
+        conductor: A `Conductor` on the same riddle.
+        game: The test cases of one game, in order.
+
+    Returns:
+        One row per turn: question, answer, sentence, revealed words, state and seconds.
+    """
+    session, history, rows = Session(conductor.riddle), [], []
+    for case in game:
+        start = time.time()
+        verdict = judge.answer(case["question"], history, sorted(session.found))
+        facts, leads = matcher.match(case["question"], verdict, history, session)
+        new = session.unlock(facts)
+        session.exclude(leads)
+        state = session.record(verdict["positive_question"], new)
+        said = conductor.reply(case["question"], verdict, history, session, new, state,
+                               [r["reply"] for r in rows])
+        rows.append({"question": case["question"], "answer": verdict["answer"], "new": new, **said,
+                     **state, "seconds": time.time() - start})
+        history.append((verdict["positive_question"], verdict["answer"]))
+    return rows
+
+
+def evaluate_conductor(judge, matcher, conductor, tests):
+    """Replay every game of a test set, games in parallel and turns in order.
+
+    Args:
+        judge, matcher, conductor: The three components, on the same riddle.
+        tests: Test cases from `load_tests`.
+
+    Returns:
+        One list of rows per game (see `play_game`), in the order of the test set.
+    """
+    games = split_games(tests)
+    results = [None] * len(games)
+    with ThreadPoolExecutor(max_workers=EVAL_WORKERS) as pool:
+        futures = {pool.submit(play_game, judge, matcher, conductor, game): i for i, game in enumerate(games)}
+        # a game takes minutes: show each one as it ends
+        for done, future in enumerate(as_completed(futures), 1):
+            results[futures[future]] = future.result()
+            print(f"\rconductor: {done}/{len(games)} games", end="", flush=True)
+    print()
+    return results
+
+
+def report_conductor(games):
+    """Print every game as the player would hear it, then checks, repetitions and turn times.
+
+    Args:
+        games: The lists of rows returned by `evaluate_conductor`.
+    """
+    for number, rows in enumerate(games, 1):
+        print(f"\nGAME {number}")
+        for r in rows:
+            # what the conductor was told, so a strange sentence can be traced to its cause
+            notes = [f"found {', '.join(r['new'])}"] if r["new"] else []
+            notes += ["repeated"] * r["repeated"] + ["relief"] * r["relief"]
+            notes += ["within reach"] * r["within_reach"]
+            notes += [f"REVEALED {', '.join(r['revealed'])}"] if r["revealed"] else []
+            print(f"  ? {r['question']}")
+            print(f"    [{r['answer']}] {r['reply']}" + (f"   ({'; '.join(notes)})" if notes else ""))
+
+    rows = [r for game in games for r in game]
+    seconds = sorted(r["seconds"] for r in rows)
+    # a sentence the player hears more than once in the same set
+    replies = [r["reply"] for r in rows]
+    repeated = len(replies) - len(set(replies))
+    print(f"\nturns: {len(rows)}   plain answers after the check: {sum(bool(r['revealed']) for r in rows)}"
+          f"   sentences heard more than once: {repeated}")
+    # games run in parallel, so retries on rate limits inflate the slowest turns
+    print(f"seconds per turn: p50 {seconds[len(seconds) // 2]:.1f}, p95 {seconds[int(0.95 * (len(seconds) - 1))]:.1f}")
+
+
 def main():
     """Parse the command line, run the evaluation and print the report."""
     parser = argparse.ArgumentParser(description="Evaluate the judge on a puzzle's test questions.")
@@ -257,14 +358,17 @@ def main():
     parser.add_argument("--facts", action="store_true",
                         help="judge only the matcher, on a riddle in the card schema, with the labelled answers")
     parser.add_argument("--no-verifier", action="store_true", help="with --facts, the matcher without the verifier")
+    parser.add_argument("--conductor", action="store_true",
+                        help="replay the test games through arbiter, matcher, engine and conductor")
     args = parser.parse_args()
 
-    # the matcher alone: what each question adds to the game
-    if args.facts:
-        matcher = Matcher(load_riddle(args.puzzle, args.language), make_client(), args.model,
-                          use_verifier=not args.no_verifier)
-        report_facts(evaluate_facts(matcher, load_tests(args.puzzle, args.language, args.tests)),
-                     matcher.riddle.key_facts)
+    # the whole turn, as the player hears it
+    if args.conductor:
+        riddle, client = load_riddle(args.puzzle, args.language), make_client()
+        judge = Judge(load_arbiter(args.puzzle, args.language), client, args.model)
+        games = evaluate_conductor(judge, Matcher(riddle, client, args.model), Conductor(riddle, client),
+                                   load_tests(args.puzzle, args.language, args.tests))
+        report_conductor(games)
         return
 
 

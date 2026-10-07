@@ -65,7 +65,15 @@ def test_empty_streak_counts_questions_without_new_facts(baita):
     assert baita.record("Era accesa?", [])["empty_streak"] == 0
 
 
-def test_victory_is_within_reach_when_its_facts_are_found(baita):
+def test_victory_is_within_reach_once_when_its_facts_are_found(baita):
     assert not baita.record("C'era una stufa?", baita.unlock(["stufa"]))["within_reach"]
     new = baita.unlock(["gas", "comignolo"])
     assert baita.record("La neve ha bloccato il comignolo e il gas l'ha ucciso?", new)["within_reach"]
+    assert not baita.record("Era notte?", [])["within_reach"]
+
+
+def test_relief_needs_a_new_fact_after_a_long_streak(baita):
+    for question in ["Era vecchio?", "Era ricco?", "Era alto?", "Era biondo?", "Era stanco?"]:
+        assert not baita.record(question, [])["relief"]
+    assert not baita.record("Nevicava?", [])["relief"]
+    assert baita.record("C'era una stufa?", baita.unlock(["stufa"]))["relief"]
