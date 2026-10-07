@@ -1,9 +1,26 @@
 """The state of one game on a riddle in the card schema.
 
 The riddle says what can be found; the session remembers what has been found.
-It never reads the player's words: deciding which facts a question states is
-the matcher's job.
+It never judges the player's words: deciding which facts a question states is
+the matcher's job. It only remembers which questions were asked, to tell the
+conductor when a question is repeated or when the player is going nowhere.
 """
+
+import re
+import unicodedata
+
+
+def question_key(question):
+    """Return the words of a question, so that the same question typed or spoken differently matches.
+
+    Case, accents, apostrophes and punctuation are ignored: "La stufa è accesa?"
+    and "la stufa e accesa" have the same key.
+
+    Args:
+        question: The question as the arbiter rewrote it.
+    """
+    text = "".join(c for c in unicodedata.normalize("NFD", question.lower()) if not unicodedata.combining(c))
+    return " ".join(re.findall(r"\w+", text.replace("'", " ")))
 
 
 class Session:
@@ -13,6 +30,8 @@ class Session:
         riddle: The riddle being played.
         found: Ids of the facts the player has found.
         excluded: Ids of the false leads already closed.
+        asked: Keys of the questions asked so far (see `question_key`).
+        empty_streak: Questions in a row that found no new fact.
     """
 
     def __init__(self, riddle):
@@ -24,6 +43,8 @@ class Session:
         self.riddle = riddle
         self.found = set()
         self.excluded = set()
+        self.asked = set()
+        self.empty_streak = 0
 
     def unlock(self, fact_ids):
         """Mark facts as found, together with everything they presuppose.
@@ -43,6 +64,32 @@ class Session:
             if exclusion["ruled_out_by"] in self.found
         }
         return [fact_id for fact_id in self.riddle.facts if fact_id in new]
+
+    def record(self, question, new_facts):
+        """Record an answered question and describe the game at this turn, for the conductor.
+
+        Call it after `unlock`, so that the facts this question found already count.
+
+        Args:
+            question: The question as the arbiter rewrote it.
+            new_facts: Ids of the facts this question found (from `unlock`).
+
+        Returns:
+            A dict with "repeated" (the same question was asked before),
+            "empty_streak" (questions in a row without a new fact before this one)
+            and "within_reach" (every fact the victory needs is found).
+        """
+        key = question_key(question)
+        state = {
+            "repeated": key in self.asked,
+            "empty_streak": self.empty_streak,
+            "within_reach": all(set(element["requires"]) <= self.found
+                                for element in self.riddle.victory.values()),
+        }
+        self.asked.add(key)
+        # only a new fact is progress: a closed false lead does not end a streak
+        self.empty_streak = 0 if new_facts else self.empty_streak + 1
+        return state
 
     def exclude(self, exclusion_ids):
         """Close false leads the player has asked about.

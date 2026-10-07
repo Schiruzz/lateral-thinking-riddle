@@ -51,3 +51,21 @@ def test_reachable_follows_what_was_found(baita):
     assert "stufa_carica" not in baita.reachable()
     baita.unlock(["stufa"])
     assert "stufa_carica" in baita.reachable()
+
+
+def test_the_same_question_written_differently_is_repeated(baita):
+    assert not baita.record("La stufa è accesa?", [])["repeated"]
+    assert baita.record("la stufa e' accesa", [])["repeated"]
+
+
+def test_empty_streak_counts_questions_without_new_facts(baita):
+    for question in ["Era vecchio?", "Era ricco?", "Era alto?"]:
+        baita.record(question, [])
+    assert baita.record("C'era una stufa?", baita.unlock(["stufa"]))["empty_streak"] == 3
+    assert baita.record("Era accesa?", [])["empty_streak"] == 0
+
+
+def test_victory_is_within_reach_when_its_facts_are_found(baita):
+    assert not baita.record("C'era una stufa?", baita.unlock(["stufa"]))["within_reach"]
+    new = baita.unlock(["gas", "comignolo"])
+    assert baita.record("La neve ha bloccato il comignolo e il gas l'ha ucciso?", new)["within_reach"]
