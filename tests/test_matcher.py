@@ -103,3 +103,10 @@ def test_found_facts_are_not_offered_again(baita):
     matcher, models = make_matcher(baita)
     matcher.match(question, verdict("yes", question), [], session)
     assert f"stufa: {baita.facts['stufa']['text']}" not in models.matcher_calls[0].system_instruction
+
+
+def test_a_fact_after_a_no_is_verified_even_if_not_key(baita):
+    question = "È morto per cause naturali?"
+    matcher, models = make_matcher(baita, [("cause naturali", "incidente")])   # the verifier says no by default
+    assert matcher.match(question, verdict("no", question), [], Session(baita)) == ([], [])
+    assert len(models.verify_calls) == 1
