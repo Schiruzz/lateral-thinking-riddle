@@ -456,11 +456,10 @@ SOLUTION ELEMENTS: list one only after yes, when the question states it entirely
 MATCHER_RULES = """HOW TO FIND THE FACTS
 1. For every fact or false lead you return, first write in "quote" the exact words of the question that state it.
 2. Facts: return one only if the question, with its answer, states or directly implies the whole fact: if a person, object, place, time or reason in the fact is missing, return nothing. Being about the same topic is not enough.
-3. A "no" states the opposite of the question: "Did someone force her to stop playing? -> no" states "Nobody forced her to stop".
+3. A "no" states the opposite of the question and nothing more: "Did someone force her to stop playing? -> no" states "Nobody forced her to stop". It never says which other possibility is true: "Did she stop because she felt ill? -> no" does not state why she stopped. A "no" to a question that joins several parts states none of them: "Did she stop in the middle, because she felt ill? -> no" does not state that she stopped in the middle.
 4. False leads: return one when the "no" rules out that lead; quote the words that state the lead.
 5. Use the context only to resolve references (pronouns, "there", "it").
 """
-
 
 class Matcher:
     """Finds which facts and false leads an answered question states, on a riddle in the card schema.
@@ -529,9 +528,11 @@ class Matcher:
         found_facts = [item_id for item_id in quoted if item_id in self.riddle.facts]
         found_leads = [item_id for item_id in quoted if item_id in self.riddle.exclusions]
 
-        # false leads follow from the "no" itself, so only facts are verified, and only key ones:
-        # a step given away costs little, a leap or a twist given away spoils the discovery
-        to_check = [fact_id for fact_id in found_facts if fact_id in self.riddle.key_facts] if self.use_verifier else []
+        # false leads follow from the "no" itself, so only facts are verified: the key ones, because a leap
+        # or a twist given away spoils the discovery, and any fact after a "no", because a "no" rarely
+        # states a fact and the matcher tends to read it as the other possibility ("not natural" -> accident)
+        to_check = [fact_id for fact_id in found_facts
+                    if fact_id in self.riddle.key_facts or answer == NO] if self.use_verifier else []
         if to_check:
             with ThreadPoolExecutor() as pool:
                 checks = list(pool.map(lambda fact_id: self._verify(fact_id, verdict, context), to_check))

@@ -358,6 +358,13 @@ def main():
         report_conductor(evaluate_conductor(chain, load_tests(args.puzzle, args.language, args.tests)))
         return
 
+    # the matcher alone: what each question adds to the game
+    if args.facts:
+        matcher = Matcher(load_riddle(args.puzzle, args.language), make_client(), args.model,
+                          use_verifier=not args.no_verifier)
+        report_facts(evaluate_facts(matcher, load_tests(args.puzzle, args.language, args.tests)),
+                     matcher.riddle.key_facts)
+        return
 
     # the arbiter alone: the puzzle has no cards, so there is nothing else to judge
     if args.answers_only:
