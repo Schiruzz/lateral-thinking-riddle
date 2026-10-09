@@ -5,7 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from riddle.conductor import (RECONNECT_FALLBACK, STUCK_LINES, VICTORY_FALLBACKS, WRONG_PART_LINES, Conductor, pick_line)
+from riddle.conductor import (DECLINE_LINES, OFFER_LINES, RECONNECT_FALLBACK, STUCK_LINES, VICTORY_FALLBACKS,
+                              WRONG_PART_LINES, Conductor, pick_line)
 from riddle.engine import Session
 from riddle.schema import load_riddle
 
@@ -197,7 +198,7 @@ def stall_line(riddle, hint, target, opening=""):
     session.unlock(["gas", "stufa"])
     answer = SimpleNamespace(text=json.dumps({"opening": opening}))
     client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda model, contents, config: answer))
-    state = {"hint": hint, "hint_target": target}
+    state = {"hint": hint, "hint_target": target, "offer": False}
     return Conductor(riddle, client).stall_line(state, [("Era chiusa la porta?", "yes")], session, [])
 
 
@@ -223,3 +224,10 @@ def test_a_reconnection_ends_with_the_open_why(baita):
 def test_a_reconnection_naming_a_hidden_fact_falls_back(baita):
     sentence = stall_line(baita, "reconnect", "v_camino", "Basta con la porta, pensa al comignolo:")
     assert sentence.startswith(RECONNECT_FALLBACK)
+
+
+def test_a_long_stall_ends_with_an_offer_and_a_no_with_a_tease(baita):
+    conductor = Conductor(baita, SimpleNamespace(models=None))
+    session = Session(baita)
+    assert conductor.stall_line({"hint": None, "hint_target": None, "offer": True}, [], session, []) in OFFER_LINES
+    assert conductor.offer_reply({"declined": True}, [], session, [])["reply"] in DECLINE_LINES

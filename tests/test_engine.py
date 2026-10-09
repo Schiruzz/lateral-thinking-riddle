@@ -141,18 +141,31 @@ def test_invalid_and_unclear_sentences_do_not_count_for_a_stall(baita):
     assert baita.record("Domanda finale?", [], "no")["stuck"]
 
 
-def test_before_the_final_phase_the_sealed_scene_is_named_once_at_the_third_stall(baita):
-    assert [state["hint"] for state in stalls(baita, 4)] == [None, None, "scene", None]
-    assert baita.scenes_hinted == {"notte"}
+def test_before_the_final_phase_the_sealed_scene_is_offered_from_the_second_stall(baita):
+    states = stalls(baita, 2)
+    assert [state["offer"] for state in states] == [False, True] and states[1]["hint"] is None
+    state = baita.answer_offer(True)
+    assert (state["hint"], state["hint_target"]) == ("scene", "notte") and baita.scenes_hinted == {"notte"}
+    assert not any(state["offer"] for state in stalls(baita, 2))   # a scene is named once
 
 
-def test_in_the_final_phase_the_why_comes_back_then_the_missing_fact_is_given(baita):
+def test_in_the_final_phase_the_why_comes_back_then_the_missing_fact_is_offered(baita):
     baita.unlock(["gas", "stufa"])
     baita.record("È morto per il fumo della stufa?", [], "yes", ["v_gas"])
-    states = stalls(baita, 3)
-    assert [state["hint"] for state in states] == ["reconnect", "reconnect", "gift"]
-    assert states[0]["hint_target"] == "v_camino"
-    assert states[2]["given"] == ["comignolo"] and "comignolo" in baita.found
+    states = []
+    while not baita.offer:   # empty questions until the hint is offered, then the yes
+        states.append(baita.record(f"Domanda {len(states)}?", [], "no"))
+    assert [(state["hint"], state["offer"]) for state in states if state["stuck"]] == [("reconnect", False), (None, True)]
+    assert baita.answer_offer(True)["given"] == ["comignolo"] and "comignolo" in baita.found
+
+
+def test_a_no_or_a_question_lets_the_offer_go(baita):
+    stalls(baita, 2)
+    assert baita.answer_offer(False)["declined"] and baita.offer is None and not baita.scenes_hinted
+    stalls(baita, 1)
+    assert baita.offer
+    baita.record("Nevicava?", [], "yes")
+    assert baita.offer is None
 
 
 
