@@ -116,17 +116,17 @@ class Session:
             and "given" (the facts a gift unlocked).
         """
         key = question_key(question)
-        if answer == "yes":
-            # an element counts only once the facts it needs are found: otherwise its "why" would name them
-            stated = [element_id for element_id in stated
-                      if set(self.riddle.victory[element_id]["requires"]) <= self.found]
+        # an element counts as explained only once the facts it needs are found: otherwise the "why" of the
+        # next one would name them; the victory takes the matcher's judgement as it is
+        explained = [element_id for element_id in stated
+                     if set(self.riddle.victory[element_id]["requires"]) <= self.found] if answer == "yes" else []
         reached = all(set(element["requires"]) <= self.found for element in self.riddle.victory.values())
         # invalid and unclear sentences are not questions about the story: they leave the streak as it is
         counted = answer not in ("invalid", "unclear")
         streak = (0 if new_facts else self.empty_streak + 1) if counted else self.empty_streak
         if answer == "yes":
             # what the player has explained so far, sentence after sentence: it picks the next "why"
-            self.claimed |= set(stated)
+            self.claimed |= set(explained)
         missing = [element_id for element_id in self.riddle.victory if element_id not in self.claimed]
         victory = answer == "yes" and set(stated) == set(self.riddle.victory)
         # a no to a sentence with victory elements: part of it is true (what partly used to say), but only for
@@ -157,10 +157,10 @@ class Session:
             "victory": victory,
             # after a yes that explains part of the story, the "why" of the next element in the
             # reasoning, asked once: the elements are in the order the reasoning follows
-            "relaunch": (missing[0] if answer == "yes" and stated and missing
+            "relaunch": (missing[0] if answer == "yes" and explained and missing
                          and missing[0] not in self.relaunched else None),
             # every element explained, but never all in one sentence: the whole story, asked once
-            "summary": answer == "yes" and bool(stated) and not missing and not victory and not self.summary_asked,
+            "summary": answer == "yes" and bool(explained) and not missing and not victory and not self.summary_asked,
             "wrong_part": bool(new_parts) or whole,
             "hint": hint,
             "hint_target": target,

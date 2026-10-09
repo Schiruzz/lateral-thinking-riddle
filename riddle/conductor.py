@@ -80,7 +80,6 @@ STUCK_LINES = [
     "Mi piace il tuo entusiasmo. I risultati un po' meno.",
     "Un'altra domanda a vuoto. La collezione cresce.",
     "Applausi per la costanza. Per il resto, ne riparliamo.",
-    "Vuoi un consiglio? Peccato, non te lo do.",
 ]
 
 # said before a yes that finds a fact after many questions without one; a line with "sì" is the
@@ -306,6 +305,9 @@ HOW YOU SPEAK
    story, and never with images from the story's world (its places, weather, objects):
    they point the player somewhere.
 5. Never open two sentences in a row the same way: your last sentences are listed.
+6. Never offer a hint, help or a choice ("Ti serve un indizio?"): the game decides when
+   to help. When the player asks for help, tease him and promise nothing ("Gli indizi
+   si guadagnano, sai?").
 
 WHAT THE GAME TELLS YOU, AND HOW IT SOUNDS
 The examples show the tone, as before | answer | after. They are not sentences to copy:

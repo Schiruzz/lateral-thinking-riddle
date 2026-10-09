@@ -160,3 +160,10 @@ def test_an_element_counts_only_once_its_facts_are_found(baita):
     # "inalando qualcosa" is not yet the stove: its "why" would name the smoke
     assert baita.record("Si è avvelenato inalando qualcosa?", baita.unlock(["gas"]), "yes", ["v_gas"])["relaunch"] is None
     assert baita.record("Veniva dalla stufa?", baita.unlock(["stufa"]), "yes", ["v_gas"])["relaunch"] == "v_camino"
+
+
+
+
+def test_a_whole_explanation_wins_before_its_facts_are_found(gabbiano):
+    # "La moglie l'ha fregato", with the rest of the game as context: the matcher sees every element
+    assert gabbiano.record("La moglie l'ha fregato?", [], "yes", ["v_figlio", "v_inganno", "v_cieco"])["victory"]
