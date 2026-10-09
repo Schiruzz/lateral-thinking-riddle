@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from riddle.conductor import (RECONNECT_FALLBACK, STUCK_LINES, VICTORY_FALLBACK, WRONG_PART_LINES, Conductor, pick_line)
+from riddle.conductor import (RECONNECT_FALLBACK, STUCK_LINES, VICTORY_FALLBACKS, WRONG_PART_LINES, Conductor, pick_line)
 from riddle.engine import Session
 from riddle.schema import load_riddle
 
@@ -179,11 +179,14 @@ def test_a_victory_gets_a_friends_comment_and_a_long_one_is_replaced(baita):
     session.unlock(["gas", "stufa", "comignolo"])
     state = session.record("Tutta la storia?", [], "yes", ["v_gas", "v_camino"])
     verdict = {"positive_question": "Tutta la storia?", "answer": "yes"}
-    for comment, expected in [("Ce l'hai fatta, finalmente!", "Ce l'hai fatta, finalmente!"),
-                              ("parola " * 50, VICTORY_FALLBACK)]:
+
+    def victory_reply(comment):
         answer = SimpleNamespace(text=json.dumps({"comment": comment}))
         client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda model, contents, config: answer))
-        assert Conductor(baita, client).reply("Tutta la storia?", verdict, [], session, [], state)["reply"] == expected
+        return Conductor(baita, client).reply("Tutta la storia?", verdict, [], session, [], state)["reply"]
+
+    assert victory_reply("Ce l'hai fatta, finalmente!") == "Ce l'hai fatta, finalmente!"
+    assert victory_reply("parola " * 50) in VICTORY_FALLBACKS
 
 
 
