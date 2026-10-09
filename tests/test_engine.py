@@ -98,10 +98,12 @@ def test_the_player_is_never_told_he_is_stuck_after_a_yes(baita):
 
 
 def test_a_sentence_with_every_element_wins(gabbiano):
+    gabbiano.unlock(["mangiato_figlio", "gabbiano_creduto", "sapore", "cieco"])   # an element counts once its facts are found
     assert gabbiano.record("Tutta la storia?", [], "yes", ["v_figlio", "v_inganno", "v_cieco"])["victory"]
 
 
 def test_part_of_the_explanation_asks_the_why_of_the_next_element_once(gabbiano):
+    gabbiano.unlock(["mangiato_figlio", "gabbiano_creduto", "sapore", "cieco"])   # an element counts once its facts are found
     assert gabbiano.record("Ha mangiato suo figlio?", [], "yes", ["v_figlio"])["relaunch"] == "v_inganno"
     assert gabbiano.record("Ha mangiato il figlio sull'isola?", [], "yes", ["v_figlio"])["relaunch"] is None
     assert gabbiano.record("La moglie gli ha detto che era gabbiano?", [], "yes", ["v_inganno"])["relaunch"] == "v_cieco"
@@ -113,6 +115,7 @@ def test_a_no_to_an_explanation_has_a_wrong_part(gabbiano):
 
 
 def test_every_element_in_different_sentences_asks_for_the_whole_story_once(gabbiano):
+    gabbiano.unlock(["mangiato_figlio", "gabbiano_creduto", "sapore", "cieco"])   # an element counts once its facts are found
     gabbiano.record("Ha mangiato suo figlio?", [], "yes", ["v_figlio"])
     gabbiano.record("La moglie gli ha detto che era gabbiano?", [], "yes", ["v_inganno"])
     assert gabbiano.record("Era cieco?", [], "yes", ["v_cieco"])["summary"]
@@ -150,3 +153,10 @@ def test_in_the_final_phase_the_why_comes_back_then_the_missing_fact_is_given(ba
     assert [state["hint"] for state in states] == ["reconnect", "reconnect", "gift"]
     assert states[0]["hint_target"] == "v_camino"
     assert states[2]["given"] == ["comignolo"] and "comignolo" in baita.found
+
+
+
+def test_an_element_counts_only_once_its_facts_are_found(baita):
+    # "inalando qualcosa" is not yet the stove: its "why" would name the smoke
+    assert baita.record("Si è avvelenato inalando qualcosa?", baita.unlock(["gas"]), "yes", ["v_gas"])["relaunch"] is None
+    assert baita.record("Veniva dalla stufa?", baita.unlock(["stufa"]), "yes", ["v_gas"])["relaunch"] == "v_camino"

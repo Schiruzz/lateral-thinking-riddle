@@ -155,6 +155,7 @@ def test_a_relief_line_with_a_colon_counts_the_questions(baita, monkeypatch):
 
 def test_a_relaunch_asks_the_why_of_the_next_element_without_the_model(baita):
     session = Session(baita)
+    session.unlock(["gas", "stufa"])
     state = session.record("È stata la stufa a ucciderlo?", [], "yes", ["v_gas"])
     models = FakeModels("", "Sì.", "")
     result = Conductor(baita, SimpleNamespace(models=models)).reply(
@@ -175,6 +176,7 @@ def test_an_explanation_with_a_wrong_part_says_so_without_saying_which(baita):
 
 def test_a_victory_gets_a_friends_comment_and_a_long_one_is_replaced(baita):
     session = Session(baita)
+    session.unlock(["gas", "stufa", "comignolo"])
     state = session.record("Tutta la storia?", [], "yes", ["v_gas", "v_camino"])
     verdict = {"positive_question": "Tutta la storia?", "answer": "yes"}
     for comment, expected in [("Ce l'hai fatta, finalmente!", "Ce l'hai fatta, finalmente!"),

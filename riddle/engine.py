@@ -116,6 +116,10 @@ class Session:
             and "given" (the facts a gift unlocked).
         """
         key = question_key(question)
+        if answer == "yes":
+            # an element counts only once the facts it needs are found: otherwise its "why" would name them
+            stated = [element_id for element_id in stated
+                      if set(self.riddle.victory[element_id]["requires"]) <= self.found]
         reached = all(set(element["requires"]) <= self.found for element in self.riddle.victory.values())
         # invalid and unclear sentences are not questions about the story: they leave the streak as it is
         counted = answer not in ("invalid", "unclear")
