@@ -39,6 +39,7 @@ class Session:
         claimed: Ids of the victory elements the player has explained so far, in any sentence.
         relaunched: Ids of the victory elements whose "why" was already asked.
         summary_asked: Whether the player was already asked to tell the whole story.
+        partly_told: Ids of the victory elements a "no" already said were true.        
     """
 
     def __init__(self, riddle):
@@ -57,6 +58,7 @@ class Session:
         self.claimed = set()
         self.relaunched = set()
         self.summary_asked = False
+        self.partly_told = set()        
 
     def unlock(self, fact_ids):
         """Mark facts as found, together with everything they presuppose.
@@ -101,7 +103,7 @@ class Session:
             "victory" (a yes to a sentence with every victory element),
             "relaunch" (the victory element whose "why" to ask now, or None),
             "summary" (every element explained, never in one sentence: ask for the whole story)
-            and "wrong_part" (a no to a sentence that puts forward victory elements).
+            and "wrong_part" (a no to a sentence with a victory element not explained yet, or with all of them).
         """
         key = question_key(question)
         reached = all(set(element["requires"]) <= self.found for element in self.riddle.victory.values())
@@ -111,6 +113,11 @@ class Session:
             self.claimed |= set(stated)
         missing = [element_id for element_id in self.riddle.victory if element_id not in self.claimed]
         victory = answer == "yes" and set(stated) == set(self.riddle.victory)
+        # a no to a sentence with victory elements: part of it is true (what partly used to say), but only for
+        # elements not explained or told yet, so narrowing questions on a known element get a plain no;
+        # a whole explanation with a wrong part is always told
+        new_parts = set(stated) - self.claimed - self.partly_told if answer == "no" else set()
+        whole = answer == "no" and set(stated) == set(self.riddle.victory)
         state = {
             "repeated": key in self.asked,
             "empty_streak": self.empty_streak,
@@ -127,7 +134,7 @@ class Session:
                          and missing[0] not in self.relaunched else None),
             # every element explained, but never all in one sentence: the whole story, asked once
             "summary": answer == "yes" and bool(stated) and not missing and not victory and not self.summary_asked,
-            "wrong_part": answer == "no" and bool(stated),
+            "wrong_part": bool(new_parts) or whole,
         }
         self.asked.add(key)
         self.reached = reached
@@ -137,6 +144,7 @@ class Session:
         if state["relaunch"]:
             self.relaunched.add(state["relaunch"])
         self.summary_asked = self.summary_asked or state["summary"]
+        self.partly_told |= new_parts
         return state
 
     def exclude(self, exclusion_ids):

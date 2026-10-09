@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from riddle.conductor import STUCK_LINES, Conductor, pick_line
+from riddle.conductor import STUCK_LINES, WRONG_PART_LINES, Conductor, pick_line
 from riddle.conductor import Conductor
 from riddle.engine import Session
 from riddle.schema import load_riddle
@@ -152,3 +152,23 @@ def test_a_relief_line_with_a_yes_is_the_whole_answer(baita, monkeypatch):
 def test_a_relief_line_with_a_colon_counts_the_questions(baita, monkeypatch):
     result = relief_reply(baita, monkeypatch, "Dopo ben {n} domande vaghe, abbiamo novità:")
     assert result["reply"] == "Dopo ben 5 domande vaghe, abbiamo novità: sì, c'era."
+
+
+def test_a_relaunch_asks_the_why_of_the_next_element_without_the_model(baita):
+    session = Session(baita)
+    state = session.record("È stata la stufa a ucciderlo?", [], "yes", ["v_gas"])
+    models = FakeModels("", "Sì.", "")
+    result = Conductor(baita, SimpleNamespace(models=models)).reply(
+        "È stata la stufa a ucciderlo?", {"positive_question": "È stata la stufa a ucciderlo?", "answer": "yes"},
+        [], session, [], state)
+    assert result["reply"].endswith("perché il fumo è rimasto nella stanza, quella notte?")
+    assert models.calls == []
+
+
+def test_an_explanation_with_a_wrong_part_says_so_without_saying_which(baita):
+    session = Session(baita)
+    question = "È morto per il fumo della stufa accesa da un amico?"
+    state = session.record(question, [], "no", ["v_gas"])
+    result = Conductor(baita, SimpleNamespace(models=FakeModels("", "No.", ""))).reply(
+        question, {"positive_question": question, "answer": "no"}, [], session, [], state)
+    assert result["reply"] in WRONG_PART_LINES

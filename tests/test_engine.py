@@ -117,3 +117,8 @@ def test_every_element_in_different_sentences_asks_for_the_whole_story_once(gabb
     gabbiano.record("La moglie gli ha detto che era gabbiano?", [], "yes", ["v_inganno"])
     assert gabbiano.record("Era cieco?", [], "yes", ["v_cieco"])["summary"]
     assert not gabbiano.record("Era proprio cieco?", [], "yes", ["v_cieco"])["summary"]
+
+
+def test_a_no_with_a_new_victory_element_says_part_is_true_once(gabbiano):
+    assert gabbiano.record("Ha mangiato il figlio e lo sapeva?", [], "no", ["v_figlio"])["wrong_part"]
+    assert not gabbiano.record("Ha mangiato il figlio crudo?", [], "no", ["v_figlio"])["wrong_part"]

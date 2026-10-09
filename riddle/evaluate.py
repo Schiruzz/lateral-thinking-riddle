@@ -311,6 +311,9 @@ def report_conductor(games):
             notes = [f"found {', '.join(r['new'])}"] if r["new"] else []
             notes += ["repeated"] * r["repeated"] + ["relief"] * r["relief"] + ["stuck"] * r["stuck"]
             notes += ["within reach"] * r["within_reach"]
+            notes += [f"relaunch {r['relaunch']}"] if r["relaunch"] else []
+            notes += ["victory"] * r["victory"] + ["summary"] * r["summary"] + ["wrong part"] * r["wrong_part"]
+            notes += [f"stated {', '.join(r['stated'])}"] if r["stated"] else []
             notes += ["ANSWER CUT"] * r["plain_answer"] + ["LONG ANSWER"] * r["long_answer"]
             notes += [f"REACTION DROPPED: {', '.join(r['revealed'])}"] if r["revealed"] else []
             print(f"  ? {r['question']}")
