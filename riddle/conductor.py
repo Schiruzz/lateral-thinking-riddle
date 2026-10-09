@@ -43,6 +43,8 @@ DISCLAIMERS = {"conta", "cambia", "centra", "importa", "irrilevante", "rilevante
 
 # said when the player is stuck: no word of any story, so the engine picks them without a model;
 # written by Federico (07/10), each said at most once per game
+# said when the player is stuck: no word of any story, so the engine picks them without a model;
+# written by Federico (07/10), the teasing ones added on 09/10 (style card rule 11), each said at most once per game
 STUCK_LINES = [
     "Stai girando a vuoto.",
     "Mi sa che ti stai iniziando a perdere.",
@@ -52,26 +54,38 @@ STUCK_LINES = [
     "Siamo un po' fermi, eh.",
     "Non stiamo andando da nessuna parte: cambia approccio.",
     "Prova a cambiare tipo di domanda.",
-    "Ok, facciamo un respiro e ripartiamo.",
     "Ti stai perdendo. Prova un'altra strada.",
     "Mi sa che ci siamo incartati.",
     "Ok, così non stiamo scoprendo niente.",
     "Domande su domande, e ancora nulla.",
     "Mi sa che è ora di cambiare prospettiva.",
-    "Ci stai mettendo impegno, ma per ora niente di nuovo.",
-    "Tranquillo, succede a tutti di bloccarsi un po'.",
-    "Non arrenderti, ma prova a ragionare diversamente.",
-    "Fermati un attimo e ripensa a quello che sai già.",
     "Qui il tempo si è fermato, eh.",
     "Sto ancora aspettando una domanda che porti da qualche parte.",
     "Fai un passo indietro e riparti.",
     "Dai, scuoti un po' le idee.",
-    "Sei bloccato, eh? Succede.",
     "Mi sa che serve un'idea nuova.",
     "Proviamo a pensarla in modo diverso?",
+    "Continua pure, io ho tutto il tempo del mondo.",
+    "Interessante strategia. Sbagliata, ma interessante.",
+    "Stai facendo un ottimo lavoro… a non scoprire niente.",
+    "Hai presente un criceto sulla ruota? Ecco.",
+    "Domanda dopo domanda, sempre allo stesso punto. Affascinante.",
+    "Ci stai mettendo l'anima, peccato per il risultato.",
+    "Coraggio, la storia non si risolve da sola. Purtroppo per te.",
+    "Ho visto bradipi più veloci.",
+    "Quasi quasi mi siedo, tanto qui ne avremo per un po'.",
+    "Bello questo giro panoramico. Quando arriviamo?",
+    "Insisti, insisti: prima o poi ti stanchi tu.",
+    "Te lo dico con affetto: così non ne esci.",
+    "Mi piace il tuo entusiasmo. I risultati un po' meno.",
+    "Un'altra domanda a vuoto. La collezione cresce.",
+    "Applausi per la costanza. Per il resto, ne riparliamo.",
+    "Vuoi un consiglio? Peccato, non te lo do.",
 ]
+
 # said before a yes that finds a fact after many questions without one; a line with "sì" is the
-# whole answer, a line ending with ":" is followed by it; written by Federico (07/10)
+# whole answer, a line ending with ":" is followed by it; written by Federico (07/10), the teasing
+# ones added on 09/10 (style card rule 11)
 RELIEF_LINES = [
     "Finalmente una domanda utile!",
     "Era ora!",
@@ -91,10 +105,23 @@ RELIEF_LINES = [
     "Grazie al cielo, sì!",
     "Fermate tutto: è un sì!",
     "Ottima domanda!",
+    "Ma guarda, ogni tanto ci prendi anche tu:",
+    "Anche un orologio rotto segna l'ora giusta due volte al giorno:",
+    "Dopo {n} domande, ecco il miracolo: sì!",
+    "Incredibile ma vero: sì.",
+    "Non ci credo nemmeno io:",
+    "Colpito! Era ora.",
+    "Ah, quindi sai fare anche le domande giuste:",
+    "Fermi tutti, ha imbroccato una domanda:",
+    "Ci sei arrivato con calma, ma ci sei arrivato:",
+    "Dopo {n} tentativi a vuoto, la fortuna ti sorride:",
+    "Peccato, mi stavo godendo lo spettacolo:",
+    "Lo ammetto, questa non me l'aspettavo:",
 ]
 
 # said before the "why" of the next victory element, when the player explains part of the story;
-# written by Federico (09/10): the "why" in the riddle file completes the sentence
+# written by Federico (09/10), the teasing ones added the same day (style card rule 11): the "why"
+# in the riddle file completes the sentence
 RELAUNCH_LINES = [
     "Esatto, ma quindi perché",
     "Ok, ma quindi perché",
@@ -104,13 +131,28 @@ RELAUNCH_LINES = [
     "Va bene, ma resta una cosa: perché",
     "Sì, ci sei. Ma spiegami: perché",
     "Bene, ma adesso dimmi: perché",
+    "Sì, bravo. Ma il bello viene adesso: perché",
+    "Esatto. E ora la domanda da un milione: perché",
+    "Giusto, ma così è troppo facile. Dimmi: perché",
+    "Sì, ma non cantare vittoria: perché",
+    "Esatto, ma non ti montare la testa: perché",
+    "Bene, un pezzo c'è. Ora spiegami perché",
+    "Sì, e fin qui ci arrivavo anch'io. Ma perché",
+    "Esatto. Ora però viene il difficile: perché",
+    "Bravo, ma non è finita. Perché",
+    "Sì, ma resta il mistero: perché",
+    "Esatto, e adesso stupiscimi: perché",
 ]
 # every victory element explained, never all in one sentence
-SUMMARY_LINE = "Ok, perfetto. Ora fammi un riepilogo di tutta la storia."
-
-# a no to a sentence with a victory element: part of it is true (what the arbiter's "partly" used to say)
+# every victory element explained, never all in one sentence; said at most once per game
+SUMMARY_LINES = [
+    "Ok, perfetto. Ora fammi un riepilogo di tutta la storia.",
+    "Bene, i pezzi ci sono tutti. Ora mettili insieme: raccontami tutta la storia.",
+    "Ok, hai tutto. Adesso fammi sentire la storia intera, dall'inizio.",
+    "Bravo, ma a rate non vale: raccontami tutta la storia in una volta.",
+]
 # a no to a sentence with a victory element: part of it is true (what the arbiter's "partly" used to say);
-# written by Federico (09/10), never saying which part
+# written by Federico (09/10), the teasing ones added the same day (style card rule 11), never saying which part
 WRONG_PART_LINES = [
     "No: una delle cose che hai detto è vera, il resto no.",
     "Non del tutto: c'è un pezzo giusto, il resto no.",
@@ -125,6 +167,13 @@ WRONG_PART_LINES = [
     "Così no, ma qualcosa di vero c'è.",
     "No, anche se non è tutto sbagliato.",
     "In parte sì, ma la risposta è no.",
+    "No, ma non buttare via tutto: qualcosa si salva.",
+    "No, però una cosa l'hai azzeccata. Quale? Non te lo dico.",
+    "No, ma in mezzo a tutto questo c'è una cosa vera.",
+    "No. Però dentro c'è un pezzo giusto.",
+    "No. Mischiare vero e falso non funziona con me: una parte è giusta, il resto no.",
+    "No, ma una cosa vera ce l'hai messa. Sarà un caso?",
+    "No, ma c'è un pezzo di verità. Trovalo.",
 ]
 
 # the hints of a stall, chosen by the engine (`Session._hint`)
@@ -203,7 +252,11 @@ VICTORY_CONFIG = types.GenerateContentConfig(
     response_schema={"type": "OBJECT", "properties": {"comment": {"type": "STRING"}}, "required": ["comment"]},
 )
 VICTORY_WORDS = 40   # a longer comment is a speech, not a friend's line: the fallback is said instead
-VICTORY_FALLBACK = "Ce l'hai fatta, l'hai risolto!"
+VICTORY_FALLBACKS = [   # said instead of a comment that is too long
+    "Ce l'hai fatta, l'hai risolto!",
+    "Ce l'hai fatta! Non ci avrei scommesso, ma ce l'hai fatta.",
+    "Ce l'hai fatta. Ora sai quello che sapevo io.",
+]
 
 # the answer speaks to the player: "devo capire...?" becomes "non devi capire..."
 PERSON = {"devo": "devi", "posso": "puoi", "voglio": "vuoi", "sono": "sei", "ho": "hai",
@@ -439,7 +492,7 @@ class Conductor:
         if state["relaunch"]:
             return f"{pick_line(RELAUNCH_LINES, said_before)} {self.riddle.victory[state['relaunch']]['why']}"
         if state["summary"]:
-            return SUMMARY_LINE
+            return random.choice(SUMMARY_LINES)
         if state["wrong_part"]:
             return pick_line(WRONG_PART_LINES, said_before)
         return None
@@ -463,7 +516,7 @@ class Conductor:
                     f"{exchanges}\n- {question} -> yes, solved")
         comment = json.loads(call_model(self.client, self.model, contents, VICTORY_CONFIG,
                                         self.max_attempts).text)["comment"].strip()
-        return comment if comment and len(comment.split()) <= VICTORY_WORDS else VICTORY_FALLBACK
+        return comment if comment and len(comment.split()) <= VICTORY_WORDS else random.choice(VICTORY_FALLBACKS)
 
 
     def reply(self, question, verdict, history, session, new_facts, state, said_before=()):
