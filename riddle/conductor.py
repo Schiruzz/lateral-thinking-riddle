@@ -80,7 +80,6 @@ STUCK_LINES = [
     "Mi piace il tuo entusiasmo. I risultati un po' meno.",
     "Un'altra domanda a vuoto. La collezione cresce.",
     "Applausi per la costanza. Per il resto, ne riparliamo.",
-    "Vuoi un consiglio? Peccato, non te lo do.",
 ]
 
 # said before a yes that finds a fact after many questions without one; a line with "sì" is the
@@ -200,6 +199,29 @@ GIFT_LINES = [
     "Te lo dico piano, così non ti offendi:",
 ]
 
+# the offer of a hint after a long stall, and the answer to a no; written by Federico (09/10)
+OFFER_LINES = [
+    "Vuoi una spintarella?",
+    "Ti vedo in difficoltà. Vuoi un indizio?",
+    "Ok, mi fai pena: vuoi un aiutino?",
+    "Ho un indizio in tasca. Lo vuoi?",
+    "Vuoi che ti illumini un po' la strada?",
+    "Vuoi un indizio? Ne ho uno bello.",
+    "Sono di buon umore: vuoi un indizio?",
+    "Se me lo chiedi gentilmente, ti do un indizio. Lo vuoi?",
+    "Ti serve una mano, o fai il duro?",
+]
+DECLINE_LINES = [
+    "Come vuoi. Coraggioso.",
+    "Va bene, orgoglioso. Continua pure.",
+    "Rispetto. E aspetto.",
+    "Ok, ma l'offerta non dura per sempre.",
+    "Peccato, era un bell'indizio.",
+    "Ammiro la testardaggine. Vai avanti.",
+    "Come preferisci. Io intanto mi godo lo spettacolo.",
+    "Benissimo, allora stupiscimi.",
+]
+
 # the reconnection: the model writes only the opening, the code adds "perché" and the open "why"
 RECONNECT_RULES = """You are the voice of a lateral thinking game played by voice, in Italian.
 The player has already explained part of the story, and the open question is why the next
@@ -306,6 +328,9 @@ HOW YOU SPEAK
    story, and never with images from the story's world (its places, weather, objects):
    they point the player somewhere.
 5. Never open two sentences in a row the same way: your last sentences are listed.
+6. Never offer a hint, help or a choice ("Ti serve un indizio?"): the game decides when
+   to help. When the player asks for help, tease him and promise nothing ("Gli indizi
+   si guadagnano, sai?").
 
 WHAT THE GAME TELLS YOU, AND HOW IT SOUNDS
 The examples show the tone, as before | answer | after. They are not sentences to copy:
@@ -434,7 +459,7 @@ class Conductor:
 
 
     def stall_line(self, state, history, session, said_before):
-        """Return the sentence for a stuck turn: the engine's hint, or a line of the stuck bank.
+        """Return the sentence for a stuck turn or an accepted offer: the hint, the offer, or a line of the stuck bank.
 
         Args:
             state: The dict from `Session.record`, on a stuck turn.
@@ -452,7 +477,25 @@ class Conductor:
         if state["hint"] == "reconnect":
             why = self.riddle.victory[target]["why"]
             return f"{self.reconnect_opening(why, history, session)} perché {why}"
+        if state["offer"]:
+            return pick_line(OFFER_LINES, said_before)
         return pick_line(STUCK_LINES, said_before)
+
+
+    def offer_reply(self, state, history, session, said_before):
+        """Write the sentence after the player answered the offer of a hint: the hint, or a tease after a no.
+
+        Args:
+            state: The dict from `Session.answer_offer`.
+            history: (positive question, answer) pairs so far.
+            session: The `Session` of the game.
+            said_before: The conductor's earlier sentences in this game.
+
+        Returns:
+            A dict with the keys of `reply`.
+        """
+        line = pick_line(DECLINE_LINES, said_before) if state["declined"] else self.stall_line(state, history, session, said_before)
+        return {"reply": line, "plain_answer": False, "long_answer": False, "revealed": []}
 
 
     def reconnect_opening(self, why, history, session):

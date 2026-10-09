@@ -11,8 +11,8 @@ import unicodedata
 
 RELIEF_STREAK = 5   # questions without progress after which a new fact deserves a "finalmente"
 STUCK_STREAK = 5    # questions in a row without progress after which the player is going nowhere
-SCENE_STALL = 3   # stalls in a row before the sealed scene the player has not entered is named
-GIFT_STALL = 3    # stalls in a row, in the final phase, before the next fact is given away
+SCENE_STALL = 2   # stalls in a row before the sealed scene the player has not entered is offered as a hint
+GIFT_STALL = 2    # stalls in a row, in the final phase, before the next fact is offered as a hint
 
 def question_key(question):
     """Return the words of a question, so that the same question typed or spoken differently matches.
@@ -44,6 +44,7 @@ class Session:
         partly_told: Ids of the victory elements a "no" already said were true.   
         stalls: Stalls in a row since the player last found a fact by himself.
         scenes_hinted: Ids of the sealed scenes already named as a hint.     
+        offer: The hint offered to the player and not answered yet, as ("scene" or "gift", id), or None.        
     """
 
     def __init__(self, riddle):
@@ -65,6 +66,7 @@ class Session:
         self.partly_told = set()       
         self.stalls = 0
         self.scenes_hinted = set() 
+        self.offer = None        
 
     def unlock(self, fact_ids):
         """Mark facts as found, together with everything they presuppose.
@@ -111,22 +113,23 @@ class Session:
             "relaunch" (the victory element whose "why" to ask now, or None),
             "summary" (every element explained, never in one sentence: ask for the whole story),
             "wrong_part" (a no to a sentence with a victory element not explained yet, or with all of them),
-            "hint" (on a stuck turn: "scene", "reconnect", "gift" or None),
+            "hint" (on a stuck turn: "reconnect" or None; a scene or a fact is offered, never given unasked),
             "hint_target" (the id of that scene, victory element or fact)
-            and "given" (the facts a gift unlocked).
+            "given" (the facts a gift unlocked: empty here, see `answer_offer`),
+            "offer" (a hint is offered on this turn) and "declined" (False here, see `answer_offer`).
         """
         key = question_key(question)
-        if answer == "yes":
-            # an element counts only once the facts it needs are found: otherwise its "why" would name them
-            stated = [element_id for element_id in stated
-                      if set(self.riddle.victory[element_id]["requires"]) <= self.found]
+        # an element counts as explained only once the facts it needs are found: otherwise the "why" of the
+        # next one would name them; the victory takes the matcher's judgement as it is
+        explained = [element_id for element_id in stated
+                     if set(self.riddle.victory[element_id]["requires"]) <= self.found] if answer == "yes" else []
         reached = all(set(element["requires"]) <= self.found for element in self.riddle.victory.values())
         # invalid and unclear sentences are not questions about the story: they leave the streak as it is
         counted = answer not in ("invalid", "unclear")
         streak = (0 if new_facts else self.empty_streak + 1) if counted else self.empty_streak
         if answer == "yes":
             # what the player has explained so far, sentence after sentence: it picks the next "why"
-            self.claimed |= set(stated)
+            self.claimed |= set(explained)
         missing = [element_id for element_id in self.riddle.victory if element_id not in self.claimed]
         victory = answer == "yes" and set(stated) == set(self.riddle.victory)
         # a no to a sentence with victory elements: part of it is true (what partly used to say), but only for
@@ -138,14 +141,15 @@ class Session:
         stuck = counted and streak - self.stuck_from >= STUCK_STREAK and answer != "yes"
         if new_facts:
             self.stalls = 0   # a fact found by the player ends the stalls in a row
+        self.offer = None   # a question instead of an answer: the offer of a hint lapses
         hint, target, given = None, None, []
         if stuck:
             self.stalls += 1
             hint, target = self._hint(missing)
-            if hint == "gift":
-                given = self.unlock([target])   # a gift is found like any fact
-            elif hint == "scene":
-                self.scenes_hinted.add(target)
+            if hint in ("scene", "gift"):
+                # a real hint is offered, never given unasked: it waits for the player's yes
+                self.offer = (hint, target)
+                hint, target = None, None
         state = {
             "repeated": key in self.asked,
             "empty_streak": self.empty_streak,
@@ -157,14 +161,16 @@ class Session:
             "victory": victory,
             # after a yes that explains part of the story, the "why" of the next element in the
             # reasoning, asked once: the elements are in the order the reasoning follows
-            "relaunch": (missing[0] if answer == "yes" and stated and missing
+            "relaunch": (missing[0] if answer == "yes" and explained and missing
                          and missing[0] not in self.relaunched else None),
             # every element explained, but never all in one sentence: the whole story, asked once
-            "summary": answer == "yes" and bool(stated) and not missing and not victory and not self.summary_asked,
+            "summary": answer == "yes" and bool(explained) and not missing and not victory and not self.summary_asked,
             "wrong_part": bool(new_parts) or whole,
             "hint": hint,
             "hint_target": target,
             "given": given,
+            "offer": self.offer is not None,
+            "declined": False,
         }
         self.asked.add(key)
         self.reached = reached
@@ -177,6 +183,27 @@ class Session:
         self.partly_told |= new_parts
         return state
 
+    def answer_offer(self, accepted):
+        """Give the offered hint after a yes, or let it go after a no.
+
+        Args:
+            accepted: Whether the player said yes to the offer.
+
+        Returns:
+            A dict with the keys of `record`: nothing happens in the story, only "hint",
+            "hint_target" and "given" are set when the hint is given, "declined" after a no.
+        """
+        hint, target = self.offer if accepted else (None, None)
+        self.offer = None
+        given = []
+        if hint == "gift":
+            given = self.unlock([target])   # a gift is found like any fact
+        elif hint == "scene":
+            self.scenes_hinted.add(target)
+        return {"repeated": False, "empty_streak": self.empty_streak, "relief": False, "stuck": False,
+                "within_reach": False, "victory": False, "relaunch": None, "summary": False,
+                "wrong_part": False, "hint": hint, "hint_target": target, "given": given,
+                "offer": False, "declined": not accepted}
 
     def _hint(self, missing):
         """Choose the help for a stall: what kind, and about what.
