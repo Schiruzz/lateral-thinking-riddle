@@ -1,6 +1,6 @@
 import pytest
 
-from riddle.engine import Session
+from riddle.engine import STUCK_STREAK, Session
 from riddle.schema import load_riddle
 
 
@@ -98,10 +98,12 @@ def test_the_player_is_never_told_he_is_stuck_after_a_yes(baita):
 
 
 def test_a_sentence_with_every_element_wins(gabbiano):
+    gabbiano.unlock(["mangiato_figlio", "gabbiano_creduto", "sapore", "cieco"])   # an element counts once its facts are found
     assert gabbiano.record("Tutta la storia?", [], "yes", ["v_figlio", "v_inganno", "v_cieco"])["victory"]
 
 
 def test_part_of_the_explanation_asks_the_why_of_the_next_element_once(gabbiano):
+    gabbiano.unlock(["mangiato_figlio", "gabbiano_creduto", "sapore", "cieco"])   # an element counts once its facts are found
     assert gabbiano.record("Ha mangiato suo figlio?", [], "yes", ["v_figlio"])["relaunch"] == "v_inganno"
     assert gabbiano.record("Ha mangiato il figlio sull'isola?", [], "yes", ["v_figlio"])["relaunch"] is None
     assert gabbiano.record("La moglie gli ha detto che era gabbiano?", [], "yes", ["v_inganno"])["relaunch"] == "v_cieco"
@@ -113,6 +115,7 @@ def test_a_no_to_an_explanation_has_a_wrong_part(gabbiano):
 
 
 def test_every_element_in_different_sentences_asks_for_the_whole_story_once(gabbiano):
+    gabbiano.unlock(["mangiato_figlio", "gabbiano_creduto", "sapore", "cieco"])   # an element counts once its facts are found
     gabbiano.record("Ha mangiato suo figlio?", [], "yes", ["v_figlio"])
     gabbiano.record("La moglie gli ha detto che era gabbiano?", [], "yes", ["v_inganno"])
     assert gabbiano.record("Era cieco?", [], "yes", ["v_cieco"])["summary"]
@@ -122,3 +125,38 @@ def test_every_element_in_different_sentences_asks_for_the_whole_story_once(gabb
 def test_a_no_with_a_new_victory_element_says_part_is_true_once(gabbiano):
     assert gabbiano.record("Ha mangiato il figlio e lo sapeva?", [], "no", ["v_figlio"])["wrong_part"]
     assert not gabbiano.record("Ha mangiato il figlio crudo?", [], "no", ["v_figlio"])["wrong_part"]
+
+
+def stalls(session, count):
+    """Ask empty questions for `count` stalls in a row; return the states of the stuck turns."""
+    states = [session.record(f"Domanda {n}?", [], "no") for n in range(count * STUCK_STREAK)]
+    return [state for state in states if state["stuck"]]
+
+
+def test_invalid_and_unclear_sentences_do_not_count_for_a_stall(baita):
+    for n in range(1, STUCK_STREAK):
+        baita.record(f"Domanda {n}?", [], "no")
+    assert not baita.record("Sei gay?", [], "invalid")["stuck"]
+    assert not baita.record("Eh?", [], "unclear")["stuck"]
+    assert baita.record("Domanda finale?", [], "no")["stuck"]
+
+
+def test_before_the_final_phase_the_sealed_scene_is_named_once_at_the_third_stall(baita):
+    assert [state["hint"] for state in stalls(baita, 4)] == [None, None, "scene", None]
+    assert baita.scenes_hinted == {"notte"}
+
+
+def test_in_the_final_phase_the_why_comes_back_then_the_missing_fact_is_given(baita):
+    baita.unlock(["gas", "stufa"])
+    baita.record("È morto per il fumo della stufa?", [], "yes", ["v_gas"])
+    states = stalls(baita, 3)
+    assert [state["hint"] for state in states] == ["reconnect", "reconnect", "gift"]
+    assert states[0]["hint_target"] == "v_camino"
+    assert states[2]["given"] == ["comignolo"] and "comignolo" in baita.found
+
+
+
+def test_an_element_counts_only_once_its_facts_are_found(baita):
+    # "inalando qualcosa" is not yet the stove: its "why" would name the smoke
+    assert baita.record("Si è avvelenato inalando qualcosa?", baita.unlock(["gas"]), "yes", ["v_gas"])["relaunch"] is None
+    assert baita.record("Veniva dalla stufa?", baita.unlock(["stufa"]), "yes", ["v_gas"])["relaunch"] == "v_camino"

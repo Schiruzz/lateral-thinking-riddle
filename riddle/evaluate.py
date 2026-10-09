@@ -310,6 +310,7 @@ def report_conductor(games):
             # what the conductor was told, so a strange sentence can be traced to its cause
             notes = [f"found {', '.join(r['new'])}"] if r["new"] else []
             notes += ["repeated"] * r["repeated"] + ["relief"] * r["relief"] + ["stuck"] * r["stuck"]
+            notes += [f"hint {r['hint']} {r['hint_target']}"] if r["hint"] else []
             notes += ["within reach"] * r["within_reach"]
             notes += [f"relaunch {r['relaunch']}"] if r["relaunch"] else []
             notes += ["victory"] * r["victory"] + ["summary"] * r["summary"] + ["wrong part"] * r["wrong_part"]

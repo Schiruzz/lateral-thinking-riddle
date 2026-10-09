@@ -10,7 +10,7 @@
   "assumption": "La causa è nel ristorante.",
   "knowledge": ["Un cieco riconosce gli animali dal verso."],
   "scenes": [
-    {"id": "anni_prima", "name": "Anni prima", "sealed": true},
+    {"id": "anni_prima", "name": "Anni prima", "sealed": true, "hint": "cosa è successo anni prima"},
     {"id": "ristorante", "name": "Il ristorante", "sealed": false}
   ],
     "facts": [

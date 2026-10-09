@@ -12,7 +12,7 @@
     "Se il comignolo è ostruito, il fumo della stufa resta nella stanza."
   ],
   "scenes": [
-    {"id": "notte", "name": "La notte", "sealed": true},
+    {"id": "notte", "name": "La notte", "sealed": true, "hint": "cosa è successo durante la notte"},
     {"id": "mattina", "name": "La mattina", "sealed": false}
   ],
   "facts": [
