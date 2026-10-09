@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from riddle.conductor import STUCK_LINES, VICTORY_FALLBACK, WRONG_PART_LINES, Conductor, pick_line
+from riddle.conductor import (RECONNECT_FALLBACK, STUCK_LINES, VICTORY_FALLBACK, WRONG_PART_LINES, Conductor, pick_line)
 from riddle.engine import Session
 from riddle.schema import load_riddle
 
@@ -182,3 +182,39 @@ def test_a_victory_gets_a_friends_comment_and_a_long_one_is_replaced(baita):
         answer = SimpleNamespace(text=json.dumps({"comment": comment}))
         client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda model, contents, config: answer))
         assert Conductor(baita, client).reply("Tutta la storia?", verdict, [], session, [], state)["reply"] == expected
+
+
+
+
+def stall_line(riddle, hint, target, opening=""):
+    """Say the sentence of a stuck turn with this hint, with a fake model that writes `opening`."""
+    session = Session(riddle)
+    session.unlock(["gas", "stufa"])
+    answer = SimpleNamespace(text=json.dumps({"opening": opening}))
+    client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda model, contents, config: answer))
+    state = {"hint": hint, "hint_target": target}
+    return Conductor(riddle, client).stall_line(state, [("Era chiusa la porta?", "yes")], session, [])
+
+
+def test_without_a_hint_a_stall_gets_a_line_of_the_stuck_bank(baita):
+    assert stall_line(baita, None, None) in STUCK_LINES
+
+
+def test_the_scene_hint_names_the_sealed_scene(baita):
+    assert stall_line(baita, "scene", "notte") == "Prova a pensare a cosa è successo durante la notte."
+
+
+def test_a_gift_goes_on_after_the_colon_of_its_opening(baita, monkeypatch):
+    monkeypatch.setattr("riddle.conductor.GIFT_LINES", ["Prendi nota:"])
+    assert stall_line(baita, "gift", "comignolo") == (
+        "Prendi nota: durante la notte la neve ha ostruito il comignolo della stufa.")
+
+
+def test_a_reconnection_ends_with_the_open_why(baita):
+    sentence = stall_line(baita, "reconnect", "v_camino", "Basta con la porta, torniamo a noi:")
+    assert sentence == "Basta con la porta, torniamo a noi: perché il fumo è rimasto nella stanza, quella notte?"
+
+
+def test_a_reconnection_naming_a_hidden_fact_falls_back(baita):
+    sentence = stall_line(baita, "reconnect", "v_camino", "Basta con la porta, pensa al comignolo:")
+    assert sentence.startswith(RECONNECT_FALLBACK)

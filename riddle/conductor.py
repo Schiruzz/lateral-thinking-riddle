@@ -127,6 +127,58 @@ WRONG_PART_LINES = [
     "In parte sì, ma la risposta è no.",
 ]
 
+# the hints of a stall, chosen by the engine (`Session._hint`)
+SCENE_LINE = "Prova a pensare a {hint}."   # the scene's "hint" in the riddle file completes it
+# said before a fact given away in the final phase; written by Federico (09/10), the fact follows the colon
+GIFT_LINES = [
+    "Ok, ti aiuto io:",
+    "Dai, ti do un indizio:",
+    "Facciamo così, ti dico una cosa:",
+    "Vista la situazione, solo io ti posso salvare:",
+    "Dopo tutte queste domande, per velocizzare ti do un indizio:",
+    "Prendi nota:",
+    "Dai, ti do una mano:",
+    "Tieni, questa ti servirà:",
+    "Mi fai tenerezza, quindi ti aiuto:",
+    "Prima che ci venga la barba bianca, ti indirizzo:",
+    "Va bene, tiro fuori l'asso dalla manica:",
+    "Per la tua salute mentale, e anche per la mia:",
+    "Lo so, lo so, ti serve una mano. Tieni:",
+    "Io la so, tu no. Facciamo così:",
+    "Guardarti soffrire è divertente, ma ora basta:",
+    "Ok, scendo al tuo livello:",
+    "Visto che da solo non ce la fai:",
+    "Te lo dico piano, così non ti offendi:",
+]
+
+# the reconnection: the model writes only the opening, the code adds "perché" and the open "why"
+RECONNECT_RULES = """You are the voice of a lateral thinking game played by voice, in Italian.
+The player has already explained part of the story, and the open question is why the next
+thing happened. Since then his questions have found nothing new. Write the opening of a
+spoken sentence that brings him back to the open question, starting from what he has been
+asking lately. The game adds "perché" and the open question right after your opening.
+
+RULES
+1. Talk about the player's last questions, never about the story: no fact, cause or
+   hypothesis of your own, and no word of the story's world he has not said.
+2. Never say he is close, right or wrong.
+3. Teasing is welcome, insults never: you know the whole story, he does not.
+4. One sentence, at most 15 words, ending with a colon.
+
+EXAMPLES (from another story: a pianist stops playing mid-concert; the open question is
+"perché si è fermato proprio a metà del concerto?")
+Last questions about the piano: "Ok, il pianoforte l'abbiamo smontato pezzo per pezzo. Ma la domanda era:"
+Last questions about the audience: "Bello il giro tra il pubblico, ma torniamo a noi:"
+"""
+RECONNECT_CONFIG = types.GenerateContentConfig(
+    system_instruction=RECONNECT_RULES,
+    temperature=0.9,
+    response_mime_type="application/json",
+    response_schema={"type": "OBJECT", "properties": {"opening": {"type": "STRING"}}, "required": ["opening"]},
+)
+RECONNECT_WORDS = 20   # a longer opening is a speech: the fallback is said instead
+RECONNECT_FALLBACK = "Torniamo alla domanda di prima:"
+
 # the victory: a friend who watched the whole game; examples from games that are not in the tests
 VICTORY_RULES = """You are the voice of a lateral thinking game played by voice, in Italian.
 The player has just solved the riddle. Write one or two short spoken sentences, as a friend
@@ -314,6 +366,69 @@ class Conductor:
         self.max_attempts = max_attempts
 
 
+    def revealed(self, text, session, said):
+        """Return the words of a text that belong to a fact not found yet and nobody has said.
+
+        Args:
+            text: The sentence to check.
+            session: The `Session` of the game.
+            said: Texts already said in the game: their words are allowed.
+        """
+        allowed = set().union(*(text_words(item) for item in said)) | STOPWORDS
+        hidden = set().union(*(text_words(fact["text"]) for fact_id, fact in self.riddle.facts.items()
+                               if fact_id not in session.found))
+        return sorted((text_words(text) & hidden) - allowed)
+
+
+    def stall_line(self, state, history, session, said_before):
+        """Return the sentence for a stuck turn: the engine's hint, or a line of the stuck bank.
+
+        Args:
+            state: The dict from `Session.record`, on a stuck turn.
+            history: (positive question, answer) pairs before this question.
+            session: The `Session` of the game, after `record`.
+            said_before: The conductor's earlier sentences in this game.
+        """
+        target = state["hint_target"]
+        if state["hint"] == "scene":
+            return SCENE_LINE.format(hint=self.riddle.scenes[target]["hint"])
+        if state["hint"] == "gift":
+            # the fact goes on with the opening's sentence, after its colon
+            text = self.riddle.facts[target]["text"]
+            return f"{pick_line(GIFT_LINES, said_before)} {text[0].lower()}{text[1:]}"
+        if state["hint"] == "reconnect":
+            why = self.riddle.victory[target]["why"]
+            return f"{self.reconnect_opening(why, history, session)} perché {why}"
+        return pick_line(STUCK_LINES, said_before)
+
+
+    def reconnect_opening(self, why, history, session):
+        """Write the words that bring the player back to the open "why", from his last questions.
+
+        Args:
+            why: The open question, said right after the opening.
+            history: (positive question, answer) pairs before this question.
+            session: The `Session` of the game.
+
+        Returns:
+            The model's opening, or a fixed one if it is long, does not end with a colon
+            or names a hidden fact.
+        """
+        recent = history[-RECENT_SIZE:]
+        found = [fact["text"] for fact_id, fact in self.riddle.facts.items() if fact_id in session.found]
+        lines = lambda items: "\n".join(f"- {item}" for item in items) or "- none"
+        contents = (f"STORY: {self.riddle.story}\n\n"
+                    f"FACTS FOUND SO FAR:\n{lines(found)}\n\n"
+                    f"PLAYER'S LAST QUESTIONS:\n{lines(f'{q} -> {a}' for q, a in recent)}\n\n"
+                    f"OPEN QUESTION: perché {why}")
+        opening = json.loads(call_model(self.client, self.model, contents, RECONNECT_CONFIG,
+                                        self.max_attempts).text)["opening"].strip()
+        said = [self.riddle.story, why, *found, *(q for q, _ in recent)]
+        if (not opening.endswith(":") or len(opening.split()) > RECONNECT_WORDS
+                or self.revealed(opening, session, said)):
+            return RECONNECT_FALLBACK
+        return opening
+
     def victory_line(self, state, said_before):
         """Return the engine's sentence for a turn that explains the story, or None for an ordinary turn.
 
@@ -372,10 +487,12 @@ class Conductor:
         if state["victory"]:
             return {"reply": self.victory_comment(question, history), "plain_answer": False,
                     "long_answer": False, "revealed": []}
+        # a stuck turn ends with a hint or a line of the stuck bank: after the answer, never instead of it
+        stall = self.stall_line(state, history, session, said_before) if state["stuck"] else ""
         # the moves of the victory are the engine's: a fixed sentence, no model
         line = self.victory_line(state, said_before)
         if line:
-            return {"reply": line, "plain_answer": False, "long_answer": False, "revealed": []}
+            return {"reply": f"{line} {stall}".strip(), "plain_answer": False, "long_answer": False, "revealed": []}
         found = [fact["text"] for fact_id, fact in self.riddle.facts.items() if fact_id in session.found]
         new = [self.riddle.facts[fact_id]["text"] for fact_id in new_facts]
         recent = history[-RECENT_SIZE:]
@@ -405,10 +522,7 @@ class Conductor:
         # the reaction: dropped if it names a hidden fact nobody has said
         reaction = f"{parts['before']} {parts['after']}"
         said = [question, verdict["positive_question"], self.riddle.story, *found, *(q for q, _ in recent)]
-        allowed = set().union(*(text_words(text) for text in said)) | STOPWORDS
-        hidden = set().union(*(text_words(fact["text"]) for fact_id, fact in self.riddle.facts.items()
-                               if fact_id not in session.found))
-        revealed = sorted((text_words(reaction) & hidden) - allowed)
+        revealed = self.revealed(reaction, session, said)
         # after a yes or no a reaction needs a reason from the engine: the model does not choose when to react
         reason = verdict["answer"] not in ("yes", "no") or any(state[name] for name in REASONS)
         before, after = (parts["before"], parts["after"]) if reason and not revealed else ("", "")
@@ -427,9 +541,8 @@ class Conductor:
         sentence = " ".join(part for part in (before, answer, after) if part.strip())
         # nothing left to say after irrelevant, invalid or unclear: the plain line
         sentence = sentence or PLAIN[verdict["answer"]]
-        # the engine says the player is stuck, with a line from the bank: after the answer, never instead of it
-        if state["stuck"]:
-            sentence = f"{sentence} {pick_line(STUCK_LINES, said_before)}"
+        if stall:
+            sentence = f"{sentence} {stall}"
         # "sì." follows a dropped "Te lo ripeto:": the sentence still starts with a capital
         return {"reply": sentence[0].upper() + sentence[1:], "plain_answer": plain_answer,
                 "long_answer": len(answer.split()) > LONG_ANSWER, "revealed": revealed}
