@@ -68,10 +68,9 @@ def test_cards_failure_becomes_an_error_line(client, monkeypatch):
 def fake_ask(self, question):
     """Stands in for `Play.ask`: a yes that finds the stove, without models."""
     self.history.append((question, "yes"))
-    return {"question": question, "positive_question": question, "answer": "yes", "new": ["stufa"], 
-            "victory": False, "reply": "Sì.", "seconds": 1.0, "arbiter_seconds": 0.4, 
-            "matcher_seconds": 0.3, "conductor_seconds": 0.3
-           }
+    return {"question": question, "positive_question": question, "answer": "yes", "new": ["stufa"],
+            "given": [], "victory": False, "reply": "Sì.", "seconds": 1.0, "arbiter_seconds": 0.4,
+            "matcher_seconds": 0.3, "conductor_seconds": 0.3}
 
 
 def test_a_playtest_game_starts_on_the_riddle_in_the_address(client):
@@ -92,8 +91,16 @@ def test_a_playtest_turn_returns_the_sentence_and_the_facts_found(client, monkey
     monkeypatch.setattr(server.Play, "ask", fake_ask)
     game_id = client.post("/api/playtest/games").json()["id"]
     reply = client.post(f"/api/playtest/games/{game_id}/ask", json={"text": "C'era una stufa?"}).json()
-    stove = server.CHAINS["baita"]["riddle"].facts["stufa"]["text"]
+    riddle = server.CHAINS["baita"]["riddle"]
+    stove = {"star": server.star_order(riddle).index("stufa"), "text": riddle.facts["stufa"]["text"], "given": False}
     assert reply == {"reply": "Sì.", "answer": "yes", "found": [stove], "questions": 1, "victory": False}
+
+
+def test_the_sky_has_a_star_per_fact_the_same_in_every_game(client):
+    first, second = (client.post("/api/playtest/games").json() for _ in range(2))
+    riddle = server.CHAINS["baita"]["riddle"]
+    assert len(first["stars"]) == len(riddle.facts) and first["stars"] == second["stars"]
+    assert server.star_order(riddle) != list(riddle.facts)   # the sky does not follow the story
 
 
 def test_a_playtest_turn_is_logged_with_the_history_before_it(client, monkeypatch):

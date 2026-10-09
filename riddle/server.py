@@ -21,6 +21,7 @@ Then open http://localhost:8000 (the page) or http://localhost:8000/docs
 (an automatic page to try the endpoints by hand).
 """
 import json
+import random
 import time
 from datetime import datetime, timezone
 from typing import Literal
@@ -224,6 +225,20 @@ def playtest_page():
     return FileResponse(STATIC_DIR / "playtest.html")
 
 
+def star_order(riddle):
+    """Return the riddle's fact ids in the order of the stars in the sky.
+
+    The order is shuffled with the riddle's id as seed: every game has the same sky, and a
+    star's place in the list says nothing about when its fact happens in the story.
+
+    Args:
+        riddle: A `Riddle` from riddle.schema.
+    """
+    order = list(riddle.facts)
+    random.Random(riddle.id).shuffle(order)
+    return order
+
+
 @app.post("/api/playtest/games")
 def playtest_new_game(riddle: str = "baita"):
     """Start a playtest game on one riddle.
@@ -232,15 +247,19 @@ def playtest_new_game(riddle: str = "baita"):
         riddle: The riddle's name, from the page address (`/playtest?riddle=gabbiano`).
 
     Returns:
-        A dict with "id", to send back with every question, "title", "story" and
-        "opening", the sentence said before the story.
+        A dict with "id", to send back with every question, "title", "story",
+        "opening", the sentence said before the story, "seed", for the places of the
+        stars, and "stars", one per fact in `star_order`, with only whether it is optional:
+        the page draws the sky without knowing any fact.
     """
     if riddle not in CHAINS:
         raise HTTPException(status_code=404, detail="riddle not found")
     game_id = uuid.uuid4().hex   # random and unguessable, as in the game
     PLAYTEST_GAMES[game_id] = Play(CHAINS[riddle])
     story = CHAINS[riddle]["riddle"]
-    return {"id": game_id, "title": story.title, "story": story.story, "opening": OPENING}
+    stars = [{"optional": bool(story.facts[fact_id].get("optional"))} for fact_id in star_order(story)]
+    return {"id": game_id, "title": story.title, "story": story.story, "opening": OPENING,
+            "seed": story.id, "stars": stars}
 
 
 @app.get("/api/playtest/games/{game_id}/solution")
@@ -261,9 +280,10 @@ def playtest_ask(game_id: str, question: PlaytestQuestion):
         question: The player's words and how they were given.
 
     Returns:
-        A dict with "reply" (the sentence to say), "answer", "found" (the texts of the
-        facts this question found, for the notebook), "questions" (asked so far) and
-        "victory"; after a victory also "truth" and "next" (the riddle to play next).
+        A dict with "reply" (the sentence to say), "answer", "found" (the facts this
+        question found, each with its "star" in `star_order`, its "text" and whether it was
+        "given" by a hint), "questions" (asked so far) and "victory"; after a victory also
+        "truth" and "next" (the riddle to play next).
     """
     play = PLAYTEST_GAMES.get(game_id)
     if play is None:
@@ -287,8 +307,10 @@ def playtest_ask(game_id: str, question: PlaytestQuestion):
         log.write(entry + "\n")
 
     riddle = play.chain["riddle"]
-    response = {"reply": turn["reply"], "answer": turn["answer"],
-                "found": [riddle.facts[fact_id]["text"] for fact_id in turn["new"]],
+    order = star_order(riddle)
+    found = [{"star": order.index(fact_id), "text": riddle.facts[fact_id]["text"], "given": fact_id in turn["given"]}
+             for fact_id in turn["new"]]
+    response = {"reply": turn["reply"], "answer": turn["answer"], "found": found,
                 "questions": len(play.history), "victory": turn["victory"]}
     if turn["victory"]:
         # the truth comes with the victory: the page tells it once the constellation has changed shape

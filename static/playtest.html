@@ -27,9 +27,11 @@ header { height: 64px; display: flex; align-items: center; justify-content: spac
 .counter { font-size: .8rem; color: var(--muted); letter-spacing: .04em; }
 .counter b { color: var(--text); font-size: 1rem; margin-left: 4px; }
 
-/* the orb shows what the game is doing: it also makes the wait for an answer feel shorter */
-.stage { position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; }
-.orb { width: 120px; height: 120px; border-radius: 50%; box-shadow: 0 0 70px var(--glow);
+/* the stage: the sky behind, the orb in the middle; the orb also makes the wait for an answer feel shorter */
+.stage { position: relative; height: 320px; display: flex; align-items: center; justify-content: center; }
+.sky { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.sky .hit { fill: transparent; cursor: pointer; }
+.orb { position: relative; width: 120px; height: 120px; border-radius: 50%; box-shadow: 0 0 70px var(--glow); pointer-events: none;
   background: radial-gradient(circle at 36% 30%, #FFFFFF 0%, var(--accent) 38%, var(--deep) 100%); }
 .orb.idle { animation: breathe 5s ease-in-out infinite; }
 .orb.listening { animation: breathe 1.2s ease-in-out infinite; box-shadow: 0 0 110px var(--accent); }
@@ -41,8 +43,12 @@ header { height: 64px; display: flex; align-items: center; justify-content: spac
 @media (prefers-reduced-motion: reduce) { .orb { animation: none !important; } }
 
 .card { position: absolute; inset: 16px 0 auto; padding: 24px; border-radius: 20px; background: var(--panel);
-  border: 1px solid var(--line); display: flex; flex-direction: column; gap: 16px; }
+  border: 1px solid var(--line); display: flex; flex-direction: column; gap: 16px; z-index: 1; }
 .card p.story { font-size: 1.05rem; line-height: 1.6; font-weight: 300; }
+
+/* the fact of a star: shown when it lights up or is touched, then it fades */
+.fact { min-height: 44px; font-size: .9rem; line-height: 1.5; color: #FFF1D6; text-align: center; opacity: 0; }
+.fact.given { color: var(--accent); }
 
 .dialogue { min-height: 120px; display: flex; flex-direction: column; gap: 8px; }
 .you { font-size: .85rem; line-height: 1.45; color: var(--muted); }
@@ -59,7 +65,6 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
   background: var(--glass); color: var(--text); font: inherit; font-size: 1rem; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .sheet { width: 100%; padding: 16px 20px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
-.sheet ol { margin: 8px 0 0; padding-left: 20px; line-height: 1.6; }
 .sheet p { line-height: 1.6; }
 </style>
 </head>
@@ -71,6 +76,15 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
   </header>
 
   <section class="stage">
+    <svg class="sky" id="sky" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid meet" aria-label="Le stelle dei fatti scoperti">
+      <defs>
+        <radialGradient id="halo-found"><stop offset="0" stop-color="#FFE2A8" stop-opacity=".85"/><stop offset="1" stop-color="#FFE2A8" stop-opacity="0"/></radialGradient>
+        <radialGradient id="halo-given"><stop offset="0" stop-color="#9CC3FF" stop-opacity=".85"/><stop offset="1" stop-color="#9CC3FF" stop-opacity="0"/></radialGradient>
+      </defs>
+      <g id="dust"></g>
+      <g id="lines"></g>
+      <g id="stars"></g>
+    </svg>
     <div class="orb idle" id="orb"></div>
     <div class="card" id="story-card">
       <p class="label" id="card-label">Un nuovo mistero</p>
@@ -78,6 +92,7 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
       <button class="primary" id="start" disabled>Inizia</button>
     </div>
   </section>
+  <p class="fact" id="fact" aria-live="polite"></p>
 
   <section class="dialogue" aria-live="polite">
     <p class="you" id="you"></p>
@@ -99,14 +114,8 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
       <button class="pill" id="send" disabled>Chiedi</button>
     </form>
     <div class="row">
-      <button class="pill" id="replay" disabled>Riascolta la storia</button>      
-      <button class="pill" id="notebook-button" aria-expanded="false" aria-controls="notebook">Taccuino</button>
+      <button class="pill" id="replay" disabled>Riascolta la storia</button>
       <button class="pill" id="reveal">Mostra la soluzione</button>
-    </div>
-    <div class="sheet" id="notebook" hidden>
-      <p class="label">Cosa hai scoperto</p>
-      <p class="help" id="notebook-empty">Ancora niente.</p>
-      <ol id="facts"></ol>
     </div>
     <div class="sheet" id="solution" hidden>
       <p class="label">Com'è andata davvero</p>
@@ -115,12 +124,17 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
     <a class="primary" id="next" href="/playtest" hidden>Prossimo indovinello</a>
   </section>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/MotionPathPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/DrawSVGPlugin.min.js"></script>
 <script>
+gsap.registerPlugin(MotionPathPlugin, DrawSVGPlugin);
 const $ = id => document.getElementById(id);
 const RIDDLE = new URLSearchParams(location.search).get("riddle") || "baita";
-let game = null;       // what the server returned when the game started: id, title, story, opening
+let game = null;       // what the server returned when the game started: id, title, story, opening, seed, stars
 let started = false;   // the player pressed "Inizia"
 let busy = true;       // nothing can be asked before the game starts
+let intro = false;     // the opening and the story are being told: any touch or key stops them
 
 function setOrb(state) { $("orb").className = `orb ${state}`; }
 
@@ -128,6 +142,138 @@ function setBusy(value) {
   busy = value;
   $("mic").disabled = value;
   $("send").disabled = value;
+}
+
+// ---------- the sky: one star per fact, placed from the seed; the page learns a fact only when it is found ----------
+const SKY = {width: 400, height: 320, margin: 22, orb: 90, gap: 46};   // orb: the clear radius around the orb
+const SVG = "http://www.w3.org/2000/svg";
+const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let stars = [];   // per star: its place in the constellation, its place while unlit, size, elements, lit
+let lines = [];   // the shortest lines joining the stars, drawn once both ends are lit
+
+// a random generator from a text: the same riddle always gets the same sky
+function seeded(text) {
+  let state = 0;
+  for (const char of text) state = Math.imul(31, state) + char.charCodeAt(0) | 0;
+  return () => {   // mulberry32
+    state = state + 0x6D2B79F5 | 0;
+    let t = Math.imul(state ^ state >>> 15, 1 | state);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// scattered points, away from the orb and from each other: irregular like a real sky
+function scatter(count, random, gap) {
+  const points = [];
+  for (let tries = 0; points.length < count; tries++) {
+    if (tries > 3000) { gap *= 0.9; tries = 0; }   // a crowded sky: let the stars come closer
+    const point = {x: SKY.margin + random() * (SKY.width - 2 * SKY.margin),
+                   y: SKY.margin + random() * (SKY.height - 2 * SKY.margin)};
+    if (Math.hypot(point.x - SKY.width / 2, point.y - SKY.height / 2) < SKY.orb) continue;
+    if (points.some(other => Math.hypot(point.x - other.x, point.y - other.y) < gap)) continue;
+    points.push(point);
+  }
+  return points;
+}
+
+// the shortest lines that join every star (a minimum spanning tree): how real constellations look
+function shortestLines(points) {
+  const joined = [0], edges = [];
+  while (joined.length < points.length) {
+    let best = null;
+    for (const a of joined) {
+      points.forEach((point, b) => {
+        if (joined.includes(b)) return;
+        const length = Math.hypot(points[a].x - point.x, points[a].y - point.y);
+        if (!best || length < best.length) best = {a, b, length};
+      });
+    }
+    edges.push(best);
+    joined.push(best.b);
+  }
+  return edges;
+}
+
+function element(tag, attributes, parent) {
+  const node = document.createElementNS(SVG, tag);
+  for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
+  parent.append(node);
+  return node;
+}
+
+function drawSky() {
+  const random = seeded(game.seed);
+  const places = scatter(game.stars.length, random, SKY.gap);
+  const unlit = scatter(game.stars.length, random, SKY.gap / 2);   // elsewhere: the dark sky hides the figure
+  // dust: tiny stars that only make the sky alive
+  for (const point of scatter(40, random, 18)) {
+    const dot = element("circle", {cx: point.x, cy: point.y, r: 0.4 + random() * 0.7, fill: "#C9D6EA", opacity: 0.25}, $("dust"));
+    if (!STILL) gsap.to(dot, {opacity: 0.06, duration: 1.5 + random() * 3, repeat: -1, yoyo: true, ease: "sine.inOut", delay: random() * 3});
+  }
+  lines = shortestLines(places).map(({a, b}) => ({a, b, node: element("line", {
+    x1: places[a].x, y1: places[a].y, x2: places[b].x, y2: places[b].y,
+    stroke: "#DCE6F5", "stroke-width": 0.8, "stroke-linecap": "round", opacity: 0.4}, $("lines"))}));
+  lines.forEach(line => gsap.set(line.node, {drawSVG: "0%"}));
+  stars = game.stars.map((star, index) => {
+    const group = element("g", {}, $("stars"));
+    // the size is chance, never the fact's role: a bigger star would say which fact matters
+    const size = 1.6 + random() * 1.6;
+    const halo = element("circle", {r: size * 7, fill: "url(#halo-found)", opacity: 0}, group);
+    const core = element("circle", {r: 1.2, fill: "#C9D6EA", opacity: star.optional ? 0 : 0.35}, group);
+    const hit = element("circle", {class: "hit", r: 20, "pointer-events": "none"}, group);
+    hit.addEventListener("click", () => showFact(stars[index]));
+    gsap.set(group, {x: unlit[index].x, y: unlit[index].y});
+    return {place: places[index], unlit: unlit[index], size, group, halo, core, hit, lit: false, text: "", given: false};
+  });
+}
+
+// a found fact: its star leaves the dark, flies to its place and lights up, then its lines are drawn
+function light(index, text, given, delay = 0) {
+  const star = stars[index];
+  if (star.lit) return;
+  Object.assign(star, {lit: true, text, given});
+  const colour = given ? "#9CC3FF" : "#FFF4DC";   // a fact given by a hint is colder: the player sees what he found alone
+  star.halo.setAttribute("fill", `url(#halo-${given ? "given" : "found"})`);
+  star.hit.setAttribute("pointer-events", "all");
+  const from = star.unlit, to = star.place;
+  // a curved flight: the middle point is pushed sideways, as a thrown light would go
+  const bend = 0.3 * (index % 2 ? 1 : -1);
+  const middle = {x: (from.x + to.x) / 2 - (to.y - from.y) * bend, y: (from.y + to.y) / 2 + (to.x - from.x) * bend};
+  const flight = gsap.timeline({delay});
+  flight.to(star.core, {attr: {r: star.size * 0.6}, fill: colour, opacity: 1, duration: 0.5, ease: "power2.out"})
+        .to(star.group, {motionPath: {path: [from, middle, to], curviness: 1.4}, duration: STILL ? 0 : 1.6, ease: "power2.inOut"}, 0.2)
+        .to(star.core, {attr: {r: star.size}, duration: 0.8, ease: "back.out(3)"}, 1.4)
+        .to(star.halo, {opacity: 1, duration: 1, ease: "power2.out"}, 1.4)
+        .add(() => drawLines(index), 1.6)
+        .add(() => twinkle(star));
+}
+
+// the lines of a newly lit star, towards the stars already lit
+function drawLines(index) {
+  for (const line of lines) {
+    if (line.a !== index && line.b !== index) continue;
+    if (!stars[line.a].lit || !stars[line.b].lit) continue;
+    gsap.to(line.node, {drawSVG: "100%", duration: STILL ? 0 : 1.2, ease: "power1.inOut"});
+  }
+}
+
+// a lit star breathes a little, each at its own pace
+function twinkle(star) {
+  if (STILL) return;
+  gsap.to(star.halo, {opacity: 0.55, duration: 1.8 + Math.random() * 2.2, repeat: -1, yoyo: true, ease: "sine.inOut"});
+}
+
+// the fact under the stage, then it fades: touching a star brings it back
+function showFact(star) {
+  if (!star.lit) return;
+  const caption = $("fact");
+  caption.textContent = star.text;
+  caption.classList.toggle("given", star.given);
+  gsap.killTweensOf(caption);
+  gsap.timeline()
+      .fromTo(caption, {opacity: 0, y: 6}, {opacity: 1, y: 0, duration: 0.5, ease: "power2.out"})
+      .to(caption, {opacity: 0, duration: 0.8, ease: "power1.in"}, "+=5");
 }
 
 // ---------- start: the server creates the game, the page knows nothing of the riddle ----------
@@ -139,6 +285,7 @@ fetch(`/api/playtest/games?riddle=${encodeURIComponent(RIDDLE)}`, {method: "POST
     $("title").textContent = data.title;
     $("story").textContent = data.story;
     $("start").disabled = false;
+    drawSky();
   })
   .catch(() => { $("error").textContent = "Indovinello non trovato."; });
 
@@ -152,10 +299,21 @@ $("start").addEventListener("click", () => {
   $("story").hidden = false;   // from now on the title opens the card with the story
   $("replay").disabled = false;
   setBusy(false);
-  // the opening, then the story, written while it is told
-  $("reply").textContent = game.opening;
-  speak(game.opening, () => tellStory());
+  // the story is written at once and told in one breath with the opening: no pause between them
+  $("you").textContent = game.opening;
+  $("reply").textContent = game.story;
+  intro = true;
+  speak(`${game.opening} ${game.story}`, () => { intro = false; });
 });
+
+// a touch or a key during the opening stops the voice: the story stays written, the game is ready
+function skipIntro() {
+  if (!intro) return;
+  intro = false;
+  hush();
+  setOrb("idle");
+}
+document.addEventListener("pointerdown", skipIntro);
 
 function tellStory() {
   $("you").textContent = "";
@@ -186,7 +344,9 @@ async function ask(text, mode) {
     const data = await response.json();
     $("reply").textContent = data.reply;
     $("count").textContent = data.questions;
-    data.found.forEach(addFact);
+    // more facts in one question light up one after the other
+    data.found.forEach((fact, order) => light(fact.star, fact.text, fact.given, order * 0.6));
+    if (data.found.length) showFact(stars[data.found[data.found.length - 1].star]);
     if (data.victory) showFinale(data);
     else speak(data.reply);
   } catch (e) {
@@ -210,29 +370,29 @@ function showFinale(data) {
   });
 }
 
-// the notebook: the facts found, in the order they were found
-function addFact(text) {
-  const item = document.createElement("li");
-  item.textContent = text;
-  $("facts").append(item);
-  $("notebook-empty").hidden = true;
-}
-
-$("notebook-button").addEventListener("click", () => {
-  const open = $("notebook").hidden;
-  $("notebook").hidden = !open;
-  $("notebook-button").setAttribute("aria-expanded", String(open));
-});
-
 // ---------- voice out: the browser reads the sentence, the orb follows it ----------
+let voice = null;   // the sentence being said: a sentence stopped halfway must not run what follows it
+
 function speak(text, then) {
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
+  voice = utterance;
   utterance.lang = "it-IT";
   utterance.onstart = () => setOrb("speaking");
   // then: what comes after this sentence, e.g. the truth after the victory comment
-  utterance.onend = () => { setOrb("idle"); if (then) then(); };
+  utterance.onend = () => {
+    if (voice !== utterance) return;   // stopped or replaced: the browser still calls onend
+    voice = null;
+    setOrb("idle");
+    if (then) then();
+  };
   speechSynthesis.speak(utterance);
+}
+
+// stop the voice without running what follows the sentence
+function hush() {
+  voice = null;
+  speechSynthesis.cancel();
 }
 
 // ---------- voice in: press, speak, stop ----------
@@ -279,7 +439,8 @@ if (Recognition) {
 function listen() {
   if (!recognizer || busy) return;
   if ($("mic").classList.contains("listening")) { finish(); return; }   // second press: send now
-  speechSynthesis.cancel();   // stop reading, so the microphone does not hear the page
+  skipIntro();
+  hush();   // stop reading, so the microphone does not hear the page
   $("you").textContent = "";
   $("mic").classList.add("listening");
   setOrb("listening");
@@ -289,6 +450,7 @@ function listen() {
 // ---------- controls ----------
 $("mic").addEventListener("click", listen);
 document.addEventListener("keydown", (event) => {
+  skipIntro();
   // the space bar works like the microphone button, except while typing or on a button
   if (event.code === "Space" && !["INPUT", "BUTTON"].includes(document.activeElement.tagName)) {
     event.preventDefault();
