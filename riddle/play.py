@@ -7,10 +7,36 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 from riddle.conductor import Conductor
-from riddle.engine import Session
+from riddle.engine import Session, question_key
 from riddle.judge import JUDGE_MODEL, MAX_ATTEMPTS, UNCLEAR, Judge, Matcher
 from riddle.puzzle import load_arbiter
 from riddle.schema import load_riddle
+
+
+# the answers to the offer of a hint, checked in code before the arbiter: "sì" is not a question about the story
+ACCEPT = ("si", "ok", "okay", "certo", "dai", "volentieri", "grazie", "va bene", "per favore", "magari", "perche no")
+DECLINE = ("no", "niente", "non ancora", "lascia stare", "meglio di no")
+OFFER_ANSWER_WORDS = 4   # a longer sentence is a question, not an answer to the offer
+
+
+def offer_answer(text):
+    """Tell whether the player's words answer the offer of a hint.
+
+    Args:
+        text: The player's words.
+
+    Returns:
+        True for a yes, False for a no, None for anything else: a question lets the offer lapse.
+    """
+    key = question_key(text)
+    words = key.split()
+    if not words or len(words) > OFFER_ANSWER_WORDS:
+        return None
+    if words[0] == "no" or key in DECLINE:
+        return False
+    if any(f" {phrase} " in f" {key} " for phrase in ACCEPT):
+        return True
+    return None
 
 
 def load_chain(name, language, client, model=JUDGE_MODEL, max_attempts=MAX_ATTEMPTS):
@@ -68,6 +94,10 @@ class Play:
             conductor's result (see `Conductor.reply`) and the seconds of the whole turn
             and of each component, the time the player waits.
         """
+        if self.session.offer:
+            accepted = offer_answer(question)
+            if accepted is not None:
+                return self.answer_offer(question, accepted)
         start = time.perf_counter()
         verdict = self.chain["judge"].answer(question, self.history, sorted(self.session.found))
         judged = time.perf_counter()
@@ -98,3 +128,23 @@ class Play:
                 "answer": verdict["answer"], "new": new, "stated": stated, **state, **said,
                 "seconds": end - start, "arbiter_seconds": judged - start,
                 "matcher_seconds": matched - judged, "conductor_seconds": end - matched}
+
+
+    def answer_offer(self, question, accepted):
+        """Answer the player's yes or no to the offer of a hint, without the arbiter: it is not a question.
+
+        Args:
+            question: The player's words.
+            accepted: Whether they said yes.
+
+        Returns:
+            A dict with the keys of `ask`; "answer" is "accepted" or "declined".
+        """
+        start = time.perf_counter()
+        state = self.session.answer_offer(accepted)
+        said = self.chain["conductor"].offer_reply(state, self.history, self.session, self.said)
+        end = time.perf_counter()
+        self.said.append(said["reply"])
+        return {"question": question, "positive_question": question, "answer": "accepted" if accepted else "declined",
+                "new": state["given"], "stated": [], **state, **said,
+                "seconds": end - start, "arbiter_seconds": 0.0, "matcher_seconds": 0.0, "conductor_seconds": end - start}
