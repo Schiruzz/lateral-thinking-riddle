@@ -3,7 +3,7 @@
   "language": "it",
   "title": "La baita",
   "tone": "cupo",
-  "story": "Cinque amici passano il weekend in una baita isolata dalla neve. La mattina dopo quattro si svegliano e trovano il quinto morto nel suo letto. La porta della sua stanza era chiusa a chiave da dentro e fuori, sulla neve, non c'è nessuna impronta.",
+  "story": "Cinque amici passano il weekend in una baita isolata dalla neve. La mattina dopo quattro si svegliano e trovano il quinto morto nel suo letto. La porta della sua stanza era chiusa a chiave da dentro e fuori, sulla neve, non c'è nessuna impronta. Cos'è successo?",
   "truth": "Il quinto amico dormiva da solo al piano terra, nella stanza con la stufa a legna; gli altri dormivano di sopra. Prima di andare a letto ha caricato la stufa al massimo e ha chiuso la porta a chiave, come faceva sempre. Durante la notte la neve ha ostruito il comignolo: il fumo non usciva più e la stanza si è riempita di monossido di carbonio, un gas senza odore. È morto nel sonno. Nessuno l'ha ucciso.",
   "obvious_answer": "L'ha ucciso uno dei quattro amici.",
   "assumption": "C'è un colpevole.",
@@ -38,9 +38,9 @@
     {"id": "passaggio", "text": "Qualcuno è entrato da un passaggio segreto o dalla finestra.", "ruled_out_by": "nessuna_impronta"}
   ],
   "victory": [
-    {"id": "v_gas", "claim": "È morto intossicato dal gas della stufa.", "requires": ["gas", "stufa"],
-     "paraphrases": ["il fumo della stufa l'ha avvelenato", "monossido di carbonio dalla stufa"]},
-    {"id": "v_neve", "claim": "La neve aveva bloccato il comignolo.", "requires": ["comignolo"],
-     "paraphrases": ["il camino era ostruito dalla neve", "il fumo non usciva per colpa della neve"]}
+    {"id": "v_gas", "claim": "È morto intossicato dal fumo della stufa.",
+     "why": "la stufa l'ha ucciso?", "requires": ["gas", "stufa"]},
+    {"id": "v_camino", "claim": "Il fumo non poteva uscire perché il camino era bloccato.",
+     "why": "il fumo è rimasto nella stanza, quella notte?", "requires": ["comignolo"]}
   ]
 }

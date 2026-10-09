@@ -92,6 +92,67 @@ RELIEF_LINES = [
     "Fermate tutto: è un sì!",
     "Ottima domanda!",
 ]
+
+# said before the "why" of the next victory element, when the player explains part of the story;
+# written by Federico (09/10): the "why" in the riddle file completes the sentence
+RELAUNCH_LINES = [
+    "Esatto, ma quindi perché",
+    "Ok, ma quindi perché",
+    "Sì, è vero, ma allora perché",
+    "Esatto, bravo, ma ti sei chiesto perché",
+    "Giusto, ma allora perché",
+    "Va bene, ma resta una cosa: perché",
+    "Sì, ci sei. Ma spiegami: perché",
+    "Bene, ma adesso dimmi: perché",
+]
+# every victory element explained, never all in one sentence
+SUMMARY_LINE = "Ok, perfetto. Ora fammi un riepilogo di tutta la storia."
+
+# a no to a sentence with a victory element: part of it is true (what the arbiter's "partly" used to say)
+# a no to a sentence with a victory element: part of it is true (what the arbiter's "partly" used to say);
+# written by Federico (09/10), never saying which part
+WRONG_PART_LINES = [
+    "No: una delle cose che hai detto è vera, il resto no.",
+    "Non del tutto: c'è un pezzo giusto, il resto no.",
+    "No, però dentro c'è una cosa vera.",
+    "Non proprio: una parte sì, il resto no.",
+    "No, ma c'è del vero in quello che dici.",
+    "No: qualcosa regge, qualcosa no.",
+    "No, ma su un punto hai ragione.",
+    "Solo in parte.",
+    "Non tutto: una cosa è vera, il resto no.",
+    "No, però una parte è giusta.",
+    "Così no, ma qualcosa di vero c'è.",
+    "No, anche se non è tutto sbagliato.",
+    "In parte sì, ma la risposta è no.",
+]
+
+# the victory: a friend who watched the whole game; examples from games that are not in the tests
+VICTORY_RULES = """You are the voice of a lateral thinking game played by voice, in Italian.
+The player has just solved the riddle. Write one or two short spoken sentences, as a friend
+who watched the whole game: celebrate, and tease the player kindly about one or two real
+moments of the game, such as how many questions it took, where they got stuck, or a funny
+or rude question they asked.
+
+RULES
+1. Only moments that are in the exchanges: never invent one.
+2. Never retell the solution: it is told right after you.
+3. Teasing is welcome, insults never.
+4. At most 35 words.
+
+EXAMPLES (from other games)
+"Ce l'hai fatta! E pensare che per dieci domande eri convinto che c'entrasse il pianoforte."
+"Risolto! Dopo avermi chiesto se ero un robot, direi che te lo meritavi proprio."
+"""
+VICTORY_CONFIG = types.GenerateContentConfig(
+    system_instruction=VICTORY_RULES,
+    temperature=0.9,
+    response_mime_type="application/json",
+    response_schema={"type": "OBJECT", "properties": {"comment": {"type": "STRING"}}, "required": ["comment"]},
+)
+VICTORY_WORDS = 40   # a longer comment is a speech, not a friend's line: the fallback is said instead
+VICTORY_FALLBACK = "Ce l'hai fatta, l'hai risolto!"
+
 # the answer speaks to the player: "devo capire...?" becomes "non devi capire..."
 PERSON = {"devo": "devi", "posso": "puoi", "voglio": "vuoi", "sono": "sei", "ho": "hai",
           "io": "tu", "mi": "ti", "me": "te", "mio": "tuo", "mia": "tua", "miei": "tuoi", "mie": "tue"}
@@ -252,6 +313,44 @@ class Conductor:
         self.model = model
         self.max_attempts = max_attempts
 
+
+    def victory_line(self, state, said_before):
+        """Return the engine's sentence for a turn that explains the story, or None for an ordinary turn.
+
+        Args:
+            state: The dict from `Session.record`.
+            said_before: The conductor's earlier sentences in this game.
+        """
+        if state["relaunch"]:
+            return f"{pick_line(RELAUNCH_LINES, said_before)} {self.riddle.victory[state['relaunch']]['why']}"
+        if state["summary"]:
+            return SUMMARY_LINE
+        if state["wrong_part"]:
+            return pick_line(WRONG_PART_LINES, said_before)
+        return None
+
+
+    def victory_comment(self, question, history):
+        """Write a friend's comment on a solved game, from its exchanges.
+
+        Nothing is left to protect once the riddle is solved, so the model reads the whole
+        game; only the length is checked, so the truth told next is not delayed.
+
+        Args:
+            question: The player's words that solved the riddle.
+            history: (positive question, answer) pairs before this question.
+
+        Returns:
+            The comment, or a fixed line if the model's is too long.
+        """
+        exchanges = "\n".join(f"- {q} -> {a}" for q, a in history)
+        contents = (f"STORY: {self.riddle.story}\n\nEXCHANGES ({len(history) + 1} questions):\n"
+                    f"{exchanges}\n- {question} -> yes, solved")
+        comment = json.loads(call_model(self.client, self.model, contents, VICTORY_CONFIG,
+                                        self.max_attempts).text)["comment"].strip()
+        return comment if comment and len(comment.split()) <= VICTORY_WORDS else VICTORY_FALLBACK
+
+
     def reply(self, question, verdict, history, session, new_facts, state, said_before=()):
         """Write the sentence for one answered question.
 
@@ -270,6 +369,13 @@ class Conductor:
             question, to count in the report) and "revealed" (words of hidden facts
             that made the reaction drop, empty when it passed).
         """
+        if state["victory"]:
+            return {"reply": self.victory_comment(question, history), "plain_answer": False,
+                    "long_answer": False, "revealed": []}
+        # the moves of the victory are the engine's: a fixed sentence, no model
+        line = self.victory_line(state, said_before)
+        if line:
+            return {"reply": line, "plain_answer": False, "long_answer": False, "revealed": []}
         found = [fact["text"] for fact_id, fact in self.riddle.facts.items() if fact_id in session.found]
         new = [self.riddle.facts[fact_id]["text"] for fact_id in new_facts]
         recent = history[-RECENT_SIZE:]

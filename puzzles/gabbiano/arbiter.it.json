@@ -48,9 +48,11 @@
     {"id": "nessun_omicidio", "text": "Qualcuno ha ucciso il figlio.", "ruled_out_by": "figlio_annegato"}
   ],
   "victory": [
-    {"id": "v_figlio", "claim": "Sull'isola ha mangiato suo figlio.", "requires": ["mangiato_figlio"],
-     "paraphrases": ["ha mangiato la carne del figlio", "il gabbiano dell'isola era suo figlio"]},
-    {"id": "v_scoperta", "claim": "Al ristorante ha capito cosa aveva mangiato.", "requires": ["sapore"],
-     "paraphrases": ["dal sapore ha scoperto la verità", "si è accorto che non era gabbiano"]}
+    {"id": "v_figlio", "claim": "Anni prima, dopo il naufragio, ha mangiato suo figlio.",
+     "why": "si è ucciso dopo aver assaggiato il gabbiano?", "requires": ["mangiato_figlio"]},
+    {"id": "v_inganno", "claim": "La moglie gli aveva fatto credere che fosse gabbiano, e al ristorante dal sapore ha capito che non lo era.",
+     "why": "si è ucciso proprio al ristorante, anni dopo?", "requires": ["gabbiano_creduto", "sapore"]},
+    {"id": "v_cieco", "claim": "Era cieco, per questo ha creduto alla moglie.",
+     "why": "ha creduto alla moglie?", "requires": ["cieco"]}
   ]
 }

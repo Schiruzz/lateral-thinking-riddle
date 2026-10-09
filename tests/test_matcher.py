@@ -110,3 +110,10 @@ def test_a_fact_after_a_no_is_verified_even_if_not_key(baita):
     matcher, models = make_matcher(baita, [("cause naturali", "incidente")])   # the verifier says no by default
     assert matcher.match(question, verdict("no", question), [], Session(baita)) == ([], [])
     assert len(models.verify_calls) == 1
+
+
+def test_victory_is_judged_on_what_the_sentence_claims_even_after_a_no(baita):
+    question = "È morto per il fumo della stufa?"
+    matcher, models = make_matcher(baita, stated={baita.victory["v_gas"]["claim"]: True})
+    assert matcher.stated_victory(verdict("no", question), [], Session(baita)) == ["v_gas"]
+    assert all("ANSWER: yes" in call for call in models.verify_calls)   # judged as if the answer were yes
