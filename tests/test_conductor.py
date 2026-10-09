@@ -5,8 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from riddle.conductor import STUCK_LINES, WRONG_PART_LINES, Conductor, pick_line
-from riddle.conductor import Conductor
+from riddle.conductor import STUCK_LINES, VICTORY_FALLBACK, WRONG_PART_LINES, Conductor, pick_line
 from riddle.engine import Session
 from riddle.schema import load_riddle
 
@@ -172,3 +171,14 @@ def test_an_explanation_with_a_wrong_part_says_so_without_saying_which(baita):
     result = Conductor(baita, SimpleNamespace(models=FakeModels("", "No.", ""))).reply(
         question, {"positive_question": question, "answer": "no"}, [], session, [], state)
     assert result["reply"] in WRONG_PART_LINES
+
+
+def test_a_victory_gets_a_friends_comment_and_a_long_one_is_replaced(baita):
+    session = Session(baita)
+    state = session.record("Tutta la storia?", [], "yes", ["v_gas", "v_camino"])
+    verdict = {"positive_question": "Tutta la storia?", "answer": "yes"}
+    for comment, expected in [("Ce l'hai fatta, finalmente!", "Ce l'hai fatta, finalmente!"),
+                              ("parola " * 50, VICTORY_FALLBACK)]:
+        answer = SimpleNamespace(text=json.dumps({"comment": comment}))
+        client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda model, contents, config: answer))
+        assert Conductor(baita, client).reply("Tutta la storia?", verdict, [], session, [], state)["reply"] == expected
