@@ -36,6 +36,9 @@ class Session:
         empty_streak: Questions in a row that found no new fact.
         stuck_from: The streak at which the conductor last said the player was stuck.
         reached: Whether every fact the victory needs has been found.
+        claimed: Ids of the victory elements the player has explained so far, in any sentence.
+        relaunched: Ids of the victory elements whose "why" was already asked.
+        summary_asked: Whether the player was already asked to tell the whole story.
     """
 
     def __init__(self, riddle):
@@ -51,6 +54,9 @@ class Session:
         self.empty_streak = 0
         self.stuck_from = 0
         self.reached = False
+        self.claimed = set()
+        self.relaunched = set()
+        self.summary_asked = False
 
     def unlock(self, fact_ids):
         """Mark facts as found, together with everything they presuppose.
@@ -71,7 +77,7 @@ class Session:
         }
         return [fact_id for fact_id in self.riddle.facts if fact_id in new]
 
-    def record(self, question, new_facts, answer=""):
+    def record(self, question, new_facts, answer="", stated=()):
         """Record an answered question and describe the game at this turn, for the conductor.
 
         Call it after `unlock`, so that the facts this question found already count.
@@ -81,6 +87,8 @@ class Session:
             new_facts: Ids of the facts this question found (from `unlock`).
             answer: The arbiter's answer: relief comes only with a yes, and after
                 a yes the player is never told he is stuck.
+            stated: Ids of the victory elements the sentence puts forward (from
+                `Matcher.stated_victory`).
 
         Returns:
             A dict with "repeated" (the same question was asked before),
@@ -88,12 +96,21 @@ class Session:
             "relief" (a yes that found a new fact after at least `RELIEF_STREAK`
             questions without one),
             "stuck" (`STUCK_STREAK` more questions without a new fact since the last time
-            it was said, never after a yes)
-            and "within_reach" (this question found the last fact the victory needs).
+            it was said, never after a yes),
+            "within_reach" (this question found the last fact the victory needs),
+            "victory" (a yes to a sentence with every victory element),
+            "relaunch" (the victory element whose "why" to ask now, or None),
+            "summary" (every element explained, never in one sentence: ask for the whole story)
+            and "wrong_part" (a no to a sentence that puts forward victory elements).
         """
         key = question_key(question)
         reached = all(set(element["requires"]) <= self.found for element in self.riddle.victory.values())
         streak = 0 if new_facts else self.empty_streak + 1   # including this question
+        if answer == "yes":
+            # what the player has explained so far, sentence after sentence: it picks the next "why"
+            self.claimed |= set(stated)
+        missing = [element_id for element_id in self.riddle.victory if element_id not in self.claimed]
+        victory = answer == "yes" and set(stated) == set(self.riddle.victory)
         state = {
             "repeated": key in self.asked,
             "empty_streak": self.empty_streak,
@@ -103,12 +120,23 @@ class Session:
             "stuck": streak - self.stuck_from >= STUCK_STREAK and answer != "yes",
             # only the turn that completes the victory: the invitation is said once
             "within_reach": reached and not self.reached,
+            "victory": victory,
+            # after a yes that explains part of the story, the "why" of the next element in the
+            # reasoning, asked once: the elements are in the order the reasoning follows
+            "relaunch": (missing[0] if answer == "yes" and stated and missing
+                         and missing[0] not in self.relaunched else None),
+            # every element explained, but never all in one sentence: the whole story, asked once
+            "summary": answer == "yes" and bool(stated) and not missing and not victory and not self.summary_asked,
+            "wrong_part": answer == "no" and bool(stated),
         }
         self.asked.add(key)
         self.reached = reached
         # only a new fact is progress: a closed false lead does not end a streak
         self.empty_streak = streak
         self.stuck_from = streak if state["stuck"] else (0 if new_facts else self.stuck_from)
+        if state["relaunch"]:
+            self.relaunched.add(state["relaunch"])
+        self.summary_asked = self.summary_asked or state["summary"]
         return state
 
     def exclude(self, exclusion_ids):

@@ -4,6 +4,7 @@ The server and the evaluation run the same turn, so what is measured is what is 
 """
 
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from riddle.conductor import Conductor
 from riddle.engine import Session
@@ -68,11 +69,16 @@ class Play:
         start = time.perf_counter()
         verdict = self.chain["judge"].answer(question, self.history, sorted(self.session.found))
         judged = time.perf_counter()
-        facts, leads = self.chain["matcher"].match(question, verdict, self.history, self.session)
+        # the victory check needs only the verdict: beside the matcher, the player waits no longer
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            matching = pool.submit(self.chain["matcher"].match, question, verdict, self.history, self.session)
+            claiming = pool.submit(self.chain["matcher"].stated_victory, verdict, self.history, self.session)
+            facts, leads = matching.result()
+            stated = claiming.result()
         matched = time.perf_counter()
         new = self.session.unlock(facts)
         self.session.exclude(leads)
-        state = self.session.record(verdict["positive_question"], new, verdict["answer"])
+        state = self.session.record(verdict["positive_question"], new, verdict["answer"], stated)
         said = self.chain["conductor"].reply(question, verdict, self.history, self.session, new, state, self.said)
         end = time.perf_counter()
 
@@ -81,6 +87,6 @@ class Play:
         if verdict["answer"] != UNCLEAR:
             self.history.append((verdict["positive_question"], verdict["answer"]))
         return {"question": question, "positive_question": verdict["positive_question"],
-                "answer": verdict["answer"], "new": new, **state, **said,
+                "answer": verdict["answer"], "new": new, "stated": stated, **state, **said,
                 "seconds": end - start, "arbiter_seconds": judged - start,
                 "matcher_seconds": matched - judged, "conductor_seconds": end - matched}

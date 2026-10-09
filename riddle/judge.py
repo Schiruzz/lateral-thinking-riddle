@@ -535,15 +535,42 @@ class Matcher:
                     if fact_id in self.riddle.key_facts or answer == NO] if self.use_verifier else []
         if to_check:
             with ThreadPoolExecutor() as pool:
-                checks = list(pool.map(lambda fact_id: self._verify(fact_id, verdict, context), to_check))
+                checks = list(pool.map(lambda fact_id: self._verify(self.riddle.facts[fact_id]["text"], verdict, context), to_check))
             rejected = {fact_id for fact_id, ok in zip(to_check, checks) if not ok}
             found_facts = [fact_id for fact_id in found_facts if fact_id not in rejected]
         return found_facts, found_leads
 
-    def _verify(self, fact_id, verdict, context):
-        """Ask the verifier whether the question, with its answer, states the whole fact."""
+
+    def stated_victory(self, verdict, history, session):
+        """Decide which victory elements an answered sentence puts forward.
+
+        What the sentence claims is judged as if the answer were yes: the arbiter's
+        answer then tells a victory (yes) from an explanation with a wrong part (no).
+
+        Args:
+            verdict: The verdict from `Judge.answer`.
+            history: (positive question, answer) pairs before this question.
+            session: The `Session` of the game, for what is already found.
+
+        Returns:
+            The ids of the victory elements the sentence states, in the riddle's order.
+        """
+        # irrelevant, invalid or unclear sentences explain nothing
+        if verdict["answer"] not in (YES, NO):
+            return []
+        claimed = {**verdict, "answer": YES}
+        context = self._context(history, session)
+        elements = list(self.riddle.victory)
+        with ThreadPoolExecutor() as pool:
+            checks = list(pool.map(lambda element_id: self._verify(self.riddle.victory[element_id]["claim"], claimed, context),
+                                   elements))
+        return [element_id for element_id, ok in zip(elements, checks) if ok]
+    
+
+    def _verify(self, text, verdict, context):
+        """Ask the verifier whether the question, with its answer, states the whole of a text (a fact or a victory element)."""
         contents = (f"{context}\n\nQUESTION: {verdict['positive_question']}\nANSWER: {verdict['answer']}\n"
-                    f"CARD: {self.riddle.facts[fact_id]['text']}")
+                    f"CARD: {text}")
         return json.loads(call_model(self.client, VERIFY_MODEL, contents, VERIFY_CONFIG,
                                      self.max_attempts).text)["stated"]
 
