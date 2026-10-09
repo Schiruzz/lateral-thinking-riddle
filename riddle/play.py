@@ -41,6 +41,7 @@ class Play:
         session: The engine's state of the game.
         history: (positive question, answer) pairs so far, read by every component.
         said: The sentences the player has heard, so the conductor's banks never repeat.
+        finished: Whether the riddle was solved: no more questions after that.
     """
 
     def __init__(self, chain):
@@ -53,6 +54,7 @@ class Play:
         self.session = Session(chain["riddle"])
         self.history = []
         self.said = []
+        self.finished = False        
 
     def ask(self, question):
         """Answer one question through the whole chain and update the game.
@@ -75,6 +77,7 @@ class Play:
             claiming = pool.submit(self.chain["matcher"].stated_victory, verdict, self.history, self.session)
             facts, leads = matching.result()
             stated = claiming.result()
+            
         matched = time.perf_counter()
         new = self.session.unlock(facts)
         self.session.exclude(leads)
@@ -83,9 +86,13 @@ class Play:
         end = time.perf_counter()
 
         self.said.append(said["reply"])
+
         # an answer not understood is not an exchange: the player asks again, as in the game
         if verdict["answer"] != UNCLEAR:
             self.history.append((verdict["positive_question"], verdict["answer"]))
+
+        self.finished = state["victory"]
+
         return {"question": question, "positive_question": verdict["positive_question"],
                 "answer": verdict["answer"], "new": new, "stated": stated, **state, **said,
                 "seconds": end - start, "arbiter_seconds": judged - start,

@@ -68,9 +68,10 @@ def test_cards_failure_becomes_an_error_line(client, monkeypatch):
 def fake_ask(self, question):
     """Stands in for `Play.ask`: a yes that finds the stove, without models."""
     self.history.append((question, "yes"))
-    return {"question": question, "positive_question": question, "answer": "yes", "new": ["stufa"],
-            "reply": "Sì.", "seconds": 1.0, "arbiter_seconds": 0.4, "matcher_seconds": 0.3,
-            "conductor_seconds": 0.3}
+    return {"question": question, "positive_question": question, "answer": "yes", "new": ["stufa"], 
+            "victory": False, "reply": "Sì.", "seconds": 1.0, "arbiter_seconds": 0.4, 
+            "matcher_seconds": 0.3, "conductor_seconds": 0.3
+           }
 
 
 def test_a_playtest_game_starts_on_the_riddle_in_the_address(client):
@@ -92,7 +93,7 @@ def test_a_playtest_turn_returns_the_sentence_and_the_facts_found(client, monkey
     game_id = client.post("/api/playtest/games").json()["id"]
     reply = client.post(f"/api/playtest/games/{game_id}/ask", json={"text": "C'era una stufa?"}).json()
     stove = server.CHAINS["baita"]["riddle"].facts["stufa"]["text"]
-    assert reply == {"reply": "Sì.", "answer": "yes", "found": [stove], "questions": 1}
+    assert reply == {"reply": "Sì.", "answer": "yes", "found": [stove], "questions": 1, "victory": False}
 
 
 def test_a_playtest_turn_is_logged_with_the_history_before_it(client, monkeypatch):
@@ -109,3 +110,21 @@ def test_the_solution_is_the_truth_of_the_games_riddle(client):
     game_id = client.post("/api/playtest/games?riddle=gabbiano").json()["id"]
     solution = client.get(f"/api/playtest/games/{game_id}/solution").json()
     assert solution == {"solution": server.CHAINS["gabbiano"]["riddle"].truth}
+
+
+def fake_win(self, question):
+    """Stands in for `Play.ask`: the sentence that solves the riddle."""
+    self.history.append((question, "yes"))
+    self.finished = True
+    return {"question": question, "positive_question": question, "answer": "yes", "new": [],
+            "victory": True, "reply": "Ce l'hai fatta!", "seconds": 1.0, "arbiter_seconds": 0.4,
+            "matcher_seconds": 0.3, "conductor_seconds": 0.3}
+
+
+def test_a_victory_brings_the_truth_and_the_next_riddle_and_ends_the_game(client, monkeypatch):
+    monkeypatch.setattr(server.Play, "ask", fake_win)
+    game_id = client.post("/api/playtest/games").json()["id"]
+    reply = client.post(f"/api/playtest/games/{game_id}/ask", json={"text": "Tutta la storia"}).json()
+    assert reply["truth"] == server.CHAINS["baita"]["riddle"].truth
+    assert reply["next"] == "gabbiano"
+    assert client.post(f"/api/playtest/games/{game_id}/ask", json={"text": "Ancora?"}).status_code == 400

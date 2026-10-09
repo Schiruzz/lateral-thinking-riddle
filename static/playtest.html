@@ -20,6 +20,7 @@ button { font-family: inherit; color: var(--text); cursor: pointer; }
 button:disabled { opacity: .4; cursor: wait; }
 .pill { min-height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid var(--line); background: var(--glass); font-size: .9rem; }
 .primary { min-height: 44px; padding: 0 20px; border-radius: 22px; border: 0; background: var(--text); color: var(--night); font-weight: 600; align-self: flex-start; }
+a.primary { display: inline-flex; align-items: center; text-decoration: none; }
 .label { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
 
 header { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -72,8 +73,8 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
   <section class="stage">
     <div class="orb idle" id="orb"></div>
     <div class="card" id="story-card">
-      <p class="label">La storia</p>
-      <p class="story" id="story"></p>
+      <p class="label" id="card-label">Un nuovo mistero</p>
+      <p class="story" id="story" hidden></p>
       <button class="primary" id="start" disabled>Inizia</button>
     </div>
   </section>
@@ -98,6 +99,7 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
       <button class="pill" id="send" disabled>Chiedi</button>
     </form>
     <div class="row">
+      <button class="pill" id="replay" disabled>Riascolta la storia</button>      
       <button class="pill" id="notebook-button" aria-expanded="false" aria-controls="notebook">Taccuino</button>
       <button class="pill" id="reveal">Mostra la soluzione</button>
     </div>
@@ -110,6 +112,7 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
       <p class="label">Com'è andata davvero</p>
       <p id="solution-text"></p>
     </div>
+    <a class="primary" id="next" href="/playtest" hidden>Prossimo indovinello</a>
   </section>
 </main>
 <script>
@@ -145,10 +148,22 @@ $("start").addEventListener("click", () => {
   if (started) return;   // later the button only closes the story
   started = true;
   $("start").textContent = "Chiudi";
-  $("reply").textContent = game.opening;
+  $("card-label").textContent = "La storia";
+  $("story").hidden = false;   // from now on the title opens the card with the story
+  $("replay").disabled = false;
   setBusy(false);
-  speak(`${game.opening} ${game.story}`);
+  // the opening, then the story, written while it is told
+  $("reply").textContent = game.opening;
+  speak(game.opening, () => tellStory());
 });
+
+function tellStory() {
+  $("you").textContent = "";
+  $("reply").textContent = game.story;
+  speak(game.story);
+}
+$("replay").addEventListener("click", tellStory);
+
 // the title brings the story back at any time
 $("title").addEventListener("click", () => { $("story-card").hidden = !$("story-card").hidden; });
 
@@ -172,13 +187,27 @@ async function ask(text, mode) {
     $("reply").textContent = data.reply;
     $("count").textContent = data.questions;
     data.found.forEach(addFact);
-    speak(data.reply);
+    if (data.victory) showFinale(data);
+    else speak(data.reply);
   } catch (e) {
     setOrb("idle");
     $("error").textContent = "Qualcosa non ha funzionato, riprova.";
   } finally {
     setBusy(false);
   }
+}
+
+// the finale: the friend's comment, then the truth and the next riddle
+// (the constellation will change shape between the two, with the presentation)
+function showFinale(data) {
+  for (const id of ["reveal", "form", "mic", "help", "replay"]) $(id).hidden = true;
+  speak(data.reply, () => {
+    $("solution-text").textContent = data.truth;
+    $("solution").hidden = false;
+    $("next").href = `/playtest?riddle=${encodeURIComponent(data.next)}`;
+    $("next").hidden = false;
+    speak(data.truth);
+  });
 }
 
 // the notebook: the facts found, in the order they were found
@@ -196,12 +225,13 @@ $("notebook-button").addEventListener("click", () => {
 });
 
 // ---------- voice out: the browser reads the sentence, the orb follows it ----------
-function speak(text) {
+function speak(text, then) {
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "it-IT";
   utterance.onstart = () => setOrb("speaking");
-  utterance.onend = () => setOrb("idle");
+  // then: what comes after this sentence, e.g. the truth after the victory comment
+  utterance.onend = () => { setOrb("idle"); if (then) then(); };
   speechSynthesis.speak(utterance);
 }
 

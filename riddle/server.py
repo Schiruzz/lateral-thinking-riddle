@@ -262,11 +262,14 @@ def playtest_ask(game_id: str, question: PlaytestQuestion):
 
     Returns:
         A dict with "reply" (the sentence to say), "answer", "found" (the texts of the
-        facts this question found, for the notebook) and "questions" (asked so far).
+        facts this question found, for the notebook), "questions" (asked so far) and
+        "victory"; after a victory also "truth" and "next" (the riddle to play next).
     """
     play = PLAYTEST_GAMES.get(game_id)
     if play is None:
         raise HTTPException(status_code=404, detail="game not found")
+    if play.finished:
+        raise HTTPException(status_code=400, detail="game over")
     if len(play.history) >= MAX_HISTORY:
         raise HTTPException(status_code=400, detail="game too long")
     history = list(play.history)   # before this question: the labels and the replays need it so
@@ -283,6 +286,12 @@ def playtest_ask(game_id: str, question: PlaytestQuestion):
     with LOG_FILE.open("a", encoding="utf-8") as log:
         log.write(entry + "\n")
 
-    facts = play.chain["riddle"].facts
-    return {"reply": turn["reply"], "answer": turn["answer"],
-            "found": [facts[fact_id]["text"] for fact_id in turn["new"]], "questions": len(play.history)}
+    riddle = play.chain["riddle"]
+    response = {"reply": turn["reply"], "answer": turn["answer"],
+                "found": [riddle.facts[fact_id]["text"] for fact_id in turn["new"]],
+                "questions": len(play.history), "victory": turn["victory"]}
+    if turn["victory"]:
+        # the truth comes with the victory: the page tells it once the constellation has changed shape
+        position = PLAYTEST_RIDDLES.index(riddle.id)
+        response |= {"truth": riddle.truth, "next": PLAYTEST_RIDDLES[(position + 1) % len(PLAYTEST_RIDDLES)]}
+    return response
