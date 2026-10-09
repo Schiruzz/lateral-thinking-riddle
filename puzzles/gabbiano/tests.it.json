@@ -127,7 +127,7 @@
     "question": "Era cieco già ai tempi del naufragio?",
     "answer": "yes",
     "cards": [
-      "cieco_prima",
+      "cieco",
       "naufragio"
     ],
     "lit": [],
@@ -875,9 +875,7 @@
     "group": "deduction",
     "question": "Essendo cieco, riconosceva i gabbiani solo dal verso?",
     "answer": "yes",
-    "cards": [
-      "cieco_prima"
-    ],
+    "cards": [],
     "lit": [
       "cieco",
       "gabbiani"

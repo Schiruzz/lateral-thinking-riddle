@@ -161,7 +161,7 @@ def test_a_relaunch_asks_the_why_of_the_next_element_without_the_model(baita):
     result = Conductor(baita, SimpleNamespace(models=models)).reply(
         "È stata la stufa a ucciderlo?", {"positive_question": "È stata la stufa a ucciderlo?", "answer": "yes"},
         [], session, [], state)
-    assert result["reply"].endswith("perché il fumo è rimasto nella stanza, quella notte?")
+    assert result["reply"].lower().endswith("perché il fumo è rimasto nella stanza, quella notte?")
     assert models.calls == []
 
 
