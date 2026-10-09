@@ -11,6 +11,8 @@ import unicodedata
 
 RELIEF_STREAK = 5   # questions without progress after which a new fact deserves a "finalmente"
 STUCK_STREAK = 5    # questions in a row without progress after which the player is going nowhere
+SCENE_STALL = 3   # stalls in a row before the sealed scene the player has not entered is named
+GIFT_STALL = 3    # stalls in a row, in the final phase, before the next fact is given away
 
 def question_key(question):
     """Return the words of a question, so that the same question typed or spoken differently matches.
@@ -39,7 +41,9 @@ class Session:
         claimed: Ids of the victory elements the player has explained so far, in any sentence.
         relaunched: Ids of the victory elements whose "why" was already asked.
         summary_asked: Whether the player was already asked to tell the whole story.
-        partly_told: Ids of the victory elements a "no" already said were true.        
+        partly_told: Ids of the victory elements a "no" already said were true.   
+        stalls: Stalls in a row since the player last found a fact by himself.
+        scenes_hinted: Ids of the sealed scenes already named as a hint.     
     """
 
     def __init__(self, riddle):
@@ -58,7 +62,9 @@ class Session:
         self.claimed = set()
         self.relaunched = set()
         self.summary_asked = False
-        self.partly_told = set()        
+        self.partly_told = set()       
+        self.stalls = 0
+        self.scenes_hinted = set() 
 
     def unlock(self, fact_ids):
         """Mark facts as found, together with everything they presuppose.
@@ -87,8 +93,9 @@ class Session:
         Args:
             question: The question as the arbiter rewrote it.
             new_facts: Ids of the facts this question found (from `unlock`).
-            answer: The arbiter's answer: relief comes only with a yes, and after
-                a yes the player is never told he is stuck.
+            answer: The arbiter's answer: relief comes only with a yes, after a yes the
+                player is never told he is stuck, and invalid or unclear sentences do not
+                count for a stall.
             stated: Ids of the victory elements the sentence puts forward (from
                 `Matcher.stated_victory`).
 
@@ -102,12 +109,17 @@ class Session:
             "within_reach" (this question found the last fact the victory needs),
             "victory" (a yes to a sentence with every victory element),
             "relaunch" (the victory element whose "why" to ask now, or None),
-            "summary" (every element explained, never in one sentence: ask for the whole story)
-            and "wrong_part" (a no to a sentence with a victory element not explained yet, or with all of them).
+            "summary" (every element explained, never in one sentence: ask for the whole story),
+            "wrong_part" (a no to a sentence with a victory element not explained yet, or with all of them),
+            "hint" (on a stuck turn: "scene", "reconnect", "gift" or None),
+            "hint_target" (the id of that scene, victory element or fact)
+            and "given" (the facts a gift unlocked).
         """
         key = question_key(question)
         reached = all(set(element["requires"]) <= self.found for element in self.riddle.victory.values())
-        streak = 0 if new_facts else self.empty_streak + 1   # including this question
+        # invalid and unclear sentences are not questions about the story: they leave the streak as it is
+        counted = answer not in ("invalid", "unclear")
+        streak = (0 if new_facts else self.empty_streak + 1) if counted else self.empty_streak
         if answer == "yes":
             # what the player has explained so far, sentence after sentence: it picks the next "why"
             self.claimed |= set(stated)
@@ -118,13 +130,24 @@ class Session:
         # a whole explanation with a wrong part is always told
         new_parts = set(stated) - self.claimed - self.partly_told if answer == "no" else set()
         whole = answer == "no" and set(stated) == set(self.riddle.victory)
+        # said once per STUCK_STREAK questions, so it does not become a sermon at every turn
+        stuck = counted and streak - self.stuck_from >= STUCK_STREAK and answer != "yes"
+        if new_facts:
+            self.stalls = 0   # a fact found by the player ends the stalls in a row
+        hint, target, given = None, None, []
+        if stuck:
+            self.stalls += 1
+            hint, target = self._hint(missing)
+            if hint == "gift":
+                given = self.unlock([target])   # a gift is found like any fact
+            elif hint == "scene":
+                self.scenes_hinted.add(target)
         state = {
             "repeated": key in self.asked,
             "empty_streak": self.empty_streak,
             # a "no" can find a fact too, but "Finalmente!" before a no sounds like a yes
             "relief": bool(new_facts) and self.empty_streak >= RELIEF_STREAK and answer == "yes",
-            # said once per STUCK_STREAK questions, so it does not become a sermon at every turn
-            "stuck": streak - self.stuck_from >= STUCK_STREAK and answer != "yes",
+            "stuck": stuck,
             # only the turn that completes the victory: the invitation is said once
             "within_reach": reached and not self.reached,
             "victory": victory,
@@ -135,17 +158,50 @@ class Session:
             # every element explained, but never all in one sentence: the whole story, asked once
             "summary": answer == "yes" and bool(stated) and not missing and not victory and not self.summary_asked,
             "wrong_part": bool(new_parts) or whole,
+            "hint": hint,
+            "hint_target": target,
+            "given": given,
         }
         self.asked.add(key)
         self.reached = reached
         # only a new fact is progress: a closed false lead does not end a streak
         self.empty_streak = streak
-        self.stuck_from = streak if state["stuck"] else (0 if new_facts else self.stuck_from)
+        self.stuck_from = streak if stuck else (0 if new_facts else self.stuck_from)
         if state["relaunch"]:
             self.relaunched.add(state["relaunch"])
         self.summary_asked = self.summary_asked or state["summary"]
         self.partly_told |= new_parts
         return state
+
+
+    def _hint(self, missing):
+        """Choose the help for a stall: what kind, and about what.
+
+        Before the player explains any victory element, only the sealed scene he has not
+        entered, once, from the `SCENE_STALL`-th stall in a row. In the final phase, the
+        open "why" again, then, from the `GIFT_STALL`-th stall in a row, the next fact the
+        missing element needs: given away only at the end, after the player's reasoning.
+
+        Args:
+            missing: Ids of the victory elements not explained yet, in reasoning order.
+
+        Returns:
+            A pair: "scene", "reconnect", "gift" or None, and the id of its scene, victory
+            element or fact.
+        """
+        if self.claimed and missing:
+            if self.stalls < GIFT_STALL:
+                return "reconnect", missing[0]
+            needed = self.riddle.closure(self.riddle.victory[missing[0]]["requires"]) - self.found
+            gifts = [fact_id for fact_id in self.reachable() if fact_id in needed]
+            return ("gift", gifts[0]) if gifts else ("reconnect", missing[0])
+        if self.stalls >= SCENE_STALL:
+            hidden = [scene_id for scene_id, scene in self.riddle.scenes.items()
+                      if scene["sealed"] and scene_id not in self.open_scenes() and scene_id not in self.scenes_hinted]
+            if hidden:
+                return "scene", hidden[0]
+        return None, None
+    
 
     def exclude(self, exclusion_ids):
         """Close false leads the player has asked about.

@@ -77,11 +77,12 @@ class Play:
             claiming = pool.submit(self.chain["matcher"].stated_victory, verdict, self.history, self.session)
             facts, leads = matching.result()
             stated = claiming.result()
-            
+
         matched = time.perf_counter()
         new = self.session.unlock(facts)
         self.session.exclude(leads)
         state = self.session.record(verdict["positive_question"], new, verdict["answer"], stated)
+        new = new + state["given"]   # a fact given away is found too: the notebook shows it
         said = self.chain["conductor"].reply(question, verdict, self.history, self.session, new, state, self.said)
         end = time.perf_counter()
 
