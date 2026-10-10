@@ -92,15 +92,15 @@ def test_a_playtest_turn_returns_the_sentence_and_the_facts_found(client, monkey
     game_id = client.post("/api/playtest/games").json()["id"]
     reply = client.post(f"/api/playtest/games/{game_id}/ask", json={"text": "C'era una stufa?"}).json()
     riddle = server.CHAINS["baita"]["riddle"]
-    stove = {"star": server.star_order(riddle).index("stufa"), "text": riddle.facts["stufa"]["text"], "given": False}
+    stove = {"text": riddle.facts["stufa"]["text"], "given": False, "sealed": True}   # the stove is in the night
     assert reply == {"reply": "Sì.", "answer": "yes", "found": [stove], "questions": 1, "victory": False}
 
 
-def test_the_sky_has_a_star_per_fact_the_same_in_every_game(client):
-    first, second = (client.post("/api/playtest/games").json() for _ in range(2))
+def test_a_new_game_draws_the_sky_of_what_is_seen_and_nothing_of_the_truth(client):
+    game = client.post("/api/playtest/games").json()
     riddle = server.CHAINS["baita"]["riddle"]
-    assert len(first["stars"]) == len(riddle.facts) and first["stars"] == second["stars"]
-    assert server.star_order(riddle) != list(riddle.facts)   # the sky does not follow the story
+    assert (game["figure"], game["stars"], game["optional"]) == ("house", len(riddle.facts), 2)
+    assert "THANATOS" not in json.dumps(game) and "snowflake" not in json.dumps(game)
 
 
 def test_a_playtest_turn_is_logged_with_the_history_before_it(client, monkeypatch):
@@ -132,6 +132,7 @@ def test_a_victory_brings_the_truth_and_the_next_riddle_and_ends_the_game(client
     monkeypatch.setattr(server.Play, "ask", fake_win)
     game_id = client.post("/api/playtest/games").json()["id"]
     reply = client.post(f"/api/playtest/games/{game_id}/ask", json={"text": "Tutta la storia"}).json()
-    assert reply["truth"] == server.CHAINS["baita"]["riddle"].truth
+    assert reply["sky"] == {"figure": "snowflake", "name": "THANATOS", "epithet": "Il fratello del sonno"}
+    assert server.CHAINS["baita"]["riddle"].facts["comignolo"]["text"] in reply["keys"]
     assert reply["next"] == "gabbiano"
     assert client.post(f"/api/playtest/games/{game_id}/ask", json={"text": "Ancora?"}).status_code == 400
