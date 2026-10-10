@@ -44,7 +44,7 @@ def test_reachable_opens_after_a_fact_is_found(baita):
 
 def test_unknown_requires_is_rejected():
     """A fact that requires a fact that does not exist is an authoring mistake."""
-    data = {"id": "x", "title": "x", "story": "x", "truth": "x",
+    data = {"id": "x", "title": "x", "story": "x", "truth": "x", "sky": {},
             "scenes": [{"id": "s", "name": "s", "sealed": False}],
             "facts": [{"id": "a", "text": "a", "scene": "s", "role": "P", "requires": ["missing"]}],
             "exclusions": [], "victory": []}

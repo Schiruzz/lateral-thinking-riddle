@@ -41,8 +41,11 @@ class Riddle:
         scenes: Scenes by id.
         exclusions: False leads by id.
         victory: Victory elements by id.
+        sky: The constellation of the riddle: "figure" (what the player sees), "truth_figure",
+            "name" and "epithet" (shown once the story is solved).        
         key_facts: Ids of the facts the verifier protects: leaps (S), twists (C)
             and every fact that presupposes one.
+
     """
 
     def __init__(self, data):
@@ -59,6 +62,7 @@ class Riddle:
         self.title = data["title"]
         self.story = data["story"]
         self.truth = data["truth"]
+        self.sky = data["sky"]        
         # dicts keep the order of the file: facts stay in time order
         self.facts = by_id(data["facts"], "fact")
         self.scenes = by_id(data["scenes"], "scene")
@@ -68,6 +72,7 @@ class Riddle:
         # a fact that presupposes a leap or a twist would bring it along: it is protected too
         self.key_facts = {fact_id for fact_id in self.facts
                           if any(self.facts[f]["role"] in ("S", "C") for f in self.closure([fact_id]))}
+        
 
     def check(self):
         """Check that every id the riddle uses exists, so the engine never meets an unknown one.

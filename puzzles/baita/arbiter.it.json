@@ -11,6 +11,7 @@
     "Il monossido di carbonio non ha odore e uccide nel sonno.",
     "Se il comignolo è ostruito, il fumo della stufa resta nella stanza."
   ],
+  "sky": {"figure": "house", "truth_figure": "snowflake", "name": "THANATOS", "epithet": "Il fratello del sonno"},
   "scenes": [
     {"id": "notte", "name": "La notte", "sealed": true, "hint": "cosa è successo durante la notte"},
     {"id": "mattina", "name": "La mattina", "sealed": false}

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Playtest</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600&family=Cormorant+Garamond:ital,wght@0,500;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
   --night: #0D1626; --text: #EEF2F8; --muted: #A9B4C6; --line: rgba(238, 242, 248, 0.16);
@@ -27,22 +27,17 @@ header { height: 64px; display: flex; align-items: center; justify-content: spac
 .counter { font-size: .8rem; color: var(--muted); letter-spacing: .04em; }
 .counter b { color: var(--text); font-size: 1rem; margin-left: 4px; }
 
-/* the orb shows what the game is doing: it also makes the wait for an answer feel shorter */
-.stage { position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; }
-.orb { width: 120px; height: 120px; border-radius: 50%; box-shadow: 0 0 70px var(--glow);
-  background: radial-gradient(circle at 36% 30%, #FFFFFF 0%, var(--accent) 38%, var(--deep) 100%); }
-.orb.idle { animation: breathe 5s ease-in-out infinite; }
-.orb.listening { animation: breathe 1.2s ease-in-out infinite; box-shadow: 0 0 110px var(--accent); }
-.orb.thinking { animation: think 1.4s linear infinite; }
-.orb.speaking { animation: speak 1.1s ease-in-out infinite; }
-@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-@keyframes think { 0% { transform: scale(.92) rotate(0deg); } 50% { transform: scale(.97) rotate(180deg); } 100% { transform: scale(.92) rotate(360deg); } }
-@keyframes speak { 0%, 100% { transform: scale(1); } 30% { transform: scale(1.09); } 60% { transform: scale(.98); } }
-@media (prefers-reduced-motion: reduce) { .orb { animation: none !important; } }
+/* the stage: the sky, with the Night (an eclipse) at the top; the story card opens over it */
+.stage { position: relative; margin: 0 -16px; }
+.sky { display: block; width: 100%; aspect-ratio: 390 / 460; cursor: pointer; }
 
 .card { position: absolute; inset: 16px 0 auto; padding: 24px; border-radius: 20px; background: var(--panel);
-  border: 1px solid var(--line); display: flex; flex-direction: column; gap: 16px; }
+  border: 1px solid var(--line); display: flex; flex-direction: column; gap: 16px; z-index: 1; }
 .card p.story { font-size: 1.05rem; line-height: 1.6; font-weight: 300; }
+
+/* the fact of a star: shown when it lights up or is touched, then it fades */
+.fact { min-height: 44px; font-size: .9rem; line-height: 1.5; color: #FFF1D6; text-align: center; opacity: 0; }
+.fact.given { color: var(--accent); }
 
 .dialogue { min-height: 120px; display: flex; flex-direction: column; gap: 8px; }
 .you { font-size: .85rem; line-height: 1.45; color: var(--muted); }
@@ -59,7 +54,6 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
   background: var(--glass); color: var(--text); font: inherit; font-size: 1rem; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .sheet { width: 100%; padding: 16px 20px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
-.sheet ol { margin: 8px 0 0; padding-left: 20px; line-height: 1.6; }
 .sheet p { line-height: 1.6; }
 </style>
 </head>
@@ -71,13 +65,14 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
   </header>
 
   <section class="stage">
-    <div class="orb idle" id="orb"></div>
+    <canvas class="sky" id="sky" aria-label="Il cielo: una stella per ogni fatto scoperto"></canvas>
     <div class="card" id="story-card">
       <p class="label" id="card-label">Un nuovo mistero</p>
       <p class="story" id="story" hidden></p>
       <button class="primary" id="start" disabled>Inizia</button>
     </div>
   </section>
+  <p class="fact" id="fact" aria-live="polite"></p>
 
   <section class="dialogue" aria-live="polite">
     <p class="you" id="you"></p>
@@ -99,14 +94,8 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
       <button class="pill" id="send" disabled>Chiedi</button>
     </form>
     <div class="row">
-      <button class="pill" id="replay" disabled>Riascolta la storia</button>      
-      <button class="pill" id="notebook-button" aria-expanded="false" aria-controls="notebook">Taccuino</button>
+      <button class="pill" id="replay" disabled>Riascolta la storia</button>
       <button class="pill" id="reveal">Mostra la soluzione</button>
-    </div>
-    <div class="sheet" id="notebook" hidden>
-      <p class="label">Cosa hai scoperto</p>
-      <p class="help" id="notebook-empty">Ancora niente.</p>
-      <ol id="facts"></ol>
     </div>
     <div class="sheet" id="solution" hidden>
       <p class="label">Com'è andata davvero</p>
@@ -115,20 +104,43 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
     <a class="primary" id="next" href="/playtest" hidden>Prossimo indovinello</a>
   </section>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="/static/figures.js"></script>
+<script src="/static/sky.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const RIDDLE = new URLSearchParams(location.search).get("riddle") || "baita";
-let game = null;       // what the server returned when the game started: id, title, story, opening
+let game = null;       // what the server returned when the game started: id, title, story, opening and the sky
 let started = false;   // the player pressed "Inizia"
 let busy = true;       // nothing can be asked before the game starts
+let intro = false;     // the opening and the story are being told: any touch or key stops them
 
-function setOrb(state) { $("orb").className = `orb ${state}`; }
+const sky = new Sky($("sky"));
+
+// the Night follows the game: idle, listening, thinking, speaking
+function setVoice(state) { sky.setVoice(state); }
 
 function setBusy(value) {
   busy = value;
   $("mic").disabled = value;
   $("send").disabled = value;
 }
+
+// ---------- the facts: written under the sky when a star lights up or is touched, then they fade ----------
+function showFact(text, given) {
+  const caption = $("fact");
+  caption.textContent = text;
+  caption.classList.toggle("given", given);
+  gsap.killTweensOf(caption);
+  gsap.timeline()
+      .fromTo(caption, {opacity: 0, y: 6}, {opacity: 1, y: 0, duration: 0.5, ease: "power2.out"})
+      .to(caption, {opacity: 0, duration: 0.8, ease: "power1.in"}, "+=5");
+}
+
+$("sky").addEventListener("click", (event) => {
+  const star = sky.starAt(event.offsetX, event.offsetY);
+  if (star) showFact(star.text, star.given);
+});
 
 // ---------- start: the server creates the game, the page knows nothing of the riddle ----------
 fetch(`/api/playtest/games?riddle=${encodeURIComponent(RIDDLE)}`, {method: "POST"})
@@ -139,6 +151,7 @@ fetch(`/api/playtest/games?riddle=${encodeURIComponent(RIDDLE)}`, {method: "POST
     $("title").textContent = data.title;
     $("story").textContent = data.story;
     $("start").disabled = false;
+    sky.load(data);
   })
   .catch(() => { $("error").textContent = "Indovinello non trovato."; });
 
@@ -152,10 +165,21 @@ $("start").addEventListener("click", () => {
   $("story").hidden = false;   // from now on the title opens the card with the story
   $("replay").disabled = false;
   setBusy(false);
-  // the opening, then the story, written while it is told
-  $("reply").textContent = game.opening;
-  speak(game.opening, () => tellStory());
+  // the story is written at once and told in one breath with the opening: no pause between them
+  $("you").textContent = game.opening;
+  $("reply").textContent = game.story;
+  intro = true;
+  speak(`${game.opening} ${game.story}`, () => { intro = false; });
 });
+
+// a touch or a key during the opening stops the voice: the story stays written, the game is ready
+function skipIntro() {
+  if (!intro) return;
+  intro = false;
+  hush();
+  setVoice("idle");
+}
+document.addEventListener("pointerdown", skipIntro);
 
 function tellStory() {
   $("you").textContent = "";
@@ -172,7 +196,7 @@ async function ask(text, mode) {
   text = text.trim();
   if (!text || busy) return;
   setBusy(true);
-  setOrb("thinking");
+  setVoice("thinking");
   $("error").textContent = "";
   $("you").textContent = `Tu: ${text}`;
   $("reply").textContent = "";
@@ -186,53 +210,60 @@ async function ask(text, mode) {
     const data = await response.json();
     $("reply").textContent = data.reply;
     $("count").textContent = data.questions;
-    data.found.forEach(addFact);
+    // more facts in one question light up one after the other
+    data.found.forEach((fact, order) => sky.light(fact, order * 0.6));
+    const last = data.found[data.found.length - 1];
+    if (last) showFact(last.text, last.given);
     if (data.victory) showFinale(data);
     else speak(data.reply);
   } catch (e) {
-    setOrb("idle");
+    setVoice("idle");
     $("error").textContent = "Qualcosa non ha funzionato, riprova.";
   } finally {
     setBusy(false);
   }
 }
 
-// the finale: the friend's comment, then the truth and the next riddle
-// (the constellation will change shape between the two, with the presentation)
+// the finale: the friend's comment while the constellation becomes the truth and takes its name;
+// the truth is told once both are over, then the next riddle
 function showFinale(data) {
   for (const id of ["reveal", "form", "mic", "help", "replay"]) $(id).hidden = true;
-  speak(data.reply, () => {
+  let waiting = 2;
+  const tellTruth = () => {
+    if (--waiting) return;
     $("solution-text").textContent = data.truth;
     $("solution").hidden = false;
     $("next").href = `/playtest?riddle=${encodeURIComponent(data.next)}`;
     $("next").hidden = false;
     speak(data.truth);
-  });
+  };
+  speak(data.reply, tellTruth);
+  sky.finale({...data.sky, keys: data.keys, remaining: data.remaining}, tellTruth);
 }
 
-// the notebook: the facts found, in the order they were found
-function addFact(text) {
-  const item = document.createElement("li");
-  item.textContent = text;
-  $("facts").append(item);
-  $("notebook-empty").hidden = true;
-}
+// ---------- voice out: the browser reads the sentence, the Night follows it ----------
+let voice = null;   // the sentence being said: a sentence stopped halfway must not run what follows it
 
-$("notebook-button").addEventListener("click", () => {
-  const open = $("notebook").hidden;
-  $("notebook").hidden = !open;
-  $("notebook-button").setAttribute("aria-expanded", String(open));
-});
-
-// ---------- voice out: the browser reads the sentence, the orb follows it ----------
 function speak(text, then) {
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
+  voice = utterance;
   utterance.lang = "it-IT";
-  utterance.onstart = () => setOrb("speaking");
+  utterance.onstart = () => setVoice("speaking");
   // then: what comes after this sentence, e.g. the truth after the victory comment
-  utterance.onend = () => { setOrb("idle"); if (then) then(); };
+  utterance.onend = () => {
+    if (voice !== utterance) return;   // stopped or replaced: the browser still calls onend
+    voice = null;
+    setVoice("idle");
+    if (then) then();
+  };
   speechSynthesis.speak(utterance);
+}
+
+// stop the voice without running what follows the sentence
+function hush() {
+  voice = null;
+  speechSynthesis.cancel();
 }
 
 // ---------- voice in: press, speak, stop ----------
@@ -267,7 +298,7 @@ if (Recognition) {
   };
   recognizer.onend = () => {
     $("mic").classList.remove("listening");
-    if (!heard) setOrb("idle");   // nothing heard: back to rest, otherwise ask() moves the orb on
+    if (!heard) setVoice("idle");   // nothing heard: back to rest, otherwise ask() moves the Night on
     finish();   // some browsers (iPhone) end without a final result
   };
 } else {
@@ -279,16 +310,18 @@ if (Recognition) {
 function listen() {
   if (!recognizer || busy) return;
   if ($("mic").classList.contains("listening")) { finish(); return; }   // second press: send now
-  speechSynthesis.cancel();   // stop reading, so the microphone does not hear the page
+  skipIntro();
+  hush();   // stop reading, so the microphone does not hear the page
   $("you").textContent = "";
   $("mic").classList.add("listening");
-  setOrb("listening");
+  setVoice("listening");
   recognizer.start();
 }
 
 // ---------- controls ----------
 $("mic").addEventListener("click", listen);
 document.addEventListener("keydown", (event) => {
+  skipIntro();
   // the space bar works like the microphone button, except while typing or on a button
   if (event.code === "Space" && !["INPUT", "BUTTON"].includes(document.activeElement.tagName)) {
     event.preventDefault();

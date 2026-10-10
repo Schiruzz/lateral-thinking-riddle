@@ -30,6 +30,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from riddle.game import Game
@@ -54,6 +55,7 @@ LOG_FILE = Path("logs/games.jsonl")  # one line per question, kept out of git
 GAMES = {}   # game id -> Game, kept in memory: the server runs as a single instance
 
 app = FastAPI(title="Lateral Thinking Riddle")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")   # the scripts of the pages
 
 MAX_QUESTION_LENGTH = 200  # longer texts are rejected before calling the judge
 
@@ -232,15 +234,19 @@ def playtest_new_game(riddle: str = "baita"):
         riddle: The riddle's name, from the page address (`/playtest?riddle=gabbiano`).
 
     Returns:
-        A dict with "id", to send back with every question, "title", "story" and
-        "opening", the sentence said before the story.
+        A dict with "id", to send back with every question, "title", "story",
+        "opening", the sentence said before the story, and what the page needs to draw the
+        sky without knowing any fact: "seed", "figure" (the constellation of what the player
+        sees), "stars" (one per fact) and "optional" (how many of them are optional).
     """
     if riddle not in CHAINS:
         raise HTTPException(status_code=404, detail="riddle not found")
     game_id = uuid.uuid4().hex   # random and unguessable, as in the game
     PLAYTEST_GAMES[game_id] = Play(CHAINS[riddle])
     story = CHAINS[riddle]["riddle"]
-    return {"id": game_id, "title": story.title, "story": story.story, "opening": OPENING}
+    optional = sum(bool(fact.get("optional")) for fact in story.facts.values())
+    return {"id": game_id, "title": story.title, "story": story.story, "opening": OPENING,
+            "seed": story.id, "figure": story.sky["figure"], "stars": len(story.facts), "optional": optional}
 
 
 @app.get("/api/playtest/games/{game_id}/solution")
@@ -260,10 +266,12 @@ def playtest_ask(game_id: str, question: PlaytestQuestion):
         game_id: The id from `playtest_new_game`.
         question: The player's words and how they were given.
 
-    Returns:
-        A dict with "reply" (the sentence to say), "answer", "found" (the texts of the
-        facts this question found, for the notebook), "questions" (asked so far) and
-        "victory"; after a victory also "truth" and "next" (the riddle to play next).
+        A dict with "reply" (the sentence to say), "answer", "found" (the facts this
+        question found, in time order, each with its "text", whether it was "given" by a
+        hint and whether it opens a "sealed" scene), "questions" (asked so far) and
+        "victory"; after a victory also "truth", "next" (the riddle to play next), "sky"
+        (the constellation of the truth: figure, name, epithet), "keys" (the texts of the
+        key facts, shown bigger) and "remaining" (the texts of the facts not found).
     """
     play = PLAYTEST_GAMES.get(game_id)
     if play is None:
@@ -287,11 +295,17 @@ def playtest_ask(game_id: str, question: PlaytestQuestion):
         log.write(entry + "\n")
 
     riddle = play.chain["riddle"]
-    response = {"reply": turn["reply"], "answer": turn["answer"],
-                "found": [riddle.facts[fact_id]["text"] for fact_id in turn["new"]],
+    found = [{"text": riddle.facts[fact_id]["text"], "given": fact_id in turn["given"],
+              "sealed": riddle.scenes[riddle.facts[fact_id]["scene"]]["sealed"]} for fact_id in turn["new"]]
+    response = {"reply": turn["reply"], "answer": turn["answer"], "found": found,
                 "questions": len(play.history), "victory": turn["victory"]}
     if turn["victory"]:
         # the truth comes with the victory: the page tells it once the constellation has changed shape
         position = PLAYTEST_RIDDLES.index(riddle.id)
-        response |= {"truth": riddle.truth, "next": PLAYTEST_RIDDLES[(position + 1) % len(PLAYTEST_RIDDLES)]}
+        response |= {"truth": riddle.truth, "next": PLAYTEST_RIDDLES[(position + 1) % len(PLAYTEST_RIDDLES)],
+                     # nothing is left to protect: the page learns the truth's constellation and every fact
+                     "sky": {"figure": riddle.sky["truth_figure"], "name": riddle.sky["name"], "epithet": riddle.sky["epithet"]},
+                     "keys": [riddle.facts[fact_id]["text"] for fact_id in riddle.key_facts],
+                     "remaining": [fact["text"] for fact_id, fact in riddle.facts.items()
+                                   if fact_id not in play.session.found and not fact.get("optional")]}
     return response
