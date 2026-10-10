@@ -30,6 +30,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from riddle.game import Game
@@ -54,6 +55,7 @@ LOG_FILE = Path("logs/games.jsonl")  # one line per question, kept out of git
 GAMES = {}   # game id -> Game, kept in memory: the server runs as a single instance
 
 app = FastAPI(title="Lateral Thinking Riddle")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")   # the scripts of the pages
 
 MAX_QUESTION_LENGTH = 200  # longer texts are rejected before calling the judge
 
