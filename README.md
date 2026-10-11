@@ -3,6 +3,8 @@
 **A voice mystery game where a chain of LLMs plays the narrator, and code keeps it honest.**
 
 [![tests](https://github.com/Schiruzz/lateral-thinking-riddle/actions/workflows/tests.yml/badge.svg)](https://github.com/Schiruzz/lateral-thinking-riddle/actions/workflows/tests.yml)
+
+
 **[Play it](https://lateral-thinking-riddle-272762813139.europe-west8.run.app/playtest)** (Italian; English next) ·
 **[Read the full case study](docs/case-study.md)**
 
