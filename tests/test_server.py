@@ -78,6 +78,15 @@ def test_a_playtest_game_starts_on_the_riddle_in_the_address(client):
     assert game["title"] == server.CHAINS["gabbiano"]["riddle"].title
     assert game["opening"] == server.OPENING
 
+def test_the_riddles_to_choose_are_the_levels_in_order_with_their_titles(client):
+    riddles = client.get("/api/playtest/riddles").json()
+    assert [riddle["id"] for riddle in riddles] == server.PLAYTEST_RIDDLES
+    assert riddles[0] == {"id": "baita", "title": server.CHAINS["baita"]["riddle"].title}
+
+
+def test_the_home_page_leads_to_the_playtest(client):
+    response = client.get("/", follow_redirects=False)
+    assert response.headers["location"] == "/playtest"
 
 def test_an_unknown_riddle_is_not_found(client):
     assert client.post("/api/playtest/games?riddle=nessuno").status_code == 404

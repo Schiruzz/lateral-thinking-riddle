@@ -29,7 +29,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -38,13 +38,14 @@ from riddle.judge import UNCLEAR, Judge, make_client
 from riddle.puzzle import load_arbiter, load_puzzle
 from riddle.conductor import OPENING
 from riddle.play import Play, load_chain
+from riddle.schema import load_index
 
 # loaded once when the server starts, shared by every game
 PUZZLE = load_puzzle("gabbiano", "it")
 JUDGE = Judge(PUZZLE, make_client(), max_attempts=2)   # a player cannot wait: give up after one retry; needs GCP_SA_KEY
 
 # playtest: the whole chain on the riddles in the card schema; one chain per riddle, shared by every game on it
-PLAYTEST_RIDDLES = ("baita", "gabbiano")
+PLAYTEST_RIDDLES = load_index()   # the levels, in order: a list of content in puzzles/index.json
 MAX_HISTORY = 100   # a longer game is not a real playtest
 # a player cannot wait: give up after one retry
 CHAINS = {name: load_chain(name, "it", make_client(), max_attempts=2) for name in PLAYTEST_RIDDLES}
@@ -119,8 +120,14 @@ def board_view(game):
     }
 
 @app.get("/")
+def home():
+    """Send the player to the playtest, where the riddles are chosen."""
+    return RedirectResponse("/playtest")
+
+
+@app.get("/classic")
 def page():
-    """Serve the game page, static/index.html."""
+    """Serve the old card game, static/index.html, until its code is removed."""
     return FileResponse(STATIC_DIR / "index.html")
 
 
@@ -225,6 +232,14 @@ def playtest_page():
     """Serve the playtest page, static/playtest.html."""
     return FileResponse(STATIC_DIR / "playtest.html")
 
+@app.get("/api/playtest/riddles")
+def playtest_riddles():
+    """List the riddles the player can choose, in the order of the levels.
+
+    Returns:
+        A list of dicts with "id" and "title": nothing of the stories, told only once a game starts.
+    """
+    return [{"id": name, "title": CHAINS[name]["riddle"].title} for name in PLAYTEST_RIDDLES]
 
 @app.post("/api/playtest/games")
 def playtest_new_game(riddle: str = "baita"):

@@ -158,10 +158,12 @@ def load_riddle(name, language):
 
 
 
-def by_id(items, kind):
-    """Index items by id, refusing duplicates (a dict would silently keep the last)."""
-    ids = [item["id"] for item in items]
-    duplicates = sorted({i for i in ids if ids.count(i) > 1})
-    if duplicates:
-        raise ValueError(f"duplicate {kind} ids: {duplicates}")
-    return {item["id"]: item for item in items}
+def load_index():
+    """Return the ids of the riddles that can be played, in the order of the levels.
+
+    The list lives in `puzzles/index.json`: adding a level changes content, not code.
+
+    Returns:
+        A list of riddle ids, e.g. ["baita", "gabbiano"].
+    """
+    return json.loads((PUZZLES_DIR / "index.json").read_text(encoding="utf-8"))
