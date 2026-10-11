@@ -37,7 +37,7 @@ class Riddle:
         title: The name shown to the player.
         story: The visible situation, read to the player and never rewritten.
         truth: The whole truth as a story, shown at the end.
-        facts: Facts by id, in time order (the order of the file).
+        facts: Facts by id, in order of play (the order of the file).
         scenes: Scenes by id.
         exclusions: False leads by id.
         victory: Victory elements by id.
@@ -63,7 +63,7 @@ class Riddle:
         self.story = data["story"]
         self.truth = data["truth"]
         self.sky = data["sky"]        
-        # dicts keep the order of the file: facts stay in time order
+        # dicts keep the order of the file: facts stay in order of play
         self.facts = by_id(data["facts"], "fact")
         self.scenes = by_id(data["scenes"], "scene")
         self.exclusions = by_id(data["exclusions"], "exclusion")
@@ -117,7 +117,7 @@ class Riddle:
             found: Ids of the facts already found.
 
         Returns:
-            Fact ids in time order.
+            Fact ids in order of play.
         """
         return [fact_id for fact_id, fact in self.facts.items()
                 if fact_id not in found and set(fact["requires"]) <= set(found)]

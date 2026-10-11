@@ -266,7 +266,7 @@ STORY: {puzzle.story}
 TRUTH (secret, the whole hidden story):
 {puzzle.solution}
 
-SOLUTION FACTS (secret, in time order):
+SOLUTION FACTS (secret, the steps a player discovers, in order):
 {facts}
 
 PUZZLE NOTES:

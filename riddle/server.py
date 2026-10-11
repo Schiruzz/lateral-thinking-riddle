@@ -282,7 +282,7 @@ def playtest_ask(game_id: str, question: PlaytestQuestion):
         question: The player's words and how they were given.
 
         A dict with "reply" (the sentence to say), "answer", "found" (the facts this
-        question found, in time order, each with its "text", whether it was "given" by a
+        question found, in order of play, each with its "text", whether it was "given" by a
         hint and whether it opens a "sealed" scene), "questions" (asked so far) and
         "victory"; after a victory also "truth", "next" (the riddle to play next), "sky"
         (the constellation of the truth: figure, name, epithet), "keys" (the texts of the
