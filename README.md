@@ -3,7 +3,8 @@
 **A voice mystery game where a chain of LLMs plays the narrator, and code keeps it honest.**
 
 [![tests](https://github.com/Schiruzz/lateral-thinking-riddle/actions/workflows/tests.yml/badge.svg)](https://github.com/Schiruzz/lateral-thinking-riddle/actions/workflows/tests.yml)
-**[Play it](https://lateral-thinking-riddle-272762813139.europe-west8.run.app/playtest)** (Italian; English next)
+**[Play it](https://lateral-thinking-riddle-272762813139.europe-west8.run.app/playtest)** (Italian; English next) ·
+**[Read the full case study](docs/case-study.md)**
 
 You hear a strange situation and ask yes/no questions out loud. The narrator answers, teases you,
 and offers a hint only when you are truly stuck. Every fact you uncover lights a star; solve the
@@ -11,7 +12,7 @@ story and the constellation becomes the shape of the truth and takes its name.
 
 | First prototype: one judge, a clue board | Now: a chain of models, the sky as the board |
 |---|---|
-| <img src="docs/images/before.png" width="480"> | <img src="docs/images/after-play.png" width="200"> <img src="docs/images/after-finale.png" width="200"> |
+| <img src="docs/images/before.png" width="420"> | <img src="docs/images/after.png" width="420"> |
 
 ## Quick start
 
@@ -62,7 +63,7 @@ the victory elements. Adding a riddle means writing a card, not touching prompts
 The cabin is the generality measure: its card was written after the prompts and judged with them frozen.
 The seagull card was corrected on its own test questions, so its numbers are development numbers.
 The first prototype, a single judge with a clue board, reached 99% answers and 90% cards on its own test set;
-the full story of how it became this chain is coming in a case study.
+the full story of how it became this chain is in the **[case study](docs/case-study.md)**.
 
 ## Repository
 
