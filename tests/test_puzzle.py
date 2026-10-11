@@ -21,6 +21,8 @@ def test_puzzle_passes_checks(path):
 def test_test_cases_use_valid_ids(path):
     """Every test case uses a known answer and the ids of the riddle's facts and false leads."""
     language = path.name.split(".")[1]   # "arbiter.it.json" -> "it"
+    if not (path.parent / f"tests.{language}.json").exists():
+        pytest.skip("no labelled questions yet: they come with the first measure of the riddle")
     riddle = load_riddle(path.parent.name, language)
     ids = set(riddle.facts) | set(riddle.exclusions)
     for case in load_tests(path.parent.name, language):
