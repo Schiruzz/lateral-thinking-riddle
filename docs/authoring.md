@@ -129,6 +129,8 @@ wife), or a single leap (il barista: short, few facts, fine as a quick riddle).
 
 1. `figure` shows the visible scene, `truth_figure` the truth; both are names in
    `static/figures.js`, reused when they fit. The atlas drawing is optional.
+   The truth figure has no more main stars than the facts that are not optional: at the end
+   every one of them is lit, and the figure must be complete (treno: 9 facts, 9 stars).
 2. `name` is mythological or Latin; `epithet` alludes to the guilt or the lesson.
    Good: THANATOS, "Il fratello del sonno" (baita); CHRONOS, "L'ora perduta" (treno).
 
