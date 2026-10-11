@@ -84,8 +84,11 @@ wife), or a single leap (il barista: short, few facts, fine as a quick riddle).
    notte"); "Sull'isola ha mangiato la carne di suo figlio" (gabbiano).
 7. Every notable element of the visible text is named by a fact or by the truth.
    Bad: baita, "impronte" missing everywhere: the arbiter stopped linking the question.
-8. `requires` means "presupposes". It also shapes the game: the final key requires the steps
-   before it, so it becomes reachable, and can be given as a hint, only at the end.
+8. `requires` means "presupposes" and nothing else: finding a fact lights everything it
+   requires. Never use it to delay a fact until the end, or finding that fact gives away the
+   whole chain. Bad: treno, first version, "C'era il cambio dell'ora." requiring "La moglie si è
+   dimenticata di fare una cosa.": asking about the time change won the game in one question.
+   The order of play is the order of the list.
 9. Few facts are fine (about 10): never pad. A false lead that almost every player explores
    can become a negative fact. Good: "Nessuno l'ha ucciso." (baita).
 

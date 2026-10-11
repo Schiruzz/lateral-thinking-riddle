@@ -276,19 +276,20 @@ def play_game(chain, game):
     return [play.ask(case["question"]) for case in game]
 
 
-def evaluate_conductor(chain, tests):
+def evaluate_conductor(chain, tests, workers=EVAL_WORKERS):
     """Replay every game of a test set, games in parallel and turns in order.
 
     Args:
         chain: The components from `load_chain`.
         tests: Test cases from `load_tests`.
+        workers: Games played at once: fewer when the rate limit (429) stops the replay.
 
     Returns:
         One list of rows per game, in the order of the test set (see `play_game`).
     """
     games = split_games(tests)
     results = [None] * len(games)
-    with ThreadPoolExecutor(max_workers=EVAL_WORKERS) as pool:
+    with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {pool.submit(play_game, chain, game): number for number, game in enumerate(games)}
         # games finish in any order: show progress as they do, keep them in their place
         for done, future in enumerate(as_completed(futures), 1):
@@ -354,12 +355,14 @@ def main():
     parser.add_argument("--no-verifier", action="store_true", help="with --facts, the matcher without the verifier")
     parser.add_argument("--conductor", action="store_true",
                         help="replay the test games through arbiter, matcher, engine and conductor")
+    parser.add_argument("--workers", type=int, default=EVAL_WORKERS,
+                        help="with --conductor, games played at once (fewer if the rate limit stops the replay)")
     args = parser.parse_args()
 
     # the whole turn, as the player hears it
     if args.conductor:
         chain = load_chain(args.puzzle, args.language, make_client(), args.model)
-        report_conductor(evaluate_conductor(chain, load_tests(args.puzzle, args.language, args.tests)))
+        report_conductor(evaluate_conductor(chain, load_tests(args.puzzle, args.language, args.tests), args.workers))
         return
 
     # the matcher alone: what each question adds to the game
