@@ -216,7 +216,7 @@ def load_tests(name, language, kind=None):
 def load_arbiter(name, language):
     """Load what the arbiter reads from a puzzle written in the card schema.
 
-    The schema has one list of facts, in time order: they are the solution the
+    The schema has one list of facts, in order of play: they are the solution the
     arbiter judges against. The victory claims follow them, so the arbiter knows
     the conclusion without a duplicate fact. The exclusions become the arbiter's
     "NOT TRUE" line.

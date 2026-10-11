@@ -75,7 +75,7 @@ class Session:
             fact_ids: Ids of the facts the player has just stated.
 
         Returns:
-            The ids of the newly found facts, in time order.
+            The ids of the newly found facts, in order of play.
         """
         new = self.riddle.closure(fact_ids) - self.found
         self.found |= new

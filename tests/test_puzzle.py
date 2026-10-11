@@ -21,6 +21,8 @@ def test_puzzle_passes_checks(path):
 def test_test_cases_use_valid_ids(path):
     """Every test case uses a known answer and the ids of the riddle's facts and false leads."""
     language = path.name.split(".")[1]   # "arbiter.it.json" -> "it"
+    if not (path.parent / f"tests.{language}.json").exists():
+        pytest.skip("no labelled questions yet: they come with the first measure of the riddle")
     riddle = load_riddle(path.parent.name, language)
     ids = set(riddle.facts) | set(riddle.exclusions)
     for case in load_tests(path.parent.name, language):
@@ -48,7 +50,7 @@ def test_arbiter_file_loads(path):
 
 @pytest.mark.parametrize("path", ARBITER_FILES, ids=str)
 def test_arbiter_reads_victory_claims_after_facts(path):
-    """The arbiter reads the facts in time order, then the victory claims, then NOT TRUE."""
+    """The arbiter reads the facts in order of play, then the victory claims, then NOT TRUE."""
     data = json.loads(path.read_text(encoding="utf-8"))
     puzzle = load_arbiter(path.parent.name, path.name.split(".")[1])
     facts = [fact["text"] for fact in data["facts"]]

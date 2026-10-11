@@ -55,6 +55,8 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
 .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .sheet { width: 100%; padding: 16px 20px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
 .sheet p { line-height: 1.6; }
+.levels { display: flex; flex-direction: column; gap: 8px; }
+.levels a { display: flex; align-items: center; text-decoration: none; color: var(--text); }
 </style>
 </head>
 <body>
@@ -69,6 +71,7 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
     <div class="card" id="story-card">
       <p class="label" id="card-label">Un nuovo mistero</p>
       <p class="story" id="story" hidden></p>
+      <nav class="levels" id="levels" aria-label="I misteri" hidden></nav>
       <button class="primary" id="start" disabled>Inizia</button>
     </div>
   </section>
@@ -80,7 +83,7 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
     <p class="error" id="error"></p>
   </section>
 
-  <section class="controls">
+  <section class="controls" id="controls">
     <button class="mic" id="mic" aria-label="Fai una domanda" disabled>
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -109,7 +112,7 @@ input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 22p
 <script src="/static/sky.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const RIDDLE = new URLSearchParams(location.search).get("riddle") || "baita";
+const RIDDLE = new URLSearchParams(location.search).get("riddle");   // none: the player chooses one
 let game = null;       // what the server returned when the game started: id, title, story, opening and the sky
 let started = false;   // the player pressed "Inizia"
 let busy = true;       // nothing can be asked before the game starts
@@ -142,18 +145,46 @@ $("sky").addEventListener("click", (event) => {
   if (star) showFact(star.text, star.given);
 });
 
-// ---------- start: the server creates the game, the page knows nothing of the riddle ----------
-fetch(`/api/playtest/games?riddle=${encodeURIComponent(RIDDLE)}`, {method: "POST"})
-  .then(response => { if (!response.ok) throw new Error(response.status); return response.json(); })
-  .then(data => {
-    game = data;
-    document.title = data.title;
-    $("title").textContent = data.title;
-    $("story").textContent = data.story;
-    $("start").disabled = false;
-    sky.load(data);
-  })
-  .catch(() => { $("error").textContent = "Indovinello non trovato."; });
+// ---------- start: a riddle in the address starts its game, otherwise the player chooses one ----------
+if (RIDDLE) startGame();
+else showLevels();
+
+// the server creates the game, the page knows nothing of the riddle
+function startGame() {
+  fetch(`/api/playtest/games?riddle=${encodeURIComponent(RIDDLE)}`, {method: "POST"})
+    .then(response => { if (!response.ok) throw new Error(response.status); return response.json(); })
+    .then(data => {
+      game = data;
+      document.title = data.title;
+      $("title").textContent = data.title;
+      $("story").textContent = data.story;
+      $("start").disabled = false;
+      sky.load(data);
+    })
+    .catch(() => { $("error").textContent = "Indovinello non trovato."; });
+}
+
+// the levels: only their titles, each a link to its game
+function showLevels() {
+  $("title").textContent = "Misteri";
+  $("title").disabled = true;    // there is no story to bring back
+  $("card-label").textContent = "Scegli un mistero";
+  $("start").hidden = true;
+  $("controls").hidden = true;   // nothing to ask before a riddle is chosen
+  fetch("/api/playtest/riddles")
+    .then(response => { if (!response.ok) throw new Error(response.status); return response.json(); })
+    .then(riddles => {
+      for (const riddle of riddles) {
+        const link = document.createElement("a");
+        link.className = "pill";
+        link.href = `/playtest?riddle=${encodeURIComponent(riddle.id)}`;
+        link.textContent = riddle.title;
+        $("levels").append(link);
+      }
+      $("levels").hidden = false;
+    })
+    .catch(() => { $("error").textContent = "Qualcosa non ha funzionato, riprova."; });
+}
 
 // a browser speaks only after the player has touched the page: the game starts with a button
 $("start").addEventListener("click", () => {

@@ -1,0 +1,45 @@
+{
+  "id": "treno",
+  "language": "it",
+  "title": "Il treno",
+  "tone": "amaro",
+  "story": "Una domenica di maggio del 1966 un uomo, puntuale da trent'anni, arriva in stazione e scopre che il suo treno è già partito. Da quel giorno non si fida più di sua moglie. Perché?",
+  "truth": "Il treno lo portava da sua madre, che stava morendo. Quella notte, tra sabato 21 e domenica 22 maggio 1966, in Italia c'era il cambio dell'ora: tornava l'ora legale dopo quasi vent'anni e le lancette andavano spostate avanti di un'ora. In casa toccava alla moglie, che la sera prima se ne dimenticò. La mattina la sveglia suonò, ma un'ora indietro, e l'uomo, sempre puntuale, uscì convinto di essere in orario. Il treno partì all'ora giusta: era lui ad arrivare con un'ora di ritardo. Quando arrivò dalla madre con il treno successivo, era già morta. La moglie non lo tradiva e non l'aveva fatto apposta, ma da quel giorno lui non si fida più di lei.",
+  "obvious_answer": "La moglie lo tradisce.",
+  "assumption": "L'ora di casa era quella giusta.",
+  "knowledge": [
+    "Quando arriva l'ora legale, di notte le lancette si spostano avanti di un'ora.",
+    "Un orologio non spostato resta un'ora indietro."
+  ],
+  "sky": {"figure": "train", "truth_figure": "pocket_watch", "name": "CHRONOS", "epithet": "L'ora perduta"},
+  "scenes": [
+    {"id": "casa", "name": "In casa", "sealed": true, "hint": "cosa è successo in casa prima che uscisse"},
+    {"id": "stazione", "name": "La stazione", "sealed": false}
+  ],
+  "facts": [
+    {"id": "errore_moglie", "text": "La moglie ha fatto un errore.", "scene": "stazione", "role": "P", "requires": []},
+    {"id": "no_tradimento", "text": "La moglie non lo tradiva.", "scene": "stazione", "role": "P", "requires": [], "negative": true},
+    {"id": "madre", "text": "Il treno lo portava da sua madre.", "scene": "stazione", "role": "P", "requires": []},
+    {"id": "madre_malata", "text": "La madre stava morendo.", "scene": "stazione", "role": "P", "requires": ["madre"]},
+    {"id": "in_ritardo", "text": "È arrivato in stazione in ritardo.", "scene": "stazione", "role": "P", "requires": []},
+    {"id": "dimenticato", "text": "La moglie si è dimenticata di fare una cosa.", "scene": "casa", "role": "P", "requires": ["errore_moglie"]},
+    {"id": "sera_prima", "text": "Se n'è dimenticata la sera prima.", "scene": "casa", "role": "P", "requires": ["dimenticato"]},
+    {"id": "orologi", "text": "Gli orologi erano indietro.", "scene": "casa", "role": "S", "requires": ["in_ritardo"]},
+    {"id": "un_ora", "text": "Erano indietro di un'ora esatta.", "scene": "casa", "role": "P", "requires": ["orologi"], "optional": true},
+    {"id": "cambio_ora", "text": "C'era il cambio dell'ora.", "scene": "casa", "role": "C", "requires": ["orologi", "dimenticato"]}
+  ],
+  "exclusions": [
+    {"id": "tradimento", "text": "La moglie lo tradiva.", "ruled_out_by": "no_tradimento"},
+    {"id": "apposta", "text": "La moglie gli ha fatto perdere il treno apposta.", "ruled_out_by": "dimenticato"},
+    {"id": "anticipo", "text": "Il treno è partito in anticipo.", "ruled_out_by": null},
+    {"id": "sciopero", "text": "C'era uno sciopero o un guasto ai treni.", "ruled_out_by": null},
+    {"id": "orario_letto", "text": "Ha letto male l'orario del treno.", "ruled_out_by": null},
+    {"id": "sveglia_muta", "text": "La sveglia non ha suonato.", "ruled_out_by": null}
+  ],
+  "victory": [
+    {"id": "v_orologi", "claim": "La moglie si è dimenticata di spostare gli orologi, e così lui ha perso il treno.",
+     "why": "non si fida più di lei?", "requires": ["orologi", "dimenticato"]},
+    {"id": "v_cambio_ora", "claim": "Quella notte c'era il cambio dell'ora.",
+     "why": "gli orologi erano indietro?", "requires": ["cambio_ora"]}
+  ]
+}
