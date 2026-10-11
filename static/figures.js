@@ -22,7 +22,13 @@ const FIGURES = {
          edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [3, 7]]},
   // the child: a small figure, head, arms open, legs apart
   child: {points: [[0, -38], [0, -22], [-22, -10], [21, -12], [0, 6], [-13, 36], [12, 35]],
-          edges: [[0, 1], [1, 2], [1, 3], [1, 4], [4, 5], [4, 6]]}
+          edges: [[0, 1], [1, 2], [1, 3], [1, 4], [4, 5], [4, 6]]},
+  // the train: a steam engine seen from the side, chimney, low boiler, high cab; no clock (it is the solution)
+  train: {points: [[-44, 15], [-31, -5], [-29, -27], [5, -9], [8, -31], [31, -28], [33, 17]],
+          edges: [[0, 1], [1, 2], [1, 3], [3, 4], [4, 5], [5, 6], [6, 0]]},
+  // the pocket watch: an uneven ring with the crown on top, two hands from the centre
+  pocket_watch: {points: [[1, -43], [0, -32], [29, -6], [17, 27], [-19, 26], [-30, -8], [1, 0], [2, -19], [-14, -7]],
+                 edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 1], [6, 7], [6, 8]]}
 };
 
 // a quadratic curve as a polyline
@@ -60,5 +66,15 @@ const ATLAS = {
     atlasCurve([-5, -29], [-4, -8], [-3, 8]), atlasCurve([5, -29], [5, -8], [3, 8]),
     atlasCurve([-5, -26], [-15, -20], [-22, -10]), atlasCurve([5, -26], [15, -22], [21, -12]),
     atlasCurve([-3, 8], [-9, 22], [-13, 36]), atlasCurve([3, 8], [8, 22], [12, 35])
-  ]
+  ],
+  // the case, the crown with its stem, the two hands and the twelve marks of the hours
+  pocket_watch: () => {
+    const lines = [atlasCircle(0, 0, 33), atlasCircle(0, -42, 4), [[0, -38], [0, -33]],
+                   [[0, 0], [2, -19]], [[0, 0], [-14, -7]]];
+    for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6;
+      lines.push([[Math.cos(a) * 28, Math.sin(a) * 28], [Math.cos(a) * 31, Math.sin(a) * 31]]);
+    }
+    return lines;
+  }
 };
