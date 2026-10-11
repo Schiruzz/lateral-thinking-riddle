@@ -26,7 +26,7 @@
     {"id": "sera_prima", "text": "Se n'è dimenticata la sera prima.", "scene": "casa", "role": "P", "requires": ["dimenticato"]},
     {"id": "orologi", "text": "Gli orologi erano indietro.", "scene": "casa", "role": "S", "requires": ["in_ritardo"]},
     {"id": "un_ora", "text": "Erano indietro di un'ora esatta.", "scene": "casa", "role": "P", "requires": ["orologi"], "optional": true},
-    {"id": "cambio_ora", "text": "C'era il cambio dell'ora.", "scene": "casa", "role": "C", "requires": ["orologi", "dimenticato"]}
+    {"id": "cambio_ora", "text": "C'era il cambio dell'ora.", "scene": "casa", "role": "C", "requires": []}
   ],
   "exclusions": [
     {"id": "tradimento", "text": "La moglie lo tradiva.", "ruled_out_by": "no_tradimento"},
