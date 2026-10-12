@@ -33,7 +33,9 @@ class Session:
     Attributes:
         riddle: The riddle being played.
         found: Ids of the facts the player has found.
-        excluded: Ids of the false leads already closed.
+        excluded: Ids of the false leads already closed, by the player or by a fact found.
+        asked_leads: Ids of the false leads the player closed with a question that got a no:
+            they are progress, as a fact found, and they show on the sky.
         asked: Keys of the questions asked so far (see `question_key`).
         empty_streak: Questions in a row that found no new fact.
         stuck_from: The streak at which the conductor last said the player was stuck.
@@ -56,6 +58,7 @@ class Session:
         self.riddle = riddle
         self.found = set()
         self.excluded = set()
+        self.asked_leads = set()
         self.asked = set()
         self.empty_streak = 0
         self.stuck_from = 0
@@ -87,7 +90,7 @@ class Session:
         }
         return [fact_id for fact_id in self.riddle.facts if fact_id in new]
 
-    def record(self, question, new_facts, answer="", stated=()):
+    def record(self, question, new_facts, answer="", stated=(), new_leads=()):
         """Record an answered question and describe the game at this turn, for the conductor.
 
         Call it after `unlock`, so that the facts this question found already count.
@@ -100,7 +103,8 @@ class Session:
                 count for a stall.
             stated: Ids of the victory elements the sentence puts forward (from
                 `Matcher.stated_victory`).
-
+            new_leads: Ids of the false leads this question closed for the first time (from
+                `exclude`): exploring a sensible lead is progress, not a question wasted.
         Returns:
             A dict with "repeated" (the same question was asked before),
             "empty_streak" (questions in a row without a new fact before this one),
@@ -126,7 +130,8 @@ class Session:
         reached = all(set(element["requires"]) <= self.found for element in self.riddle.victory.values())
         # invalid and unclear sentences are not questions about the story: they leave the streak as it is
         counted = answer not in ("invalid", "unclear")
-        streak = (0 if new_facts else self.empty_streak + 1) if counted else self.empty_streak
+        progress = bool(new_facts or new_leads)
+        streak = (0 if progress else self.empty_streak + 1) if counted else self.empty_streak
         if answer == "yes":
             # what the player has explained so far, sentence after sentence: it picks the next "why"
             self.claimed |= set(explained)
@@ -139,8 +144,8 @@ class Session:
         whole = answer == "no" and set(stated) == set(self.riddle.victory)
         # said once per STUCK_STREAK questions, so it does not become a sermon at every turn
         stuck = counted and streak - self.stuck_from >= STUCK_STREAK and answer != "yes"
-        if new_facts:
-            self.stalls = 0   # a fact found by the player ends the stalls in a row
+        if progress:
+            self.stalls = 0   # a fact or a lead found by the player ends the stalls in a row
         self.offer = None   # a question instead of an answer: the offer of a hint lapses
         hint, target, given = None, None, []
         if stuck:
@@ -175,8 +180,9 @@ class Session:
         self.asked.add(key)
         self.reached = reached
         # only a new fact is progress: a closed false lead does not end a streak
+        # a new fact or a false lead the player closed is progress: it ends a streak
         self.empty_streak = streak
-        self.stuck_from = streak if stuck else (0 if new_facts else self.stuck_from)
+        self.stuck_from = streak if stuck else (0 if progress else self.stuck_from)
         if state["relaunch"]:
             self.relaunched.add(state["relaunch"])
         self.summary_asked = self.summary_asked or state["summary"]
@@ -238,9 +244,15 @@ class Session:
         """Close false leads the player has asked about.
 
         Args:
-            exclusion_ids: Ids of the false leads to close.
+            exclusion_ids: Ids of the false leads the player's no ruled out.
+
+        Returns:
+            The ids of the leads asked for the first time, in the riddle's order.
         """
-        self.excluded |= set(exclusion_ids)
+        new = set(exclusion_ids) - self.asked_leads
+        self.asked_leads |= new
+        self.excluded |= new
+        return [lead_id for lead_id in self.riddle.exclusions if lead_id in new]
 
     def open_scenes(self):
         """List the scenes shown on the board.

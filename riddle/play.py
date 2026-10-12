@@ -90,7 +90,8 @@ class Play:
 
         Returns:
             A dict with "question", the arbiter's "positive_question" and "answer",
-            "new" (the facts found), the engine's state (see `Session.record`), the
+            "new" (the facts found), "leads" (the false leads closed for the first time),
+            the engine's state (see `Session.record`), the
             conductor's result (see `Conductor.reply`) and the seconds of the whole turn
             and of each component, the time the player waits.
         """
@@ -110,8 +111,8 @@ class Play:
 
         matched = time.perf_counter()
         new = self.session.unlock(facts)
-        self.session.exclude(leads)
-        state = self.session.record(verdict["positive_question"], new, verdict["answer"], stated)
+        new_leads = self.session.exclude(leads)   # a lead asked for the first time: progress and a red star
+        state = self.session.record(verdict["positive_question"], new, verdict["answer"], stated, new_leads)
         new = new + state["given"]   # a fact given away is found too: the notebook shows it
         said = self.chain["conductor"].reply(question, verdict, self.history, self.session, new, state, self.said)
         end = time.perf_counter()
@@ -146,5 +147,5 @@ class Play:
         end = time.perf_counter()
         self.said.append(said["reply"])
         return {"question": question, "positive_question": question, "answer": "accepted" if accepted else "declined",
-                "new": state["given"], "stated": [], **state, **said,
+                "new": state["given"], "leads": [], "stated": [], **state, **said,
                 "seconds": end - start, "arbiter_seconds": 0.0, "matcher_seconds": 0.0, "conductor_seconds": end - start}

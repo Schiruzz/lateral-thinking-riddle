@@ -180,3 +180,21 @@ def test_an_element_counts_only_once_its_facts_are_found(baita):
 def test_a_whole_explanation_wins_before_its_facts_are_found(gabbiano):
     # "La moglie l'ha fregato", with the rest of the game as context: the matcher sees every element
     assert gabbiano.record("La moglie l'ha fregato?", [], "yes", ["v_figlio", "v_inganno", "v_cieco"])["victory"]
+
+
+
+def test_a_lead_the_player_closes_is_progress_but_no_relief(baita):
+    """Exploring a sensible lead ends a streak and the stalls; only a fact found deserves a "finalmente"."""
+    for n in range(6):
+        baita.record(f"Domanda {n}?", [], "no")
+    baita.stalls = 1
+    state = baita.record("Qualcuno è entrato dalla finestra?", [], "no", (), baita.exclude(["passaggio"]))
+    assert baita.empty_streak == 0 and baita.stalls == 0 and not state["relief"]
+
+
+def test_a_lead_closed_by_a_fact_is_not_asked_and_counts_once(baita):
+    """A lead ruled out by a fact found is closed, not asked; asking it later counts, but only once."""
+    baita.unlock(["gas"])
+    assert "freddo" in baita.excluded and "freddo" not in baita.asked_leads
+    assert baita.exclude(["freddo"]) == ["freddo"]
+    assert baita.exclude(["freddo"]) == []
