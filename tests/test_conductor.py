@@ -190,6 +190,16 @@ def test_a_victory_gets_a_friends_comment_and_a_long_one_is_replaced(baita):
     assert victory_reply("parola " * 50) in VICTORY_FALLBACKS
 
 
+def test_only_the_victory_comment_reads_the_truth(baita):
+    """Once solved there is nothing to protect: the comment knows which ideas were right."""
+    seen = []
+    answer = SimpleNamespace(text=json.dumps({"comment": "Ce l'hai fatta!"}))
+    client = SimpleNamespace(models=SimpleNamespace(
+        generate_content=lambda model, contents, config: seen.append(contents) or answer))
+    Conductor(baita, client).victory_comment("Tutta la storia?", [("Nevicava?", "yes")])
+    assert baita.truth in seen[0]
+    _, ordinary = reply(baita, ("", "Sì.", ""), "C'era una stufa?", found=["stufa"])
+    assert baita.truth not in ordinary
 
 
 def stall_line(riddle, hint, target, opening=""):
