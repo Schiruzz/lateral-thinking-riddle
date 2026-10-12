@@ -3559,7 +3559,7 @@
   {
     "group": "laconic",
     "question": "Colpa della radio?",
-    "answer": "irrelevant",
+    "answer": "no",
     "cards": [],
     "lit": [],
     "history": [
@@ -3999,7 +3999,7 @@
   {
     "group": "laconic",
     "question": "Il governo l'aveva annunciato tardi?",
-    "answer": "irrelevant",
+    "answer": "no",
     "cards": [],
     "lit": [],
     "history": [
@@ -7761,7 +7761,7 @@
   {
     "group": "hasty",
     "question": "la moglie sapeva che quella notte c'era il cambio dell'ora e non glielo ha ricordato",
-    "answer": "no",
+    "answer": "yes",
     "cards": [],
     "lit": [],
     "history": [
@@ -9500,7 +9500,7 @@
   {
     "group": "hasty",
     "question": "la moglie sapeva dell ora legale ma non poteva immaginare che lui avrebbe perso il treno",
-    "answer": "no",
+    "answer": "yes",
     "cards": [],
     "lit": [],
     "history": [
