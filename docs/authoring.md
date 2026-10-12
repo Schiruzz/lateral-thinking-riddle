@@ -90,7 +90,10 @@ wife), or a single leap (il barista: short, few facts, fine as a quick riddle).
    dimenticata di fare una cosa.": asking about the time change won the game in one question.
    The order of play is the order of the list.
 9. Few facts are fine (about 10): never pad. A false lead that almost every player explores
-   can become a negative fact. Good: "Nessuno l'ha ucciso." (baita).
+   can become a negative fact. Good: "Nessuno l'ha ucciso." (baita). The negative fact then
+   replaces the false lead: never write both, or after a "no" the matcher picks one at random.
+   Bad: treno, "La moglie lo tradiva." beside "La moglie non lo tradiva.": "l'ha tradito?" lit
+   only the red star, "lo tradiva?" both.
 
 ## 4. Roles
 
