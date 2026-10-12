@@ -9,6 +9,8 @@ from riddle.schema import load_riddle
 PUZZLE_FILES = sorted(PUZZLES_DIR.glob("*/??.json"))
 # puzzles with only the arbiter's fields: files named like "arbiter.it.json"
 ARBITER_FILES = sorted(PUZZLES_DIR.glob("*/arbiter.*.json"))
+# every set of labelled questions, written by hand or simulated: "tests.it.json", "tests.simulated.it.json"
+TEST_FILES = sorted(PUZZLES_DIR.glob("*/tests*.json"))
 
 
 @pytest.mark.parametrize("path", PUZZLE_FILES, ids=str)
@@ -17,15 +19,13 @@ def test_puzzle_passes_checks(path):
     load_puzzle(path.parent.name, path.stem)
 
 
-@pytest.mark.parametrize("path", ARBITER_FILES, ids=str)
+@pytest.mark.parametrize("path", TEST_FILES, ids=str)
 def test_test_cases_use_valid_ids(path):
-    """Every test case uses a known answer and the ids of the riddle's facts and false leads."""
-    language = path.name.split(".")[1]   # "arbiter.it.json" -> "it"
-    if not (path.parent / f"tests.{language}.json").exists():
-        pytest.skip("no labelled questions yet: they come with the first measure of the riddle")
+    """Every labelled question uses a known answer and the ids of its riddle's facts and false leads."""
+    language = path.name.split(".")[-2]   # "tests.simulated.it.json" -> "it"
     riddle = load_riddle(path.parent.name, language)
     ids = set(riddle.facts) | set(riddle.exclusions)
-    for case in load_tests(path.parent.name, language):
+    for case in json.loads(path.read_text(encoding="utf-8")):
         assert case["answer"] in ANSWERS, case["question"]
         assert set(case["cards"]) <= ids, case["question"]
         assert set(case["lit"]) <= ids, case["question"]
