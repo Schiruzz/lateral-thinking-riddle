@@ -117,3 +117,13 @@ def test_victory_is_judged_on_what_the_sentence_claims_even_after_a_no(baita):
     matcher, models = make_matcher(baita, stated={baita.victory["v_gas"]["claim"]: True})
     assert matcher.stated_victory(verdict("no", question), [], Session(baita)) == ["v_gas"]
     assert all("ANSWER: yes" in call for call in models.verify_calls)   # judged as if the answer were yes
+
+
+
+def test_the_victory_check_does_not_read_the_visible_story(baita):
+    """The story alone could complete a partial guess into the whole explanation."""
+    matcher, models = make_matcher(baita)
+    matcher.stated_victory(verdict("yes", "C'era una stufa?"), [], Session(baita))
+    assert models.verify_calls and all(baita.story not in call for call in models.verify_calls)
+    matcher.match("C'era una stufa?", verdict("yes", "C'era una stufa?"), [], Session(baita))
+    assert baita.story in matcher._context([], Session(baita))   # the facts still read it

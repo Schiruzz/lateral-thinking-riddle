@@ -563,7 +563,9 @@ class Matcher:
         if verdict["answer"] not in (YES, NO):
             return []
         claimed = {**verdict, "answer": YES}
-        context = self._context(history, session)
+        # without the visible story: from it alone ("he no longer trusts his wife") the verifier
+        # could complete any partial guess into the whole explanation, and one question would win
+        context = self._context(history, session, story=False)
         elements = list(self.riddle.victory)
         with ThreadPoolExecutor() as pool:
             checks = list(pool.map(lambda element_id: self._verify(self.riddle.victory[element_id]["claim"], claimed, context),
@@ -578,15 +580,21 @@ class Matcher:
         return json.loads(call_model(self.client, VERIFY_MODEL, contents, VERIFY_CONFIG,
                                      self.max_attempts).text)["stated"]
 
-    def _context(self, history, session):
-        """Build the context: the story, the facts already found, then the last exchanges."""
+    def _context(self, history, session, story=True):
+        """Build the context: the story, the facts already found, then the last exchanges.
+
+        Args:
+            history: (positive question, answer) pairs before this question.
+            session: The `Session` of the game, for what is already found.
+            story: False to leave out the visible story, as the victory check does.
+        """
         older, recent = history[:-HISTORY_SIZE], history[-HISTORY_SIZE:]
         established = [fact["text"] for fact_id, fact in self.riddle.facts.items() if fact_id in session.found]
         established += [f"{q} -> {a}" for q, a in older]
         established_lines = "\n".join(f"- {line}" for line in established) or "- none"
         recent_lines = "\n".join(f"- {q} -> {a}" for q, a in recent) or "- none"
-        return (f"STORY: {self.riddle.story}\n\n"
-                f"ALREADY ESTABLISHED:\n{established_lines}\n\nPREVIOUS EXCHANGES:\n{recent_lines}")
+        visible = f"STORY: {self.riddle.story}\n\n" if story else ""
+        return (f"{visible}ALREADY ESTABLISHED:\n{established_lines}\n\nPREVIOUS EXCHANGES:\n{recent_lines}")
 
     def _config(self, facts, leads):
         """Build the matcher's config: the facts and false leads it can return now, nothing else."""
