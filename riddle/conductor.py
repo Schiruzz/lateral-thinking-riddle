@@ -255,18 +255,22 @@ VICTORY_RULES = """You are the voice of a lateral thinking game played by voice,
 The player has just solved the riddle. Write one or two short spoken sentences, as a friend
 who watched the whole game: celebrate, and tease the player kindly about one or two real
 moments of the game, such as how many questions it took, where they got stuck, or a funny
-or rude question they asked.
+or rude question they asked. You know the truth, so you know which ideas were right.
 
 RULES
 1. Only moments that are in the exchanges: never invent one.
-2. Never retell the solution: it is told right after you.
-3. Teasing is welcome, insults never.
-4. At most 35 words.
+2. An idea was wrong only if it got a "no". Never say the player doubted, missed or got
+   wrong something that the truth confirms.
+3. The player is not a character of the story: never call a character "yours".
+4. Never retell the solution: it is told right after you.
+5. Teasing is welcome, insults never.
+6. At most 35 words.
 
 EXAMPLES (from other games)
-"Ce l'hai fatta! E pensare che per dieci domande eri convinto che c'entrasse il pianoforte."
+"Ce l'hai fatta! Dieci domande sul pianoforte prima di chiederti dove fosse il tecnico."
 "Risolto! Dopo avermi chiesto se ero un robot, direi che te lo meritavi proprio."
 """
+
 VICTORY_CONFIG = types.GenerateContentConfig(
     system_instruction=VICTORY_RULES,
     temperature=0.9,
@@ -545,7 +549,7 @@ class Conductor:
         """Write a friend's comment on a solved game, from its exchanges.
 
         Nothing is left to protect once the riddle is solved, so the model reads the whole
-        game; only the length is checked, so the truth told next is not delayed.
+        game and the truth; only the length is checked, so the truth told next is not delayed.
 
         Args:
             question: The player's words that solved the riddle.
@@ -555,7 +559,10 @@ class Conductor:
             The comment, or a fixed line if the model's is too long.
         """
         exchanges = "\n".join(f"- {q} -> {a}" for q, a in history)
-        contents = (f"STORY: {self.riddle.story}\n\nEXCHANGES ({len(history) + 1} questions):\n"
+        # the truth is told right after the comment: nothing is left to protect, and without it the
+        # model guesses which ideas were right ("you doubted the time change", when it was the key)
+        contents = (f"STORY: {self.riddle.story}\n\nTRUTH: {self.riddle.truth}\n\n"
+                    f"EXCHANGES ({len(history) + 1} questions):\n"
                     f"{exchanges}\n- {question} -> yes, solved")
         comment = json.loads(call_model(self.client, self.model, contents, VICTORY_CONFIG,
                                         self.max_attempts).text)["comment"].strip()
