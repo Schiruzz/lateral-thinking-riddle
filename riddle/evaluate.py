@@ -1,8 +1,9 @@
-"""Evaluate the judge on a puzzle's labelled test questions.
+"""Evaluate the chain on a riddle's labelled test questions: the arbiter, the matcher or the whole turn.
 
 Run from the repository root:
-    python -m riddle.evaluate
-    python -m riddle.evaluate --puzzle gabbiano --language it --model gemini-3.5-flash-lite
+    python -m riddle.evaluate --puzzle baita                          # the arbiter's answers
+    python -m riddle.evaluate --puzzle baita --facts                  # the matcher, with the labelled answers
+    python -m riddle.evaluate --puzzle treno --tests simulated --conductor   # whole games, as the player hears them
 """
 
 import argparse
@@ -13,80 +14,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from riddle.play import Play, load_chain
 from riddle.engine import Session
 from riddle.judge import JUDGE_MODEL, Judge, Matcher, make_client
-from riddle.puzzle import PUZZLES_DIR, load_arbiter, load_puzzle, load_tests
+from riddle.puzzle import load_arbiter, load_tests
 from riddle.schema import load_riddle
 
 EVAL_WORKERS = 8   # questions judged at once: minutes instead of most of an hour, within the rate limit
-
-
-def evaluate(judge, tests):
-    """Judge every test question and compare the result with its label.
-
-    Each question goes through the game's two steps: the answer, then the
-    cards. Cards already lit in a test's context are left out of both sides,
-    so only the cards unlocked by the question itself are compared. Cards are
-    compared after adding the cards they imply, since that is what the player sees.
-
-    Args:
-        judge: The `Judge` to evaluate.
-        tests: Test cases from `load_tests`.
-
-    Returns:
-        One row per test, with expected and obtained answer and cards, and the
-        time of each step.
-    """
-    rows = []
-    for i, case in enumerate(tests, 1):
-        print(f"\r{judge.model}: {i}/{len(tests)}", end="", flush=True)   # flush: show progress at once
-        known = judge.puzzle.closure(case["lit"])
-        start = time.time()
-        verdict = judge.answer(case["question"], case["history"], case["lit"])
-        answered = time.time()
-        cards = judge.cards(case["question"], verdict, case["history"], case["lit"])
-        rows.append({
-            "group": case["group"], "question": case["question"], "rewritten": verdict["positive_question"],
-            "expected_answer": case["answer"], "answer": verdict["answer"],
-            "expected_cards": judge.puzzle.closure(case["cards"]) - known,
-            "cards": judge.puzzle.closure(cards) - known,
-            "answer_seconds": answered - start, "cards_seconds": time.time() - answered,
-        })
-    print()
-    return rows
-
-
-def report(rows):
-    """Print accuracy per group, cards given away, time per step, then every mistake.
-
-    Args:
-        rows: The rows returned by `evaluate`.
-    """
-    print(f"{'group':<20}{'answers':>9}{'cards':>9}{'extra':>7}")
-    for group in dict.fromkeys(r["group"] for r in rows):
-        sub = [r for r in rows if r["group"] == group]
-        answers = sum(r["answer"] == r["expected_answer"] for r in sub) / len(sub)
-        cards = sum(r["cards"] == r["expected_cards"] for r in sub) / len(sub)
-        extra = sum(len(r["cards"] - r["expected_cards"]) for r in sub)
-        print(f"{group:<20}{answers:>9.0%}{cards:>9.0%}{extra:>7}")
-
-    answers = sum(r["answer"] == r["expected_answer"] for r in rows) / len(rows)
-    cards = sum(r["cards"] == r["expected_cards"] for r in rows) / len(rows)
-    extra = sum(len(r["cards"] - r["expected_cards"]) for r in rows)
-    print(f"{'TOTAL':<20}{answers:>9.0%}{cards:>9.0%}{extra:>7}")
-
-    # average and worst case of each step: a high maximum means retries on rate limits or timeouts
-    print(f"\n{'step':<10}{'avg s':>8}{'max s':>8}")
-    for step in ("answer", "cards"):
-        seconds = [r[f"{step}_seconds"] for r in rows]
-        print(f"{step:<10}{sum(seconds) / len(seconds):>8.1f}{max(seconds):>8.1f}")
-
-    print("\nMISTAKES")
-    for r in rows:
-        if r["answer"] != r["expected_answer"] or r["cards"] != r["expected_cards"]:
-            print(f"- {r['question']}")
-            print(f"    rewritten: {r['rewritten']}")
-            print(f"    expected:  {r['expected_answer']:<11}{', '.join(sorted(r['expected_cards'])) or '-'}")
-            print(f"    got:       {r['answer']:<11}{', '.join(sorted(r['cards'])) or '-'}")
-
 
 
 def evaluate_answers(judge, tests, runs):
@@ -97,7 +28,7 @@ def evaluate_answers(judge, tests, runs):
     all asked in parallel.
 
     Args:
-        judge: A `Judge` built on a puzzle from `load_arbiter` or `load_puzzle`.
+        judge: A `Judge` built on a riddle from `load_arbiter`.
         tests: Test cases from `load_tests`.
         runs: How many times every question is asked.
 
@@ -171,7 +102,7 @@ def evaluate_facts(matcher, tests):
     """Match every test question and compare what it adds to the game with its label.
 
     The matcher gets the labelled answer, not the arbiter's: it is measured on its
-    own, and the arbiter's mistakes stay in `--answers-only`. Both sides are compared
+    own, and the arbiter's mistakes are measured on their own. Both sides are compared
     after the engine has applied them, so presupposed facts and leads closed by a
     fact count as the player sees them.
 
@@ -341,15 +272,13 @@ def report_conductor(games):
 def main():
     """Parse the command line, run the evaluation and print the report."""
     parser = argparse.ArgumentParser(description="Evaluate the judge on a puzzle's test questions.")
-    parser.add_argument("--puzzle", default="gabbiano")
+    parser.add_argument("--puzzle", default="baita")
     parser.add_argument("--language", default="it")
     parser.add_argument("--model", default=JUDGE_MODEL)
-    parser.add_argument("--answers-only", action="store_true",
-                        help="judge only the answers, on a puzzle with only the arbiter's fields")
-    parser.add_argument("--runs", type=int, default=3, help="runs per question with --answers-only")
+    parser.add_argument("--runs", type=int, default=3, help="runs per question of the arbiter")
     parser.add_argument("--tests", default=None, help="test set, e.g. simulated (default: the main one)")
     parser.add_argument("--grep", default=None,
-                        help="with --answers-only, judge only the questions matching this pattern, e.g. \"cause naturali|infarto\"")
+                        help="with the arbiter, judge only the questions matching this pattern, e.g. \"cause naturali|infarto\"")
     parser.add_argument("--facts", action="store_true",
                         help="judge only the matcher, on a riddle in the card schema, with the labelled answers")
     parser.add_argument("--no-verifier", action="store_true", help="with --facts, the matcher without the verifier")
@@ -373,24 +302,14 @@ def main():
                      matcher.riddle.key_facts)
         return
 
-    # the arbiter alone: the puzzle has no cards, so there is nothing else to judge
-    if args.answers_only:
-        # a full puzzle works too: its cards give the arbiter the context of the cards lit in a test
-        arbiter_only = (PUZZLES_DIR / args.puzzle / f"arbiter.{args.language}.json").exists()
-        puzzle = (load_arbiter if arbiter_only else load_puzzle)(args.puzzle, args.language)
-        judge = Judge(puzzle, make_client(), args.model)
-        tests = load_tests(args.puzzle, args.language, args.tests)
-        # a quick check after a change: only the questions it touches
-        if args.grep:
-            tests = [case for case in tests if re.search(args.grep, case["question"], re.IGNORECASE)]
-            print(f"questions matching {args.grep!r}: {len(tests)}")
-        report_answers(evaluate_answers(judge, tests, args.runs), args.runs)
-        return
-
-    puzzle = load_puzzle(args.puzzle, args.language)
-    judge = Judge(puzzle, make_client(), args.model)
-    report(evaluate(judge, load_tests(args.puzzle, args.language, args.tests)))
-
+    # the arbiter alone: its answers, several runs per question
+    judge = Judge(load_arbiter(args.puzzle, args.language), make_client(), args.model)
+    tests = load_tests(args.puzzle, args.language, args.tests)
+    # a quick check after a change: only the questions it touches
+    if args.grep:
+        tests = [case for case in tests if re.search(args.grep, case["question"], re.IGNORECASE)]
+        print(f"questions matching {args.grep!r}: {len(tests)}")
+    report_answers(evaluate_answers(judge, tests, args.runs), args.runs)
 
 if __name__ == "__main__":
     main()

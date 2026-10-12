@@ -2,21 +2,13 @@
 import json
 import pytest
 
-from riddle.puzzle import ANSWERS, PUZZLES_DIR, load_arbiter, load_puzzle, load_tests
+from riddle.puzzle import ANSWERS, PUZZLES_DIR, load_arbiter
 from riddle.schema import load_riddle
 
-# every puzzle in every language: files named like "it.json", "en.json"
-PUZZLE_FILES = sorted(PUZZLES_DIR.glob("*/??.json"))
 # puzzles with only the arbiter's fields: files named like "arbiter.it.json"
 ARBITER_FILES = sorted(PUZZLES_DIR.glob("*/arbiter.*.json"))
 # every set of labelled questions, written by hand or simulated: "tests.it.json", "tests.simulated.it.json"
 TEST_FILES = sorted(PUZZLES_DIR.glob("*/tests*.json"))
-
-
-@pytest.mark.parametrize("path", PUZZLE_FILES, ids=str)
-def test_puzzle_passes_checks(path):
-    """Every puzzle loads, so its tree and ids are consistent."""
-    load_puzzle(path.parent.name, path.stem)
 
 
 @pytest.mark.parametrize("path", TEST_FILES, ids=str)
@@ -29,15 +21,6 @@ def test_test_cases_use_valid_ids(path):
         assert case["answer"] in ANSWERS, case["question"]
         assert set(case["cards"]) <= ids, case["question"]
         assert set(case["lit"]) <= ids, case["question"]
-
-
-def test_gabbiano_matches_the_notebook():
-    """The gabbiano puzzle keeps the numbers validated in the notebook."""
-    puzzle = load_puzzle("gabbiano", "it")
-    assert len(puzzle.facts) == 21
-    assert len(puzzle.deductions) == 9
-    assert puzzle.points[puzzle.root] == 550
-    assert len(load_tests("gabbiano", "it")) == 154
 
 
 @pytest.mark.parametrize("path", ARBITER_FILES, ids=str)
