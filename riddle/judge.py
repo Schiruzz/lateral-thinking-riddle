@@ -514,7 +514,7 @@ class Matcher:
         facts = [fact_id for fact_id in self.riddle.facts if fact_id not in session.found]
         # a false lead is closed only by a "no"
         leads = [lead_id for lead_id in self.riddle.exclusions
-                 if lead_id not in session.excluded] if answer == NO else []
+                 if lead_id not in session.asked_leads] if answer == NO else []
         if not facts and not leads:
             return [], []
 
