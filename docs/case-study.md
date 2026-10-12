@@ -128,7 +128,7 @@ mid-concert): the seagull dropped two points and every other set improved.
 addressed to the game and which direction it pointed made both tasks worse (the "where should I look"
 strategy questions fell to 50%). It was dropped: the arbiter only decides the answer.
 
-The arbiter now reads the truth as prose, then the facts in time order, the victory claims, and a NOT
+The arbiter now reads the truth as prose, then the facts in order of play, the victory claims, and a NOT
 TRUE line built from the false leads. Its five answers are *yes, no, irrelevant, invalid, unclear*.
 With the riddles moved to cards (section 6) the latest numbers are 93% on the cabin playtest, 94% on the
 simulated cabin and 97% on the seagull: the playtest drop is one question ("Was there a fireplace?"
@@ -138,7 +138,7 @@ answered no, because the room had a stove).
 
 A riddle is a JSON card, and adding one means writing a card, not touching prompts.
 
-- **Facts** are the player's steps, one statement each, in time order, from vague to specific ("Something
+- **Facts** are the player's steps, one statement each, in order of play, from vague to specific ("Something
   from his past is involved" is a fact). Each has a **role**: *P* (a step, can be given away), *S* (a leap,
   protected) or *C* (the twist, protected).
 - **`requires` means "presupposes"**: finding a fact lights everything it presupposes, and a fact is
@@ -263,9 +263,36 @@ Gross spend in the first week: about 10 €, covered by credits. Flash-Lite cost
 input tokens; a full evaluation suite about 0.75 €, a simulated set of games played through the whole
 chain about 0.35 €. Every run is estimated before it is started.
 
-## 14. Limits and next steps
+## 14. A third riddle, with the prompts frozen
 
-- **The seagull numbers are development numbers**: its card was corrected on its own test questions. The
-  cabin is the generality measure, and even there the labels and the card were written by the same person.
-- **Next: a third riddle written from scratch** and judged with the prompts frozen, then a real playtest
-  with players who do not know the riddles, a linter for the cards, and English.
+The train: *one Sunday in May 1966 a man, punctual for thirty years, reaches the station and finds
+his train already gone. From that day he no longer trusts his wife.* Its card was written from the
+authoring rules and judged with every prompt frozen, on 241 simulated questions.
+
+- **The arbiter scored 95% at the first run.** Its main error was an omission: "did his wife move
+  the clock?" got a yes, though she had forgotten to. One generic rule, with an example from an
+  invented story, brought the train to 96% and left the cabin and the seagull unchanged.
+- **Every other bug it found was in the system, not in the riddle:**
+  1. `requires` used to delay the twist: asking about the time change won the game in one question.
+     The rule now says that `requires` means "presupposes" and nothing else.
+  2. The victory check read the visible story, so a short sentence could complete it: it now reads
+     only what the player said.
+  3. A spoken question without "?" read as a statement, and the verifier dropped the fact a "no"
+     had found: the code now adds it.
+  4. A negative fact and a false lead said the same thing, so the matcher picked one at random:
+     the negative fact now replaces the lead.
+  5. Ruling out a sensible false lead was not counted as progress, so the narrator called the
+     player stuck while they were exploring well. Counting it, stuck turns in the replay went
+     from 34 to 27 and hint offers from 16 to 11; on the page each one is a red dwarf.
+
+**Lesson 4: a new riddle is worth more than more points on the old ones.** Each of these bugs was
+invisible on the cabin and the seagull, and most of them became a rule in `docs/authoring.md`.
+
+## 15. Limits and next steps
+
+- **The seagull numbers are development numbers**: its card was corrected on its own test questions.
+  The cabin and the train are the generality measure, and even there the labels and the cards were
+  written by the same person.
+- **A question that guesses the mechanism lights most of the story at once**: the player has
+  understood, but skips the discovery step by step.
+- **Next**: a playtest with players who do not know the riddles, and English.
