@@ -177,9 +177,9 @@ class Session:
             "offer": self.offer is not None,
             "declined": False,
         }
-        self.asked.add(key)
+        if counted:
+            self.asked.add(key)   # a sentence not understood was not asked: the player may say it again
         self.reached = reached
-        # only a new fact is progress: a closed false lead does not end a streak
         # a new fact or a false lead the player closed is progress: it ends a streak
         self.empty_streak = streak
         self.stuck_from = streak if stuck else (0 if progress else self.stuck_from)

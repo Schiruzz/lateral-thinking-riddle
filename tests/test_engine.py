@@ -57,6 +57,9 @@ def test_the_same_question_written_differently_is_repeated(baita):
     assert not baita.record("La stufa è accesa?", [])["repeated"]
     assert baita.record("la stufa e' accesa", [])["repeated"]
 
+def test_a_question_not_understood_is_not_repeated_when_asked_again(baita):
+    baita.record("La stufa è accesa?", [], "unclear")
+    assert not baita.record("La stufa è accesa?", [], "no")["repeated"]
 
 def test_empty_streak_counts_questions_without_new_facts(baita):
     for question in ["Era vecchio?", "Era ricco?", "Era alto?"]:
