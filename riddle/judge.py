@@ -309,6 +309,11 @@ PUZZLE NOTES:
         rewrite_joined, rewrite_split = words(verdict["positive_question"])
         if not (rewrite_joined <= said or rewrite_split <= said):
             verdict["answer"] = UNCLEAR
+        # a voice transcription or a quick typist drops the "?": without it the matcher and the verifier
+        # read a statement, and a "no" to it no longer says the opposite of a question
+        positive = verdict["positive_question"].rstrip()
+        if positive and not positive.endswith("?"):
+            verdict["positive_question"] = positive + "?"
         return verdict
 
     def cards(self, question, verdict, history, lit):
