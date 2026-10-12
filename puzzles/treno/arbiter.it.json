@@ -29,7 +29,6 @@
     {"id": "cambio_ora", "text": "C'era il cambio dell'ora.", "scene": "casa", "role": "C", "requires": []}
   ],
   "exclusions": [
-    {"id": "tradimento", "text": "La moglie lo tradiva.", "ruled_out_by": "no_tradimento"},
     {"id": "apposta", "text": "La moglie gli ha fatto perdere il treno apposta.", "ruled_out_by": "dimenticato"},
     {"id": "anticipo", "text": "Il treno è partito in anticipo.", "ruled_out_by": null},
     {"id": "sciopero", "text": "C'era uno sciopero o un guasto ai treni.", "ruled_out_by": null},
