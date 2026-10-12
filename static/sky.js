@@ -82,6 +82,7 @@ class Sky {
     this.warm = sprite("255,236,200");
     this.cold = sprite("190,215,255");
     this.white = sprite("255,250,240");
+    this.red = sprite("255,120,100");    
     const tick = (time) => { this.draw(time / 1000); requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   }
@@ -103,6 +104,7 @@ class Sky {
     this.order = [...order, ...minorStars];
     this.lines = figure.edges.map(([a, b]) => ({a: this.stars[a], b: this.stars[b], p: 0, fade: 1}));
     this.truthLines = null;
+    this.dwarfs = [];
     // the deep sky: three layers of small stars, denser around the figure so a found fact opens a cluster
     const deep = seeded(game.seed + "-deep");
     const tint = () => { const r = deep(); return r < 0.25 ? "190,210,255" : r < 0.85 ? "235,240,250" : "255,225,190"; };
@@ -183,6 +185,26 @@ class Sky {
     }});
   }
 
+    // a false lead the player asked: a dim red star off the figure and its lines, always in the same place
+  dwarf(text, delay = 0) {
+    const random = seeded(this.seed + text);
+    const nearLine = (q) => this.lines.some(({a, b}) => {
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const t = Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
+      return Math.hypot(a.x + dx * t - q.x, a.y + dy * t - q.y) < 18;
+    });
+    for (let tries = 0; tries < 300; tries++) {
+      // below the Night and above the name of the constellation
+      const q = {x: 20 + random() * (SKY_W - 40), y: 140 + random() * (SKY_H - 190)};
+      if ([...this.stars, ...this.dwarfs].some(o => Math.hypot(o.x - q.x, o.y - q.y) < 30) || nearLine(q)) continue;
+      const d = {...q, text, lead: true, glow: 0, reveal: {r: 0}, phase: random() * 2 * Math.PI};
+      this.dwarfs.push(d);
+      gsap.to(d, {glow: 1, duration: 1.6, delay, ease: "power2.out"});
+      gsap.to(d.reveal, {r: 28, duration: STILL ? 0 : 1.6, delay, ease: "power2.out"});
+      return;
+    }
+  }
+
   ignite(s, sealed) {
     s.flash = 1;
     gsap.to(s, {glow: 1, duration: 1.4, ease: "power2.out"});
@@ -211,7 +233,7 @@ class Sky {
   starAt(x, y) {
     const k = SKY_W / this.canvas.clientWidth;
     let best = null;
-    for (const s of this.stars) {
+    for (const s of [...this.stars, ...this.dwarfs]) {
       if (!s.glow || !s.text) continue;
       const [sx, sy] = this.position(s);
       const d = Math.hypot(sx - x * k, sy - y * k);
@@ -388,7 +410,7 @@ class Sky {
       v.globalAlpha = 1;
       v.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
       v.globalCompositeOperation = "destination-out";
-      for (const [x, y, r] of [[NIGHT_X, NIGHT_Y, 140], ...this.stars.map(s => [s.x, s.y, s.reveal.r])]) {
+      for (const [x, y, r] of [[NIGHT_X, NIGHT_Y, 140], ...[...this.stars, ...this.dwarfs].map(s => [s.x, s.y, s.reveal.r])]) {
         if (r < 1) continue;
         const grad = v.createRadialGradient(x, y, 0, x, y, r);
         grad.addColorStop(0, "rgba(0,0,0,0.92)");
@@ -437,6 +459,17 @@ class Sky {
       ctx.font = "italic 400 15px 'Cormorant Garamond', Georgia, serif";
       ctx.fillText(this.label.epithet, FIGURE_X, SKY_H - 12);
       ctx.restore();
+    }
+    // the red dwarfs: small and dim, no spikes and no lines, under the stars of the facts
+    for (const d of this.dwarfs) {
+      if (d.glow <= 0) continue;
+      const pulse = STILL ? 1 : 0.8 + 0.2 * Math.sin(time * 0.9 + d.phase);
+      ctx.globalAlpha = 0.55 * d.glow * pulse;
+      ctx.drawImage(this.red, d.x - 11, d.y - 11, 22, 22);
+      ctx.globalAlpha = 0.8 * d.glow;
+      ctx.fillStyle = "#FFB3A3";
+      ctx.beginPath(); ctx.arc(d.x, d.y, 1.2, 0, 2 * Math.PI); ctx.fill();
+      ctx.globalAlpha = 1;
     }
     // the stars of the facts: a glow, a core and the thin spikes of a real star photograph
     for (const s of this.stars) {

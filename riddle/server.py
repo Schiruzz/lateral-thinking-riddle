@@ -283,7 +283,8 @@ def playtest_ask(game_id: str, question: PlaytestQuestion):
 
         A dict with "reply" (the sentence to say), "answer", "found" (the facts this
         question found, in order of play, each with its "text", whether it was "given" by a
-        hint and whether it opens a "sealed" scene), "questions" (asked so far) and
+        hint and whether it opens a "sealed" scene), "leads" (the texts of the false leads
+        closed for the first time), "questions" (asked so far) and
         "victory"; after a victory also "truth", "next" (the riddle to play next), "sky"
         (the constellation of the truth: figure, name, epithet), "keys" (the texts of the
         key facts, shown bigger) and "remaining" (the texts of the facts not found).
@@ -312,7 +313,9 @@ def playtest_ask(game_id: str, question: PlaytestQuestion):
     riddle = play.chain["riddle"]
     found = [{"text": riddle.facts[fact_id]["text"], "given": fact_id in turn["given"],
               "sealed": riddle.scenes[riddle.facts[fact_id]["scene"]]["sealed"]} for fact_id in turn["new"]]
-    response = {"reply": turn["reply"], "answer": turn["answer"], "found": found,
+    # a false lead is shown only once the player has asked it: it tells nothing they did not say
+    leads = [riddle.exclusions[lead_id]["text"] for lead_id in turn["leads"]]
+    response = {"reply": turn["reply"], "answer": turn["answer"], "found": found, "leads": leads,
                 "questions": len(play.history), "victory": turn["victory"]}
     if turn["victory"]:
         # the truth comes with the victory: the page tells it once the constellation has changed shape

@@ -126,7 +126,7 @@ class Play:
         self.finished = state["victory"]
 
         return {"question": question, "positive_question": verdict["positive_question"],
-                "answer": verdict["answer"], "new": new, "stated": stated, **state, **said,
+                "answer": verdict["answer"], "new": new, "leads": new_leads, "stated": stated, **state, **said,
                 "seconds": end - start, "arbiter_seconds": judged - start,
                 "matcher_seconds": matched - judged, "conductor_seconds": end - matched}
 
