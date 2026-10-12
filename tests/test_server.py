@@ -66,10 +66,10 @@ def test_cards_failure_becomes_an_error_line(client, monkeypatch):
 
 
 def fake_ask(self, question):
-    """Stands in for `Play.ask`: a yes that finds the stove, without models."""
+    """Stands in for `Play.ask`: a yes that finds the stove and closes the cold, without models."""
     self.history.append((question, "yes"))
     return {"question": question, "positive_question": question, "answer": "yes", "new": ["stufa"],
-            "given": [], "victory": False, "reply": "Sì.", "seconds": 1.0, "arbiter_seconds": 0.4,
+            "given": [], "leads": ["freddo"], "victory": False, "reply": "Sì.", "seconds": 1.0, "arbiter_seconds": 0.4,
             "matcher_seconds": 0.3, "conductor_seconds": 0.3}
 
 
@@ -102,7 +102,8 @@ def test_a_playtest_turn_returns_the_sentence_and_the_facts_found(client, monkey
     reply = client.post(f"/api/playtest/games/{game_id}/ask", json={"text": "C'era una stufa?"}).json()
     riddle = server.CHAINS["baita"]["riddle"]
     stove = {"text": riddle.facts["stufa"]["text"], "given": False, "sealed": True}   # the stove is in the night
-    assert reply == {"reply": "Sì.", "answer": "yes", "found": [stove], "questions": 1, "victory": False}
+    cold = riddle.exclusions["freddo"]["text"]
+    assert reply == {"reply": "Sì.", "answer": "yes", "found": [stove], "leads": [cold], "questions": 1, "victory": False}
 
 
 def test_a_new_game_draws_the_sky_of_what_is_seen_and_nothing_of_the_truth(client):
@@ -132,7 +133,7 @@ def fake_win(self, question):
     """Stands in for `Play.ask`: the sentence that solves the riddle."""
     self.history.append((question, "yes"))
     self.finished = True
-    return {"question": question, "positive_question": question, "answer": "yes", "new": [],
+    return {"question": question, "positive_question": question, "answer": "yes", "new": [], "leads": [],
             "victory": True, "reply": "Ce l'hai fatta!", "seconds": 1.0, "arbiter_seconds": 0.4,
             "matcher_seconds": 0.3, "conductor_seconds": 0.3}
 

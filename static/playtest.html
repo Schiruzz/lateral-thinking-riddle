@@ -38,6 +38,7 @@ header { height: 64px; display: flex; align-items: center; justify-content: spac
 /* the fact of a star: shown when it lights up or is touched, then it fades */
 .fact { min-height: 44px; font-size: .9rem; line-height: 1.5; color: #FFF1D6; text-align: center; opacity: 0; }
 .fact.given { color: var(--accent); }
+.fact.lead { color: #FF9C8A; text-decoration: line-through; }
 
 .dialogue { min-height: 120px; display: flex; flex-direction: column; gap: 8px; }
 .you { font-size: .85rem; line-height: 1.45; color: var(--muted); }
@@ -130,10 +131,11 @@ function setBusy(value) {
 }
 
 // ---------- the facts: written under the sky when a star lights up or is touched, then they fade ----------
-function showFact(text, given) {
+function showFact(text, given, lead = false) {
   const caption = $("fact");
   caption.textContent = text;
   caption.classList.toggle("given", given);
+  caption.classList.toggle("lead", lead);
   gsap.killTweensOf(caption);
   gsap.timeline()
       .fromTo(caption, {opacity: 0, y: 6}, {opacity: 1, y: 0, duration: 0.5, ease: "power2.out"})
@@ -142,7 +144,7 @@ function showFact(text, given) {
 
 $("sky").addEventListener("click", (event) => {
   const star = sky.starAt(event.offsetX, event.offsetY);
-  if (star) showFact(star.text, star.given);
+  if (star) showFact(star.text, star.given, star.lead);
 });
 
 // ---------- start: a riddle in the address starts its game, otherwise the player chooses one ----------
@@ -243,8 +245,12 @@ async function ask(text, mode) {
     $("count").textContent = data.questions;
     // more facts in one question light up one after the other
     data.found.forEach((fact, order) => sky.light(fact, order * 0.6));
+    // the false leads after the facts: a red dwarf each
+    data.leads.forEach((lead, order) => sky.dwarf(lead, (data.found.length + order) * 0.6));
     const last = data.found[data.found.length - 1];
+    const lead = data.leads[data.leads.length - 1];
     if (last) showFact(last.text, last.given);
+    else if (lead) showFact(lead, false, true);
     if (data.victory) showFinale(data);
     else speak(data.reply);
   } catch (e) {
