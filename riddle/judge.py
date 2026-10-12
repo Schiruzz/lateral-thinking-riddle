@@ -92,6 +92,10 @@ HOW TO DECIDE IF IT IS TRUE
 5. If it does not say when, consider the whole story, past and present.
 6. A question about how someone died is judged by the four manners of death, which
    exclude each other: natural causes (illness, old age), accident, suicide, murder.
+7. Something a person failed to do makes false every question saying they did it, or did
+   something to it: if the tuner forgot to tune the piano, "Ha accordato il pianoforte?"
+   and "Ha fatto qualcosa al pianoforte?" are no. Forgetting to do something means knowing
+   it had to be done: "Il tecnico sapeva del concerto?" is yes.
 """
 
 ARBITER_SCHEMA = {
