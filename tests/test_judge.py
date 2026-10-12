@@ -76,6 +76,9 @@ def test_rewrite_that_only_removes_words_is_kept(puzzle):
     judge, _ = make_judge(puzzle, [answer("yes", "Era cieco?")])
     assert judge.answer("secondo me era cieco", [], [])["answer"] == "yes"
 
+def test_positive_question_always_ends_with_a_question_mark(puzzle):
+    judge, _ = make_judge(puzzle, [answer("no", "Il gabbiano era vivo")])
+    assert judge.answer("il gabbiano era vivo", [], [])["positive_question"] == "Il gabbiano era vivo?"
 
 def test_rewrite_that_only_adds_an_apostrophe_is_kept(puzzle):
     """The transcription writes "centra", the arbiter "c'entra": the same word."""
