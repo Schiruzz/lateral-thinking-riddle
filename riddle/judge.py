@@ -1,12 +1,11 @@
-"""LLM judge: answers the player's questions, then decides which cards they unlock.
+"""The models that judge a question: the arbiter answers it, the matcher finds what it uncovered.
 
 Each question goes through focused steps on a fast model:
-    1. the arbiter answers it, knowing the solution but no cards;
-    2. the matcher reads the question with its answer and proposes cards,
-       without seeing the solution;
-    3. the verifier checks each proposed card on its own.
-Deterministic guards in code handle negations, words the player did not say,
-key cards that must be named, and the solution.
+    1. the arbiter answers it, knowing the whole truth;
+    2. the matcher reads the question with its answer and finds the facts and false leads it
+       states, without seeing the truth;
+    3. the verifier checks the facts that matter most on their own.
+Deterministic guards in code handle negations, words the player did not say and quotes.
 """
 
 import json
@@ -25,7 +24,7 @@ from riddle.puzzle import ANSWERS
 
 YES, NO, IRRELEVANT, INVALID, UNCLEAR = ANSWERS
 JUDGE_MODEL = "gemini-3.5-flash-lite"    # arbiter and matcher
-VERIFY_MODEL = "gemini-3.5-flash-lite"   # Flash with thinking timed out on Vertex; Lite is fast and refused every hinted card in verifier_trial
+VERIFY_MODEL = "gemini-3.5-flash-lite"   # Flash with thinking timed out on Vertex; Lite is fast and refused every hinted card in a trial
 HISTORY_SIZE = 5
 MAX_ATTEMPTS = 6
 CALL_TIMEOUT_MS = 10_000   # a healthy call takes 1-2 s: after 10 s it is abandoned and retried
@@ -108,15 +107,6 @@ ARBITER_SCHEMA = {
     "propertyOrdering": ["positive_question", "answer"],
 }
 
-
-MATCHER_STEPS = """HOW TO FIND THE CARDS
-1. For every card, first write in "quote" the exact words of the question that state it.
-2. Fact cards: return one only if the quote, with the answer, states every element of the card: if a person, place, time or reason is missing, return no card. Being about the same topic is not enough.
-3. Deduction cards: only after yes, and only if the player's words alone state the whole deduction.
-4. Exclusion cards: return one only after no or partly, when the answer rules out that false lead; quote the words that state the false lead.
-5. Solution elements: only after yes, and only those the question states entirely.
-6. Use the context only to resolve references (pronouns, "lì", "l'ha ordinato").
-"""
 
 VERIFY_PROMPT = """You check one card in a lateral thinking puzzle played by voice.
 You get the context, the player's question, the judge's answer and one card.
@@ -227,12 +217,12 @@ def call_model(client, model, contents, config, max_attempts):
 
 
 class Judge:
-    """Judge of one puzzle: answers questions, then decides which cards they unlock.
+    """The arbiter of one riddle: answers the player's questions; the `Matcher` decides what they found.
 
     Attributes:
-        puzzle: The `Puzzle` being judged.
+        puzzle: What the arbiter reads of the riddle, from `load_arbiter`.
         client: The Vertex AI client.
-        model: The model of the arbiter and the matcher; the verifier uses `VERIFY_MODEL`.
+        model: The arbiter's model.
         max_attempts: Calls per request before giving up on a retryable error.
         arbiter_config: The arbiter's config, the same for the whole game.
     """
@@ -241,21 +231,15 @@ class Judge:
         """Prepare the parts of the prompts that never change during a game.
 
         Args:
-            puzzle: The `Puzzle` to judge.
+            puzzle: What the arbiter reads of the riddle, from `load_arbiter`.
             client: A `genai.Client`, e.g. from `make_client`.
-            model: The model of the arbiter and the matcher, kept as a parameter to compare models.
+            model: The arbiter's model, kept as a parameter to compare models.
             max_attempts: Calls per request before giving up: high for evaluation, low in a live game.
         """
         self.puzzle = puzzle
         self.client = client
         self.model = model
         self.max_attempts = max_attempts
-
-        # card lists shown to the matcher, one "id: text" per line
-        self.fact_lines = "\n".join(f"- {cid}: {c['text']}" for cid, c in puzzle.facts.items())
-        self.exclusion_lines = "\n".join(f"- {cid}: {c['text']}" for cid, c in puzzle.exclusions.items())
-        self.element_lines = "\n".join(f"- {eid}: {text}" for eid, text in puzzle.solution_elements.items())
-        self.no_context = self._context([], [])   # links and the solution must be stated by the player alone
 
         # the arbiter knows the whole truth as a story, the solution one fact per line, and the
         # puzzle notes, but no cards: the facts are the steps of the game, the story has every detail
@@ -316,88 +300,6 @@ PUZZLE NOTES:
             verdict["positive_question"] = positive + "?"
         return verdict
 
-    def cards(self, question, verdict, history, lit):
-        """Decide which cards an answered question unlocks.
-
-        Args:
-            question: The player's words.
-            verdict: The verdict from `answer`.
-            history: (positive question, answer) pairs before this question.
-            lit: Ids of the cards already lit.
-
-        Returns:
-            The ids of the cards to unlock, with the root of the tree when the
-            player has stated the solution.
-        """
-        answer = verdict["answer"]
-        # irrelevant, invalid or unclear questions never unlock cards: no call at all
-        if answer in (IRRELEVANT, INVALID, UNCLEAR):
-            return []
-
-        # the matcher reads the question with the answer already decided
-        context = self._context(history, lit)
-        contents = (f"{context}\n\nPLAYER'S WORDS: {question}\n"
-                    f"QUESTION: {verdict['positive_question']}\nANSWER: {answer}")
-        match = json.loads(self._call(self.model, contents, self._matcher_config(lit)).text)
-
-        # candidates: cards quoted with words the player said, in any order and with any punctuation;
-        # apostrophes read both ways, as in `answer`
-        said = f"{question} {verdict['positive_question']}"
-        said_words = set(WORD.findall(normalize(said))) | set(WORD.findall(said.lower()))
-        candidates = [c["id"] for c in match["cards"]
-                      if WORD.findall(c["quote"]) and set(WORD.findall(normalize(c["quote"]))) <= said_words]
-        # key cards must be named explicitly by the player, whatever the models think
-        required = self.puzzle.required_words
-        candidates = [card for card in candidates
-                      if card not in required or any(w in question.lower() for w in required[card])]
-        # exclusions follow from a "no" and are not stated by the question: they skip verification
-        exclusions = [card for card in candidates if card in self.puzzle.exclusions]
-        to_verify = [card for card in candidates if card not in self.puzzle.exclusions]
-        # the player wins by stating every key element, whatever is on the board;
-        # all of them are checked when the matcher sees any, or when the player says an element word
-        # ("scoperto"): the win must not depend on the matcher alone
-        said_element = any(stem in question.lower() for stems in self.puzzle.element_words.values() for stem in stems)
-        elements = list(self.puzzle.solution_elements) if answer == YES and (match["solution_elements"] or said_element) else []
-        by_words = [e for e in elements if e in self.puzzle.element_words]
-        by_verifier = [e for e in elements if e not in self.puzzle.element_words]
-
-        # facts may use the context for references; deductions and the solution must be in the player's words
-        checks_to_run = [(self.puzzle.card_text[card], context if card in self.puzzle.facts else self.no_context)
-                         for card in to_verify]
-        checks_to_run += [(self.puzzle.solution_elements[e], self.no_context) for e in by_verifier]
-        with ThreadPoolExecutor() as pool:
-            checks = list(pool.map(lambda item: self.verify(item[0], verdict["positive_question"], answer, item[1]),
-                                   checks_to_run))
-        card_checks, element_checks = checks[:len(to_verify)], checks[len(to_verify):]
-        element_checks += [any(stem in question.lower() for stem in self.puzzle.element_words[e]) for e in by_words]
-
-        cards = exclusions + [card for card, ok in zip(to_verify, card_checks) if ok]
-        # door cards light from their trigger words after a yes, with no model involved,
-        # unless the board already has them (lit or implied by a lit card)
-        if answer == YES:
-            known = self.puzzle.closure(lit)
-            cards += [card for card, stems in self.puzzle.trigger_words.items()
-                      if card not in cards and card not in known and any(stem in question.lower() for stem in stems)]
-        # the solution needs every key element confirmed
-        if elements and all(element_checks):
-            cards.append(self.puzzle.root)
-        return cards
-
-    def verify(self, text, question, answer, context):
-        """Check whether a question, with its answer, states a whole card.
-
-        Args:
-            text: The text of the card or of the solution element.
-            question: The question in positive form.
-            answer: The arbiter's answer.
-            context: The context text from `_context`, or `no_context`.
-
-        Returns:
-            True if the question and answer establish everything the text says.
-        """
-        contents = f"{context}\n\nQUESTION: {question}\nANSWER: {answer}\nCARD: {text}"
-        return json.loads(self._call(VERIFY_MODEL, contents, VERIFY_CONFIG).text)["stated"]
-
     def _call(self, model, contents, config):
         """Call a model with retries, see `call_model`."""
         return call_model(self.client, model, contents, config, self.max_attempts)
@@ -413,53 +315,6 @@ PUZZLE NOTES:
         recent_lines = "\n".join(f"- {q} -> {a}" for q, a in recent) or "- none"
         return (f"STORY: {self.puzzle.story}\n\n"
                 f"ALREADY ESTABLISHED:\n{established_lines}\n\nPREVIOUS EXCHANGES:\n{recent_lines}")
-
-    def _matcher_config(self, lit):
-        """Build the matcher's config: the cards the player can unlock now, with their criteria.
-
-        The matcher never sees the solution: the answer already says what is true.
-        Its schema only accepts the cards reachable now.
-        """
-        reachable = self.puzzle.reachable_deductions(lit)
-        deduction_lines = "\n".join(f"- {d_id}: {text}" for d_id, text in reachable) or "- none"
-        prompt = f"""You find which cards a player's question has unlocked in a lateral thinking
-puzzle played by voice. The question has already been answered: you do not judge whether
-it is true, you only read what the player's words, together with that answer, establish.
-
-FACT CARDS: return one when the question, with its answer, states or directly implies the whole fact (id: fact):
-{self.fact_lines}
-
-DEDUCTION CARDS the player can reach now: return one only after yes, when the player's words state the whole deduction (id: deduction):
-{deduction_lines}
-
-EXCLUSION CARDS: false leads; return one after no or partly, when the answer rules it out (id: false lead):
-{self.exclusion_lines}
-
-SOLUTION ELEMENTS: list one only after yes, when the question states it entirely (id: element):
-{self.element_lines}
-
-{MATCHER_STEPS}"""
-        card_ids = sorted(set(self.puzzle.facts) | set(self.puzzle.exclusions) | {d_id for d_id, _ in reachable})
-        schema = {
-            "type": "OBJECT",
-            "properties": {
-                "cards": {"type": "ARRAY", "items": {
-                    "type": "OBJECT",
-                    "properties": {"quote": {"type": "STRING"}, "id": {"type": "STRING", "enum": card_ids}},
-                    "required": ["quote", "id"],
-                    "propertyOrdering": ["quote", "id"],
-                }},
-                "solution_elements": {"type": "ARRAY", "items": {"type": "STRING",
-                                                                 "enum": list(self.puzzle.solution_elements)}},
-            },
-            "required": ["cards", "solution_elements"],
-            "propertyOrdering": ["cards", "solution_elements"],
-        }
-        # a short reasoning makes the matcher check every card instead of stopping at the first that fits
-        return types.GenerateContentConfig(system_instruction=prompt, temperature=0,
-                                           response_mime_type="application/json", response_schema=schema,
-                                           thinking_config=types.ThinkingConfig(thinking_level="low"))
-
 
 
 MATCHER_RULES = """HOW TO FIND THE FACTS
