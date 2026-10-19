@@ -40,8 +40,6 @@
   ],
   "victory": [
     {"id": "v_gas", "claim": "È morto intossicato dal fumo della stufa.",
-     "why": "la stufa l'ha ucciso?", "requires": ["gas", "stufa"]},
-    {"id": "v_camino", "claim": "Il fumo non poteva uscire perché il camino era bloccato.",
-     "why": "il fumo è rimasto nella stanza, quella notte?", "requires": ["comignolo"]}
+     "why": "la stufa l'ha ucciso?", "requires": ["gas", "stufa"]}
   ]
 }
