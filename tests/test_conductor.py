@@ -28,6 +28,12 @@ def baita():
     return load_riddle("baita", "it")
 
 
+@pytest.fixture
+def treno():
+    """The train: two victory elements, so the relaunch and the reconnection have a "why" to ask."""
+    return load_riddle("treno", "it")
+
+
 def reply(riddle, parts, question, answer="yes", found=()):
     """Run the conductor on one question with a fake model; return its result and what the model saw."""
     models = FakeModels(*parts)
@@ -154,15 +160,15 @@ def test_a_relief_line_with_a_colon_counts_the_questions(baita, monkeypatch):
     assert result["reply"] == "Dopo ben 5 domande vaghe, abbiamo novità: sì, c'era."
 
 
-def test_a_relaunch_asks_the_why_of_the_next_element_without_the_model(baita):
-    session = Session(baita)
-    session.unlock(["gas", "stufa"])
-    state = session.record("È stata la stufa a ucciderlo?", [], "yes", ["v_gas"])
+def test_a_relaunch_asks_the_why_of_the_next_element_without_the_model(treno):
+    session = Session(treno)
+    session.unlock(["orologi", "dimenticato"])
+    question = "La moglie ha dimenticato di spostare gli orologi?"
+    state = session.record(question, [], "yes", ["v_orologi"])
     models = FakeModels("", "Sì.", "")
-    result = Conductor(baita, SimpleNamespace(models=models)).reply(
-        "È stata la stufa a ucciderlo?", {"positive_question": "È stata la stufa a ucciderlo?", "answer": "yes"},
-        [], session, [], state)
-    assert result["reply"].lower().endswith("perché il fumo è rimasto nella stanza, quella notte?")
+    result = Conductor(treno, SimpleNamespace(models=models)).reply(
+        question, {"positive_question": question, "answer": "yes"}, [], session, [], state)
+    assert result["reply"].lower().endswith("perché gli orologi erano indietro?")
     assert models.calls == []
 
 
@@ -177,8 +183,8 @@ def test_an_explanation_with_a_wrong_part_says_so_without_saying_which(baita):
 
 def test_a_victory_gets_a_friends_comment_and_a_long_one_is_replaced(baita):
     session = Session(baita)
-    session.unlock(["gas", "stufa", "comignolo"])
-    state = session.record("Tutta la storia?", [], "yes", ["v_gas", "v_camino"])
+    session.unlock(["gas", "stufa"])
+    state = session.record("Tutta la storia?", [], "yes", ["v_gas"])
     verdict = {"positive_question": "Tutta la storia?", "answer": "yes"}
 
     def victory_reply(comment):
@@ -202,10 +208,10 @@ def test_only_the_victory_comment_reads_the_truth(baita):
     assert baita.truth not in ordinary
 
 
-def stall_line(riddle, hint, target, opening=""):
+def stall_line(riddle, hint, target, opening="", found=("gas", "stufa")):
     """Say the sentence of a stuck turn with this hint, with a fake model that writes `opening`."""
     session = Session(riddle)
-    session.unlock(["gas", "stufa"])
+    session.unlock(list(found))
     answer = SimpleNamespace(text=json.dumps({"opening": opening}))
     client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda model, contents, config: answer))
     state = {"hint": hint, "hint_target": target, "offer": False}
@@ -226,13 +232,15 @@ def test_a_gift_goes_on_after_the_colon_of_its_opening(baita, monkeypatch):
         "Prendi nota: durante la notte la neve ha ostruito il comignolo della stufa.")
 
 
-def test_a_reconnection_ends_with_the_open_why(baita):
-    sentence = stall_line(baita, "reconnect", "v_camino", "Basta con la porta, torniamo a noi:")
-    assert sentence == "Basta con la porta, torniamo a noi: perché il fumo è rimasto nella stanza, quella notte?"
+def test_a_reconnection_ends_with_the_open_why(treno):
+    sentence = stall_line(treno, "reconnect", "v_cambio_ora", "Basta con la stazione, torniamo a noi:",
+                          found=("orologi", "dimenticato"))
+    assert sentence == "Basta con la stazione, torniamo a noi: perché gli orologi erano indietro?"
 
 
-def test_a_reconnection_naming_a_hidden_fact_falls_back(baita):
-    sentence = stall_line(baita, "reconnect", "v_camino", "Basta con la porta, pensa al comignolo:")
+def test_a_reconnection_naming_a_hidden_fact_falls_back(treno):
+    sentence = stall_line(treno, "reconnect", "v_cambio_ora", "Basta con la stazione, pensa al cambio dell'ora:",
+                          found=("orologi", "dimenticato"))
     assert sentence.startswith(RECONNECT_FALLBACK)
 
 

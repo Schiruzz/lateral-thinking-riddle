@@ -14,6 +14,12 @@ def gabbiano():
     return Session(load_riddle("gabbiano", "it"))
 
 
+@pytest.fixture
+def treno():
+    """The train: two victory elements, so there is a final phase before the victory."""
+    return Session(load_riddle("treno", "it"))
+
+
 def test_a_new_game_has_nothing_found_and_only_open_scenes(baita):
     assert baita.found == set()
     assert baita.open_scenes() == ["mattina"]
@@ -152,14 +158,14 @@ def test_before_the_final_phase_the_sealed_scene_is_offered_from_the_second_stal
     assert not any(state["offer"] for state in stalls(baita, 2))   # a scene is named once
 
 
-def test_in_the_final_phase_the_why_comes_back_then_the_missing_fact_is_offered(baita):
-    baita.unlock(["gas", "stufa"])
-    baita.record("È morto per il fumo della stufa?", [], "yes", ["v_gas"])
+def test_in_the_final_phase_the_why_comes_back_then_the_missing_fact_is_offered(treno):
+    treno.unlock(["orologi", "dimenticato"])
+    treno.record("La moglie ha dimenticato di spostare gli orologi?", [], "yes", ["v_orologi"])
     states = []
-    while not baita.offer:   # empty questions until the hint is offered, then the yes
-        states.append(baita.record(f"Domanda {len(states)}?", [], "no"))
+    while not treno.offer and len(states) < 3 * STUCK_STREAK:   # empty questions until the hint is offered
+        states.append(treno.record(f"Domanda {len(states)}?", [], "no"))
     assert [(state["hint"], state["offer"]) for state in states if state["stuck"]] == [("reconnect", False), (None, True)]
-    assert baita.answer_offer(True)["given"] == ["comignolo"] and "comignolo" in baita.found
+    assert treno.answer_offer(True)["given"] == ["cambio_ora"] and "cambio_ora" in treno.found
 
 
 def test_a_no_or_a_question_lets_the_offer_go(baita):
@@ -172,10 +178,12 @@ def test_a_no_or_a_question_lets_the_offer_go(baita):
 
 
 
-def test_an_element_counts_only_once_its_facts_are_found(baita):
-    # "inalando qualcosa" is not yet the stove: its "why" would name the smoke
-    assert baita.record("Si è avvelenato inalando qualcosa?", baita.unlock(["gas"]), "yes", ["v_gas"])["relaunch"] is None
-    assert baita.record("Veniva dalla stufa?", baita.unlock(["stufa"]), "yes", ["v_gas"])["relaunch"] == "v_camino"
+def test_an_element_counts_only_once_its_facts_are_found(treno):
+    # "si è dimenticata" is not yet the clocks: the next "why" would name them
+    question = "La moglie si è dimenticata qualcosa?"
+    assert treno.record(question, treno.unlock(["dimenticato"]), "yes", ["v_orologi"])["relaunch"] is None
+    question = "Gli orologi erano indietro?"
+    assert treno.record(question, treno.unlock(["orologi"]), "yes", ["v_orologi"])["relaunch"] == "v_cambio_ora"
 
 
 
